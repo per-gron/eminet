@@ -6,8 +6,8 @@
 //  Copyright (c) 2012 __MyCompanyName__. All rights reserved.
 //
 
-#ifndef roshambo_EmiSockDelegate_h
-#define roshambo_EmiSockDelegate_h
+#ifndef emilir_EmiSockDelegate_h
+#define emilir_EmiSockDelegate_h
 
 #import <Foundation/Foundation.h>
 

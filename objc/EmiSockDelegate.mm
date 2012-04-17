@@ -22,17 +22,15 @@ void EmiSockDelegate::closeSocket(GCDAsyncUdpSocket *socket) {
 GCDAsyncUdpSocket *EmiSockDelegate::openSocket(uint16_t port, Error& err) {
     GCDAsyncUdpSocket *socket = [[GCDAsyncUdpSocket alloc] initWithDelegate:_socket delegateQueue:dispatch_get_current_queue()];
     
-    if ([socket bindToPort:port error:&err]) {
-        if ([socket beginReceiving:&err]) {
-            return socket;
-        }
-        else {
-            return nil;
-        }
-    }
-    else {
+    if (![socket bindToPort:port error:&err]) {
         return nil;
     }
+    
+    if (![socket beginReceiving:&err]) {
+        return nil;
+    }
+    
+    return socket;
 }
 
 EC *EmiSockDelegate::extractConn(EmiConnection *conn) {
