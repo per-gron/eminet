@@ -61,7 +61,7 @@ class EmiSenderBuffer {
     size_t _size;
     
     // Contains at most one message per channel. It is sorted by regTime
-    EmiSenderBufferNextMsgTree *_nextMsgTree;
+    EmiSenderBufferNextMsgTree _nextMsgTree;
     // contains all messages in the reliable buffer. It is sorted by
     // channelQualifier and sequenceNumber
     EmiSenderBufferSendBuffer *_sendBuffer;
@@ -89,7 +89,6 @@ private:
 public:
     
     EmiSenderBuffer(size_t size) {
-        _nextMsgTree = new EmiSenderBufferNextMsgTree;
         _sendBuffer = new EmiSenderBufferSendBuffer;
         _sendBufferSize = 0;
     }
@@ -104,11 +103,6 @@ public:
             
             delete _sendBuffer;
             _sendBuffer = NULL;
-        }
-        
-        if (NULL != _nextMsgTree) {
-            delete _nextMsgTree;
-            _nextMsgTree = NULL;
         }
         
         _sendBufferSize = 0;
@@ -127,7 +121,7 @@ public:
         if (NULL == messageSearch(message)) {
             // Only add to _nextMsgTree if there wasn't already a message for that connection id
             // and channel id in the system.
-            _nextMsgTree->insert(message);
+            _nextMsgTree.insert(message);
         }
         
         bool wasInserted = _sendBuffer->insert(message).second;
@@ -186,7 +180,7 @@ public:
                 _sendBufferSize -= msg->approximateSize();
             }
             
-            bool wasRemovedFromNextMsgTree = 0 != _nextMsgTree->erase(msg);
+            bool wasRemovedFromNextMsgTree = 0 != _nextMsgTree.erase(msg);
             wasInReliableTree = wasRemovedFromNextMsgTree || wasInReliableTree;
             
             msg->release();
@@ -196,16 +190,16 @@ public:
         
         if (wasInReliableTree) {
             EmiMessage<SockDelegate> *newMsg = messageSearch(&msgStub);
-            if (NULL != newMsg) _nextMsgTree->insert(newMsg);
+            if (NULL != newMsg) _nextMsgTree.insert(newMsg);
         }
     }
     
     bool empty() const {
-        return _nextMsgTree->empty();
+        return _nextMsgTree.empty();
     }
     void eachCurrentMessage(EmiTimeInterval now, EmiTimeInterval rto, EmiSenderBufferIteratorBlock block) const {
-        EmiSenderBufferNextMsgTreeIter iter = _nextMsgTree->begin();
-        EmiSenderBufferNextMsgTreeIter end = _nextMsgTree->end();
+        EmiSenderBufferNextMsgTreeIter iter = _nextMsgTree.begin();
+        EmiSenderBufferNextMsgTreeIter end = _nextMsgTree.end();
         
         while (iter != end) {
             EmiMessage<SockDelegate> *msg = *iter;
