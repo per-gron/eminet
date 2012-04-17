@@ -239,9 +239,9 @@ public:
         
         EmiConnectionKey ckey(address, inboundPort);
         typename EmiConnectionMap::iterator cur = _conns.find(ckey);
-        __block ConnectionHandle nativeConn = _conns.end() == cur ? nil : (*cur).second;
+        ConnectionHandle nativeConn = _conns.end() == cur ? NULL : (*cur).second;
         
-        __block EC *conn = SockDelegate::extractConn(nativeConn);
+        __block EC *conn = nativeConn ? SockDelegate::extractConn(nativeConn) : NULL;
         
         if (conn) conn->gotPacket();
         
@@ -292,16 +292,18 @@ public:
                         conn = nil;
                     }
                     
+                    ConnectionHandle openedNativeConn(nativeConn);
+                    
                     if (!conn) {
-                        nativeConn = _delegate.makeConnection(address, inboundPort, /*initiator:*/false);
-                        conn = SockDelegate::extractConn(nativeConn);
-                        _conns[ckey] = nativeConn;
+                        openedNativeConn = _delegate.makeConnection(address, inboundPort, /*initiator:*/false);
+                        conn = SockDelegate::extractConn(openedNativeConn);
+                        _conns[ckey] = openedNativeConn;
                     }
                     
                     conn->gotTimestamp(now, data);
                     
                     if (conn->open(now, header->sequenceNumber)) {
-                        _delegate.gotConnection(nativeConn);
+                        _delegate.gotConnection(openedNativeConn);
                     }
                 }
                 else if (synFlag && rstFlag) {
