@@ -23,9 +23,8 @@ class EmiConn {
     typedef typename SockDelegate::Error            Error;
     typedef typename SockDelegate::Data             Data;
     typedef typename SockDelegate::Address          Address;
-    typedef typename SockDelegate::ConnectionHandle ConnectionHandle;
     
-    typedef void (^EmiConnectionOpenedBlock)(const Error& err, const ConnectionHandle& connection);
+    typedef void (^EmiConnectionOpenedBlock)(const Error& err, const EmiConn& connection);
     typedef EmiSock<SockDelegate, ConnDelegate> ES;
     typedef EmiLogicalConnection<SockDelegate, ConnDelegate> ELC;
     typedef EmiSendQueue<SockDelegate, ConnDelegate> ESQ;
@@ -35,8 +34,6 @@ class EmiConn {
     
     ES *_emisock;
     bool _initiator;
-    
-    ConnectionHandle _emiConn;
     
     ELC *_conn;
     EmiSenderBuffer<SockDelegate> _senderBuffer;
@@ -56,12 +53,11 @@ private:
     EmiConn& operator=(const EmiConn& other) { return *this; }
     
 public:
-    EmiConn(ConnDelegate delegate, uint16_t inboundPort, Address address, const ConnectionHandle& emiConn, ES *socket, bool initiator) :
+    EmiConn(ConnDelegate delegate, uint16_t inboundPort, Address address, ES *socket, bool initiator) :
     _inboundPort(inboundPort),
     _address(address),
     _conn(NULL),
     _delegate(delegate),
-    _emiConn(emiConn),
     _emisock(socket),
     _initiator(initiator),
     _senderBuffer(_emisock->config.senderBufferSize),
@@ -294,10 +290,10 @@ public:
                 if (!blockCopy) return;
                 
                 if (error) {
-                    block(SockDelegate::makeError("com.emilir.eminet.disconnect", reason), nil);
+                    block(SockDelegate::makeError("com.emilir.eminet.disconnect", reason), *this);
                 }
                 else {
-                    block(nil, _emiConn);
+                    block(nil, *this);
                 }
                 
                 blockCopy = nil;

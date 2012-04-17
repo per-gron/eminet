@@ -12,13 +12,13 @@
 #import "EmiConnection.h"
 
 class EmiConnDelegate {
-    EmiConnection *_conn;
-    
     NSTimer *_tickTimer;
     NSTimer *_heartbeatTimer;
     NSTimer *_rtoTimer;
     NSTimer *_connectionTimer;
 public:
+    EmiConnection* const conn;
+    
     EmiConnDelegate(EmiConnection *conn);
     
     void invalidate();
