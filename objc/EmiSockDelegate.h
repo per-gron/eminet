@@ -29,7 +29,7 @@ public:
     typedef __strong NSError* Error;
     typedef __strong EmiConnection* ConnectionHandle;
     typedef EmiAddressCmp AddressCmp;
-    typedef GCDAsyncUdpSocket Socket;
+    typedef GCDAsyncUdpSocket SocketHandle;
     typedef NSData* Address;
     typedef NSData* Data;
     

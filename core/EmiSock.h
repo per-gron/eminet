@@ -49,7 +49,7 @@ class EmiSock {
     typedef typename SockDelegate::Data             Data;
     typedef typename SockDelegate::Address          Address;
     typedef typename SockDelegate::AddressCmp       AddressCmp;
-    typedef typename SockDelegate::Socket           Socket;
+    typedef typename SockDelegate::SocketHandle     SocketHandle;
     typedef typename SockDelegate::ConnectionHandle ConnectionHandle;
     
     class EmiConnectionKey {
@@ -88,12 +88,12 @@ class EmiSock {
     };
     
     struct EmiClientSocket {
-        EmiClientSocket(EmiSock *emiSock_, uint16_t port_, Socket *socket_) :
+        EmiClientSocket(EmiSock *emiSock_, uint16_t port_, SocketHandle *socket_) :
         emiSock(emiSock_), port(port_), socket(socket_) {}
         
         EmiSock *emiSock;
         uint16_t port;
-        Socket *socket;
+        SocketHandle *socket;
         std::set<EmiClientSocketKey> addresses;
         
         bool open(Error& err) {
@@ -119,7 +119,7 @@ class EmiSock {
     
     
 protected:
-    Socket                       *_serverSocket;
+    SocketHandle                 *_serverSocket;
     EmiConnectionMap              _conns;
     EmiClientSocketMap            _clientSockets;
     SockDelegate                  _delegate;
@@ -148,7 +148,7 @@ protected:
         
         int32_t inboundPort = findFreeClientPort(address);
         if (-1 == inboundPort) {
-            Socket *socket = _delegate.openSocket(0, err);
+            SocketHandle *socket = _delegate.openSocket(0, err);
             if (!socket) {
                 return 0;
             }
@@ -228,7 +228,7 @@ public:
         return YES;
     }
     
-    void onMessage(EmiTimeInterval now, Socket *sock, uint16_t inboundPort, Address address, Data data) {
+    void onMessage(EmiTimeInterval now, SocketHandle *sock, uint16_t inboundPort, Address address, Data data) {
         __block const char *err = nil;
         
         size_t len = SockDelegate::extractLength(data);
@@ -427,7 +427,7 @@ public:
     }
     
     void sendDatagram(EC *conn, const uint8_t *data, size_t size) {
-        Socket *socket = nil;
+        SocketHandle *socket = nil;
         
         if (conn->isInitiator()) {
             typename EmiClientSocketMap::iterator cur = _clientSockets.find(conn->getInboundPort());
