@@ -177,6 +177,10 @@ public:
         desuspend(err);
     }
     
+    virtual ~EmiSock() {
+        suspend(); // This will close (which, depending on the binding, might mean deallocate) all sockets
+    }
+    
     SockDelegate& getDelegate() {
         return _delegate;
     }
