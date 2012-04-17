@@ -29,7 +29,7 @@ public:
     senderBufferSize(EMI_DEFAULT_SENDER_BUFFER_SIZE),
     acceptConnections(false),
     port(0),
-    address(nil) {}
+    address(NULL) {}
     
     size_t mtu;
     float heartbeatFrequency;
@@ -233,7 +233,7 @@ public:
     }
     
     void onMessage(EmiTimeInterval now, SocketHandle *sock, uint16_t inboundPort, Address address, Data data) {
-        __block const char *err = nil;
+        __block const char *err = NULL;
         
         size_t len = SockDelegate::extractLength(data);
         
@@ -289,7 +289,7 @@ public:
                         // other host has forgot about the connection we have open. Force
                         // close it and continue as if conn did not exist.
                         conn->forceClose();
-                        conn = nil;
+                        conn = NULL;
                     }
                     
                     ConnectionHandle openedNativeConn(nativeConn);
@@ -433,11 +433,11 @@ public:
     }
     
     void sendDatagram(EC *conn, const uint8_t *data, size_t size) {
-        SocketHandle *socket = nil;
+        SocketHandle *socket = NULL;
         
         if (conn->isInitiator()) {
             typename EmiClientSocketMap::iterator cur = _clientSockets.find(conn->getInboundPort());
-            socket = _clientSockets.end() == cur ? nil : (*cur).second.socket;
+            socket = _clientSockets.end() == cur ? NULL : (*cur).second.socket;
         }
         else {
             socket = _serverSocket;

@@ -82,7 +82,7 @@ public:
     virtual ~EmiConn() {
         if (_conn) {
             delete _conn;
-            _conn = nil;
+            _conn = NULL;
         }
     }
     
@@ -168,7 +168,7 @@ public:
     void deregisterConnection(EmiDisconnectReason reason) {
         if (_conn) {
             _conn->wasClosed(reason);
-            _conn = nil; // This has to be done before forceClose
+            _conn = NULL; // This has to be done before forceClose
             forceClose(reason);
         }
     }
@@ -179,7 +179,7 @@ public:
             
             // _conn is niled out to ensure that we don't fire several disconnect events,
             // which would happen if the disconnect delegate callback calls forceClose.
-            _conn = nil;
+            _conn = NULL;
             
             conn->wasClosed(reason);
         }
@@ -293,10 +293,10 @@ public:
                     block(SockDelegate::makeError("com.emilir.eminet.disconnect", reason), *this);
                 }
                 else {
-                    block(nil, *this);
+                    block(NULL, *this);
                 }
                 
-                blockCopy = nil;
+                blockCopy = NULL;
             });
             return true;
         }

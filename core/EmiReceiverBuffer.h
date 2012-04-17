@@ -92,7 +92,7 @@ public:
     _size(size), _tree(new EmiReceiverBufferTree), _bufferSize(0), _gotMessage([gotMessage copy]) {}
     
     virtual ~EmiReceiverBuffer() {
-        if (nil != _tree) {
+        if (NULL != _tree) {
             EmiReceiverBufferTreeIter iter = _tree->begin();
             EmiReceiverBufferTreeIter end = _tree->end();
             while (iter != end) {
@@ -101,7 +101,7 @@ public:
             }
             
             delete _tree;
-            _tree = nil;
+            _tree = NULL;
         }
         
         _size = 0;

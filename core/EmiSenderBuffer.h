@@ -83,7 +83,7 @@ private:
             ++iter;
         }
         
-        return nil;
+        return NULL;
     }
     
 public:
@@ -94,7 +94,7 @@ public:
         _sendBufferSize = 0;
     }
     virtual ~EmiSenderBuffer() {
-        if (nil != _sendBuffer) {
+        if (NULL != _sendBuffer) {
             EmiSenderBufferSendBufferIter iter = _sendBuffer->begin();
             EmiSenderBufferSendBufferIter end = _sendBuffer->end();
             while (iter != end) {
@@ -103,12 +103,12 @@ public:
             }
             
             delete _sendBuffer;
-            _sendBuffer = nil;
+            _sendBuffer = NULL;
         }
         
-        if (nil != _nextMsgTree) {
+        if (NULL != _nextMsgTree) {
             delete _nextMsgTree;
-            _nextMsgTree = nil;
+            _nextMsgTree = NULL;
         }
         
         _sendBufferSize = 0;
@@ -124,7 +124,7 @@ public:
         }
         
         // Check if there already is a message with this channel qualifier in the buffer
-        if (nil == messageSearch(message)) {
+        if (NULL == messageSearch(message)) {
             // Only add to _nextMsgTree if there wasn't already a message for that connection id
             // and channel id in the system.
             _nextMsgTree->insert(message);
@@ -196,7 +196,7 @@ public:
         
         if (wasInReliableTree) {
             EmiMessage<SockDelegate> *newMsg = messageSearch(&msgStub);
-            if (nil != newMsg) _nextMsgTree->insert(newMsg);
+            if (NULL != newMsg) _nextMsgTree->insert(newMsg);
         }
     }
     
