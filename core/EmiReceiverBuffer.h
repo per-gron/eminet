@@ -49,7 +49,7 @@ protected:
     // Buffer max size
     size_t _size;
     
-    EmiReceiverBufferTree *_tree;
+    EmiReceiverBufferTree _tree;
     size_t _bufferSize;
     
     EmiReveiverBufferGotMessageBlock _gotMessage;
@@ -67,7 +67,7 @@ private:
         size_t msgSize = EmiReceiverBuffer::bufferEntrySize(entry);
         // Discard the message if it doesn't fit in the buffer
         if (_bufferSize + msgSize <= _size) {
-            bool wasInserted = _tree->insert(entry).second;
+            bool wasInserted = _tree.insert(entry).second;
             // Only increment this._bufferSize if the message wasn't already in the buffer
             if (wasInserted) {
                 _bufferSize += msgSize;
@@ -77,7 +77,7 @@ private:
     void remove(Entry *entry) {
         size_t msgSize = EmiReceiverBuffer::bufferEntrySize(entry);
         
-        size_t numErasedElements = _tree->erase(entry);
+        size_t numErasedElements = _tree.erase(entry);
         if (0 != numErasedElements) {
             // Only decrement this._bufferSize if the message was in the buffer
             _bufferSize -= msgSize;
@@ -89,19 +89,14 @@ private:
 public:
     
     EmiReceiverBuffer(size_t size, EmiReveiverBufferGotMessageBlock gotMessage) :
-    _size(size), _tree(new EmiReceiverBufferTree), _bufferSize(0), _gotMessage([gotMessage copy]) {}
+    _size(size), _bufferSize(0), _gotMessage([gotMessage copy]) {}
     
     virtual ~EmiReceiverBuffer() {
-        if (NULL != _tree) {
-            EmiReceiverBufferTreeIter iter = _tree->begin();
-            EmiReceiverBufferTreeIter end = _tree->end();
-            while (iter != end) {
-                remove(*iter);
-                ++iter;
-            }
-            
-            delete _tree;
-            _tree = NULL;
+        EmiReceiverBufferTreeIter iter = _tree.begin();
+        EmiReceiverBufferTreeIter end = _tree.end();
+        while (iter != end) {
+            remove(*iter);
+            ++iter;
         }
         
         _size = 0;
@@ -116,14 +111,14 @@ public:
         insert(entry);
     }
     void flushBuffer(EmiChannelQualifier channelQualifier, EmiSequenceNumber sequenceNumber) {
-        if (_tree->empty()) return;
+        if (_tree.empty()) return;
         
         Entry mockEntry;
         mockEntry.header.channelQualifier = channelQualifier;
         mockEntry.header.sequenceNumber = sequenceNumber;
         
-        EmiReceiverBufferTreeIter iter = _tree->lower_bound(&mockEntry);
-        EmiReceiverBufferTreeIter end = _tree->end();
+        EmiReceiverBufferTreeIter iter = _tree.lower_bound(&mockEntry);
+        EmiReceiverBufferTreeIter end = _tree.end();
         
         std::vector<Entry *> toBeRemoved;
         EmiSequenceNumber expectedSequenceNumber = sequenceNumber+1;
