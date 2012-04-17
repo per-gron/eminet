@@ -64,7 +64,7 @@ class EmiSenderBuffer {
     EmiSenderBufferNextMsgTree _nextMsgTree;
     // contains all messages in the reliable buffer. It is sorted by
     // channelQualifier and sequenceNumber
-    EmiSenderBufferSendBuffer *_sendBuffer;
+    EmiSenderBufferSendBuffer _sendBuffer;
     size_t _sendBufferSize;
     
 private:
@@ -73,8 +73,8 @@ private:
     EmiSenderBuffer& operator=(const EmiSenderBuffer& other) { return *this; }
     
     EmiMessage<SockDelegate> *messageSearch(EmiMessage<SockDelegate> *messageStub) {
-        EmiSenderBufferSendBufferIter iter = _sendBuffer->lower_bound(messageStub);
-        EmiSenderBufferSendBufferIter end = _sendBuffer->end();
+        EmiSenderBufferSendBufferIter iter = _sendBuffer.lower_bound(messageStub);
+        EmiSenderBufferSendBufferIter end = _sendBuffer.end();
         
         // We need to look at both *iter and *(++iter), and of course
         // also guard for if we reach end. That's what this loop does.
@@ -89,23 +89,15 @@ private:
 public:
     
     EmiSenderBuffer(size_t size) {
-        _sendBuffer = new EmiSenderBufferSendBuffer;
         _sendBufferSize = 0;
     }
     virtual ~EmiSenderBuffer() {
-        if (NULL != _sendBuffer) {
-            EmiSenderBufferSendBufferIter iter = _sendBuffer->begin();
-            EmiSenderBufferSendBufferIter end = _sendBuffer->end();
-            while (iter != end) {
-                (*iter)->release();
-                ++iter;
-            }
-            
-            delete _sendBuffer;
-            _sendBuffer = NULL;
+        EmiSenderBufferSendBufferIter iter = _sendBuffer.begin();
+        EmiSenderBufferSendBufferIter end = _sendBuffer.end();
+        while (iter != end) {
+            (*iter)->release();
+            ++iter;
         }
-        
-        _sendBufferSize = 0;
     }
     
     // Returns false if the buffer didn't have space for the message
@@ -124,7 +116,7 @@ public:
             _nextMsgTree.insert(message);
         }
         
-        bool wasInserted = _sendBuffer->insert(message).second;
+        bool wasInserted = _sendBuffer.insert(message).second;
         if (wasInserted) {
             message->retain();
             _sendBufferSize += msgSize;
@@ -140,10 +132,10 @@ public:
         msgStub.channelQualifier = channelQualifier;
         msgStub.sequenceNumber = sequenceNumber;
         
-        EmiSenderBufferSendBufferIter begin = _sendBuffer->begin();
-        EmiSenderBufferSendBufferIter iter  = _sendBuffer->lower_bound(&msgStub);
+        EmiSenderBufferSendBufferIter begin = _sendBuffer.begin();
+        EmiSenderBufferSendBufferIter iter  = _sendBuffer.lower_bound(&msgStub);
         
-        if (iter == _sendBuffer->end()) return;
+        if (iter == _sendBuffer.end()) return;
         
         std::vector<EmiMessage<SockDelegate> *> toBeRemoved;
         do {
@@ -174,7 +166,7 @@ public:
         while (viter != vend) {
             EmiMessage<SockDelegate> *msg = *viter;
             
-            bool wasRemovedFromSendBuffer = (0 != _sendBuffer->erase(msg));
+            bool wasRemovedFromSendBuffer = (0 != _sendBuffer.erase(msg));
             if (wasRemovedFromSendBuffer) {
                 // wasRemovedFromSendBuffer should always be true, but we check just in case
                 _sendBufferSize -= msg->approximateSize();
