@@ -20,12 +20,12 @@
 
 template<class SockDelegate, class ConnDelegate>
 class EmiConn {
-    typedef typename SockDelegate::Error      Error;
-    typedef typename SockDelegate::Data       Data;
-    typedef typename SockDelegate::Address    Address;
-    typedef typename SockDelegate::Connection Connection;
+    typedef typename SockDelegate::Error            Error;
+    typedef typename SockDelegate::Data             Data;
+    typedef typename SockDelegate::Address          Address;
+    typedef typename SockDelegate::ConnectionHandle ConnectionHandle;
     
-    typedef void (^EmiConnectionOpenedBlock)(const Error& err, const Connection& connection);
+    typedef void (^EmiConnectionOpenedBlock)(const Error& err, const ConnectionHandle& connection);
     typedef EmiSock<SockDelegate, ConnDelegate> ES;
     typedef EmiLogicalConnection<SockDelegate, ConnDelegate> ELC;
     typedef EmiSendQueue<SockDelegate, ConnDelegate> ESQ;
@@ -36,7 +36,7 @@ class EmiConn {
     ES *_emisock;
     bool _initiator;
     
-    Connection _emiConn;
+    ConnectionHandle _emiConn;
     
     ELC *_conn;
     EmiSenderBuffer<SockDelegate> _senderBuffer;
@@ -56,7 +56,7 @@ private:
     EmiConn& operator=(const EmiConn& other) { return *this; }
     
 public:
-    EmiConn(ConnDelegate delegate, uint16_t inboundPort, Address address, const Connection& emiConn, ES *socket, bool initiator) :
+    EmiConn(ConnDelegate delegate, uint16_t inboundPort, Address address, const ConnectionHandle& emiConn, ES *socket, bool initiator) :
     _inboundPort(inboundPort),
     _address(address),
     _conn(NULL),

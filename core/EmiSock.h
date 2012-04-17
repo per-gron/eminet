@@ -45,12 +45,12 @@ public:
 
 template<class SockDelegate, class ConnDelegate>
 class EmiSock {
-    typedef typename SockDelegate::Error      Error;
-    typedef typename SockDelegate::Data       Data;
-    typedef typename SockDelegate::Address    Address;
-    typedef typename SockDelegate::AddressCmp AddressCmp;
-    typedef typename SockDelegate::Socket     Socket;
-    typedef typename SockDelegate::Connection Connection;
+    typedef typename SockDelegate::Error            Error;
+    typedef typename SockDelegate::Data             Data;
+    typedef typename SockDelegate::Address          Address;
+    typedef typename SockDelegate::AddressCmp       AddressCmp;
+    typedef typename SockDelegate::Socket           Socket;
+    typedef typename SockDelegate::ConnectionHandle ConnectionHandle;
     
     class EmiConnectionKey {
         const AddressCmp _cmp;
@@ -110,10 +110,10 @@ class EmiSock {
         }
     };
     
-    typedef std::map<EmiConnectionKey, Connection> EmiConnectionMap;
+    typedef std::map<EmiConnectionKey, ConnectionHandle> EmiConnectionMap;
     typedef std::map<uint16_t, EmiClientSocket> EmiClientSocketMap;
     
-    typedef void (^EmiConnectionOpenedBlock)(const Error& err, const Connection& connection);
+    typedef void (^EmiConnectionOpenedBlock)(const Error& err, const ConnectionHandle& connection);
     typedef EmiConn<SockDelegate, ConnDelegate> EC;
     typedef EmiSendQueue<SockDelegate, ConnDelegate> ESQ;
     
@@ -235,7 +235,7 @@ public:
         
         EmiConnectionKey ckey(address, inboundPort);
         typename EmiConnectionMap::iterator cur = _conns.find(ckey);
-        __block Connection nativeConn = _conns.end() == cur ? nil : (*cur).second;
+        __block ConnectionHandle nativeConn = _conns.end() == cur ? nil : (*cur).second;
         
         __block EC *conn = SockDelegate::extractConn(nativeConn);
         
@@ -419,7 +419,7 @@ public:
         }
         
         
-        Connection ec = _delegate.makeConnection(address, inboundPort, /*initiator:*/true);
+        ConnectionHandle ec = _delegate.makeConnection(address, inboundPort, /*initiator:*/true);
         _conns[key] = ec;
         SockDelegate::extractConn(ec)->open(now, block);
         

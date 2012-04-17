@@ -114,7 +114,7 @@
     NSError *err = nil;
     BOOL retVal = ((S *)_sock)->connect([NSDate timeIntervalSinceReferenceDate], address,
                                         ^(const EmiSockDelegate::Error& err,
-                                          const EmiSockDelegate::Connection& connection) {
+                                          const EmiSockDelegate::ConnectionHandle& connection) {
                                             block(err, connection);
                                         }, err);
     *errPtr = err;

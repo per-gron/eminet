@@ -27,7 +27,7 @@ class EmiSockDelegate {
 public:
     
     typedef __strong NSError* Error;
-    typedef __strong EmiConnection* Connection;
+    typedef __strong EmiConnection* ConnectionHandle;
     typedef EmiAddressCmp AddressCmp;
     typedef GCDAsyncUdpSocket Socket;
     typedef NSData* Address;

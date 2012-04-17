@@ -24,8 +24,8 @@ typedef void (^SendSynRstAckPacketCallback)(uint8_t *buf, size_t size);
 
 template<class SockDelegate, class ConnDelegate>
 class EmiSendQueue {
-    typedef typename SockDelegate::Data       Data;
-    typedef typename SockDelegate::Connection Connection;
+    typedef typename SockDelegate::Data             Data;
+    typedef typename SockDelegate::ConnectionHandle ConnectionHandle;
     
     typedef std::vector<EmiMessage<SockDelegate> *> EmiSendQueueVector;
     typedef typename std::vector<EmiMessage<SockDelegate> *>::iterator EmiSendQueueVectorIter;
