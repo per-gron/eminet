@@ -24,7 +24,6 @@ class EmiConn {
     typedef typename SockDelegate::Data             Data;
     typedef typename SockDelegate::Address          Address;
     
-    typedef void (^EmiConnectionOpenedBlock)(const Error& err, EmiConn& connection);
     typedef EmiSock<SockDelegate, ConnDelegate> ES;
     typedef EmiLogicalConnection<SockDelegate, ConnDelegate> ELC;
     typedef EmiSendQueue<SockDelegate, ConnDelegate> ESQ;
@@ -270,7 +269,7 @@ public:
     
     // The first time this methods is called, it opens the EmiConnection and returns true.
     // Subsequent times it just resends the init message and returns false.
-    bool open(EmiTimeInterval now, EmiSequenceNumber otherHostInitialSequenceNumber) {
+    bool opened(EmiTimeInterval now, EmiSequenceNumber otherHostInitialSequenceNumber) {
         if (_conn) {
             Error err;
             if (!_conn->resendInitMessage(now, err)) {
@@ -286,7 +285,8 @@ public:
             return true;
         }
     }
-    bool open(EmiTimeInterval now, EmiConnectionOpenedBlock block) {
+    template<class ConnectionOpenedFunctor>
+    bool open(EmiTimeInterval now, ConnectionOpenedFunctor block) {
         if (_conn) {
             // We don't need to explicitly resend the init message here;
             // SYN connection init messages like this are reliable messages
@@ -294,19 +294,13 @@ public:
             return false;
         }
         else {
-            __block EmiConnectionOpenedBlock blockCopy = [block copy];
-            
             _conn = new ELC(this, now, ^(bool error, EmiDisconnectReason reason) {
-                if (!blockCopy) return;
-                
                 if (error) {
                     block(SockDelegate::makeError("com.emilir.eminet.disconnect", reason), *this);
                 }
                 else {
                     block(NULL, *this);
                 }
-                
-                blockCopy = NULL;
             });
             return true;
         }

@@ -110,7 +110,6 @@ class EmiSock {
     };
     
     typedef EmiConn<SockDelegate, ConnDelegate> EC;
-    typedef void (^EmiConnectionOpenedBlock)(const Error& err, EC& connection);
     typedef EmiSendQueue<SockDelegate, ConnDelegate> ESQ;
     
     typedef std::map<EmiConnectionKey, EC*> EmiConnectionMap;
@@ -313,7 +312,7 @@ public:
                     
                     conn->gotTimestamp(now, data);
                     
-                    if (conn->open(now, header->sequenceNumber)) {
+                    if (conn->opened(now, header->sequenceNumber)) {
                         _delegate.gotConnection(conn);
                     }
                 }
@@ -418,7 +417,8 @@ public:
         return;
     }
     
-    bool connect(EmiTimeInterval now, const Address& address, EmiConnectionOpenedBlock block, Error& err) {
+    template<class ConnectionOpenedFunctor>
+    bool connect(EmiTimeInterval now, const Address& address, ConnectionOpenedFunctor block, Error& err) {
         uint16_t inboundPort = openClientSocket(address, err);
         
         if (!inboundPort) {
