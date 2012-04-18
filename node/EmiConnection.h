@@ -19,6 +19,10 @@ class EmiConnection : public node::ObjectWrap {
   static v8::Persistent<v8::String>   prioritySymbol;
   static v8::Persistent<v8::Function> constructor;
   
+  // Private copy constructor and assignment operator
+  inline EmiConnection(const EmiConnection& other);
+  inline EmiConnection& operator=(const EmiConnection& other);
+  
   EmiConnection(EmiSocket *es, const struct sockaddr_storage& address, uint16_t inboundPort, bool initiator);
   
  public:

@@ -50,6 +50,7 @@ class EmiSock {
     typedef typename SockDelegate::Address          Address;
     typedef typename SockDelegate::AddressCmp       AddressCmp;
     typedef typename SockDelegate::SocketHandle     SocketHandle;
+    typedef typename SockDelegate::ConnectionOpenedCallbackCookie  ConnectionOpenedCallbackCookie;
     
     class EmiConnectionKey {
         const AddressCmp _cmp;
@@ -415,8 +416,8 @@ public:
         return;
     }
     
-    template<class ConnectionOpenedFunctor>
-    bool connect(EmiTimeInterval now, const Address& address, ConnectionOpenedFunctor block, Error& err) {
+    // SockDelegate::connectionOpened will be called on the cookie iff this function returns true.
+    bool connect(EmiTimeInterval now, const Address& address, const ConnectionOpenedCallbackCookie& cookie, Error& err) {
         uint16_t inboundPort = openClientSocket(address, err);
         
         if (!inboundPort) {
@@ -434,7 +435,7 @@ public:
         
         EC *ec(_delegate.makeConnection(address, inboundPort, /*initiator:*/true));
         _conns.insert(std::make_pair(key, ec));
-        ec->open(now, block);
+        ec->open(now, cookie);
         
         return true;
     }

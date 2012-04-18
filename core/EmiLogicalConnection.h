@@ -143,7 +143,7 @@ public:
             SockDelegate::panic();
         }
     }
-    EmiLogicalConnection(EC *connection, EmiTimeInterval now, ConnectionOpenedCallbackCookie connectionOpenedCallbackCookie) :
+    EmiLogicalConnection(EC *connection, EmiTimeInterval now, const ConnectionOpenedCallbackCookie& connectionOpenedCallbackCookie) :
     _conn(connection), _otherHostInitialSequenceNumber(0),
     _sendingSyn(true), _connectionOpenedCallbackCookie(connectionOpenedCallbackCookie) {
         commonInit();

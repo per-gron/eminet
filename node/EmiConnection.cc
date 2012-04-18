@@ -145,7 +145,7 @@ Handle<Value> EmiConnection::Send(const Arguments& args) {
     return scope.Close(Undefined());
   }
   
-  if (!args[0]->IsObject() || !args[1]->IsObject()) {
+  if (!args[0]->IsObject() || (2 == numArgs && !args[1]->IsObject())) {
     ThrowException(Exception::TypeError(String::New("Wrong arguments")));
     return scope.Close(Undefined());
   }
@@ -158,8 +158,8 @@ Handle<Value> EmiConnection::Send(const Arguments& args) {
   
   if (2 == numArgs) {
     Local<Object> opts = args[1]->ToObject();
-    Local<Value> cqv   = opts->Get(channelQualifierSymbol);
-    Local<Value> pv    = opts->Get(prioritySymbol);
+    Local<Value>  cqv  = opts->Get(channelQualifierSymbol);
+    Local<Value>  pv   = opts->Get(prioritySymbol);
     
     if (!cqv.IsEmpty()) {
       if (!cqv->IsNumber()) {

@@ -22,17 +22,18 @@ class EmiSockDelegate {
   EmiSocket *_es;
  public:
     
-  typedef EmiError                     Error;
-  typedef EmiAddressCmp                AddressCmp;
-  typedef uv_udp_t                     SocketHandle;
-  typedef struct sockaddr_storage      Address;
-  typedef v8::Persistent<v8::Object>   Data;
-  typedef v8::Persistent<v8::Function> ConnectionOpenedCallbackCookie;
+  typedef EmiError                   Error;
+  typedef EmiAddressCmp              AddressCmp;
+  typedef uv_udp_t                   SocketHandle;
+  typedef struct sockaddr_storage    Address;
+  typedef v8::Persistent<v8::Object> Data;
+  typedef v8::Persistent<v8::Object> ConnectionOpenedCallbackCookie;
     
   EmiSockDelegate(EmiSocket *es);
     
   static void closeSocket(uv_udp_t *socket);
   uv_udp_t *openSocket(uint16_t port, Error& err);
+  static uint16_t extractLocalPort(uv_udp_t *socket);
     
   EC *makeConnection(const Address& address, uint16_t inboundPort, bool initiator);
     

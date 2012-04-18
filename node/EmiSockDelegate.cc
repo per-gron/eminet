@@ -93,6 +93,25 @@ uv_udp_t *EmiSockDelegate::openSocket(uint16_t port, Error& error) {
   return NULL;
 }
 
+uint16_t EmiSockDelegate::extractLocalPort(uv_udp_t *socket) {
+  Address address;
+  int len(sizeof(address));
+  
+  uv_udp_getsockname(socket, (struct sockaddr *)&address, &len);
+  
+  if (sizeof(sockaddr_in) == len) {
+    sockaddr_in *addr = (sockaddr_in *)&address;
+    return addr->sin_port;
+  }
+  else if (sizeof(sockaddr_in6) == len) {
+    sockaddr_in6 *addr = (sockaddr_in6 *)&address;
+    return addr->sin6_port;
+  }
+  else {
+    ASSERT(0 && "Invalid sockaddr size");
+  }
+}
+
 EC *EmiSockDelegate::makeConnection(const Address& address, uint16_t inboundPort, bool initiator) {
   HandleScope scope;
   
@@ -136,6 +155,9 @@ void EmiSockDelegate::gotConnection(EC *conn) {
 }
 
 void EmiSockDelegate::connectionOpened(ConnectionOpenedCallbackCookie& cookie, bool error, EmiDisconnectReason reason, EC& ec) {
+  // TODO
+  
+  cookie.Dispose();
 }
 
 void EmiSockDelegate::panic() {

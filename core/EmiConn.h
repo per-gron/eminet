@@ -286,7 +286,7 @@ public:
             return true;
         }
     }
-    bool open(EmiTimeInterval now, ConnectionOpenedCallbackCookie block) {
+    bool open(EmiTimeInterval now, const ConnectionOpenedCallbackCookie& cookie) {
         if (_conn) {
             // We don't need to explicitly resend the init message here;
             // SYN connection init messages like this are reliable messages
@@ -294,7 +294,7 @@ public:
             return false;
         }
         else {
-            _conn = new ELC(this, now, block);
+            _conn = new ELC(this, now, cookie);
             return true;
         }
     }

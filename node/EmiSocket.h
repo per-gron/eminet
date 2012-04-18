@@ -11,10 +11,9 @@
 #include <node.h>
 
 class EmiSocket : public node::ObjectWrap {
- private:
-  
   typedef EmiSock<EmiSockDelegate, EmiConnDelegate> ES;
   
+ private:
   ES _sock;
   double counter_;
   
@@ -27,6 +26,10 @@ class EmiSocket : public node::ObjectWrap {
 
   static v8::Handle<v8::Value> New(const v8::Arguments& args);
   static v8::Handle<v8::Value> PlusOne(const v8::Arguments& args);
+  static v8::Handle<v8::Value> Suspend(const v8::Arguments& args);
+  static v8::Handle<v8::Value> Desuspend(const v8::Arguments& args);
+  static v8::Handle<v8::Value> Connect(const v8::Arguments& args);
+  
  public:
   static void Init(v8::Handle<v8::Object> target);
   
