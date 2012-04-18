@@ -294,14 +294,7 @@ public:
             return false;
         }
         else {
-            _conn = new ELC(this, now, ^(bool error, EmiDisconnectReason reason) {
-                if (error) {
-                    block(SockDelegate::makeError("com.emilir.eminet.disconnect", reason), *this);
-                }
-                else {
-                    block(NULL, *this);
-                }
-            });
+            _conn = new ELC(this, now, block);
             return true;
         }
     }

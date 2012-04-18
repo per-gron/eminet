@@ -19,8 +19,6 @@ class EmiMessage;
 template<class SockDelegate, class ConnDelegate>
 class EmiConn;
 
-typedef void (^EmiSynRstCallback)(bool error, EmiDisconnectReason reason);
-
 typedef std::map<EmiChannelQualifier, EmiSequenceNumber> EmiLogicalConnectionMemo;
 
 template<class SockDelegate, class ConnDelegate>
@@ -28,6 +26,7 @@ class EmiLogicalConnection {
     typedef typename SockDelegate::Error Error;
     typedef typename SockDelegate::Data  Data;
     typedef EmiConn<SockDelegate, ConnDelegate> EC;
+    typedef void (^EmiSynRstCallback)(bool error, EmiDisconnectReason reason, EC& ec);
     
     bool _closing;
     EC *_conn;
@@ -54,7 +53,7 @@ private:
             // to remove the reference to it before we invoke it.
             _synRstCallback = NULL;
             
-            callback(error, reason);
+            callback(error, reason, *_conn);
         }
     }
     void releaseSynMsg() {

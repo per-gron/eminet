@@ -113,10 +113,11 @@
 - (BOOL)connectToAddress:(NSData *)address block:(EmiConnectionOpenedBlock)block error:(NSError **)errPtr {
     NSError *err = nil;
     BOOL retVal = ((S *)_sock)->connect([NSDate timeIntervalSinceReferenceDate], address,
-                                        ^(const EmiSockDelegate::Error& err,
+                                        ^(bool error,
+                                          EmiDisconnectReason reason,
                                           EC& connection) {
-                                            if (err) {
-                                                block(err, nil);
+                                            if (error) {
+                                                block(EmiSockDelegate::makeError("com.emilir.eminet.disconnect", reason), nil);
                                             }
                                             else {
                                                 block(nil, connection.getDelegate().getConn());
