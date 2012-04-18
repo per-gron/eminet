@@ -38,7 +38,9 @@ EC *EmiSockDelegate::makeConnection(NSData *address, uint16_t inboundPort, bool 
 }
 
 void EmiSockDelegate::sendData(GCDAsyncUdpSocket *socket, NSData *address, const uint8_t *data, size_t size) {
-    [socket sendData:[NSData dataWithBytesNoCopy:(void *)data length:size freeWhenDone:NO]
+    // TODO This copies the packet data. We might want to redesign
+    // this part of the code so that this is not required.
+    [socket sendData:[NSData dataWithBytes:data length:size]
            toAddress:address
          withTimeout:-1 tag:0];
 }
