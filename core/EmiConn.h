@@ -49,8 +49,8 @@ class EmiConn {
     
 private:
     // Private copy constructor and assignment operator
-    EmiConn(const EmiConn& other) {}
-    EmiConn& operator=(const EmiConn& other) { return *this; }
+    inline EmiConn(const EmiConn& other);
+    inline EmiConn& operator=(const EmiConn& other);
     
     void deregister() {
         _emisock->deregisterConnection(this);

@@ -44,8 +44,8 @@ class EmiSendQueue {
     
 private:
     // Private copy constructor and assignment operator
-    EmiSendQueue(const EmiSendQueue& other) {}
-    EmiSendQueue& operator=(const EmiSendQueue& other) { return *this; }
+    inline EmiSendQueue(const EmiSendQueue& other);
+    inline EmiSendQueue& operator=(const EmiSendQueue& other);
     
     void clearQueue() {
         EmiSendQueueVectorIter iter = _queue.begin();

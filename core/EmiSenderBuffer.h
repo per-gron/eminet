@@ -69,8 +69,8 @@ class EmiSenderBuffer {
     
 private:
     // Private copy constructor and assignment operator
-    EmiSenderBuffer(const EmiSenderBuffer& other) {}
-    EmiSenderBuffer& operator=(const EmiSenderBuffer& other) { return *this; }
+    inline EmiSenderBuffer(const EmiSenderBuffer& other);
+    inline EmiSenderBuffer& operator=(const EmiSenderBuffer& other);
     
     EmiMessage<SockDelegate> *messageSearch(EmiMessage<SockDelegate> *messageStub) {
         EmiSenderBufferSendBufferIter iter = _sendBuffer.lower_bound(messageStub);

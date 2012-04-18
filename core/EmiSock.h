@@ -119,8 +119,8 @@ class EmiSock {
     
 private:
     // Private copy constructor and assignment operator
-    EmiSock(const EmiSock& other) {}
-    EmiSock& operator=(const EmiSock& other) { return *this; }
+    inline EmiSock(const EmiSock& other);
+    inline EmiSock& operator=(const EmiSock& other);
     
     SocketHandle                 *_serverSocket;
     EmiConnectionMap              _conns;

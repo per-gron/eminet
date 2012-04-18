@@ -43,8 +43,8 @@ class EmiLogicalConnection {
     
 private:
     // Private copy constructor and assignment operator
-    EmiLogicalConnection(const EmiLogicalConnection& other) {}
-    EmiLogicalConnection& operator=(const EmiLogicalConnection& other) { return *this; }
+    inline EmiLogicalConnection(const EmiLogicalConnection& other);
+    inline EmiLogicalConnection& operator=(const EmiLogicalConnection& other);
     
     void invokeSynRstCallback(bool error, EmiDisconnectReason reason){
         if (_synRstCallback) {

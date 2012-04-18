@@ -25,8 +25,8 @@ class EmiConnTime {
     
 private:
     // Private copy constructor and assignment operator
-    EmiConnTime(const EmiConnTime& other) {}
-    EmiConnTime& operator=(const EmiConnTime& other) { return *this; }
+    inline EmiConnTime(const EmiConnTime& other);
+    inline EmiConnTime& operator=(const EmiConnTime& other);
     
 public:
     EmiConnTime();

@@ -56,8 +56,8 @@ protected:
     
 private:
     // Private copy constructor and assignment operator
-    EmiReceiverBuffer(const EmiReceiverBuffer& other) {}
-    EmiReceiverBuffer& operator=(const EmiReceiverBuffer& other) { return *this; }
+    inline EmiReceiverBuffer(const EmiReceiverBuffer& other);
+    inline EmiReceiverBuffer& operator=(const EmiReceiverBuffer& other);
     
     static size_t bufferEntrySize(Entry *entry) {
         return entry->header.headerLength + entry->header.length;
