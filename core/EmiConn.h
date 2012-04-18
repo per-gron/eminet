@@ -28,6 +28,7 @@ class EmiConn {
     typedef EmiSock<SockDelegate, ConnDelegate> ES;
     typedef EmiLogicalConnection<SockDelegate, ConnDelegate> ELC;
     typedef EmiSendQueue<SockDelegate, ConnDelegate> ESQ;
+    typedef EmiReceiverBuffer<Data, EmiConn> ERB;
     
     const uint16_t _inboundPort;
     const Address _address;
@@ -37,7 +38,7 @@ class EmiConn {
     
     ELC *_conn;
     EmiSenderBuffer<SockDelegate> _senderBuffer;
-    EmiReceiverBuffer<Data> _receiverBuffer;
+    ERB _receiverBuffer;
     ESQ _sendQueue;
     EmiConnTime _time;
     
@@ -58,15 +59,9 @@ private:
     }
     
 public:
-    EmiConn(const ConnDelegate& delegate, uint16_t inboundPort, const Address& address, ES *socket, bool initiator) :
-    _inboundPort(inboundPort),
-    _address(address),
-    _conn(NULL),
-    _delegate(delegate),
-    _emisock(socket),
-    _initiator(initiator),
-    _senderBuffer(_emisock->config.senderBufferSize),
-    _receiverBuffer(_emisock->config.receiverBufferSize, ^(typename EmiReceiverBuffer<Data>::Entry *entry) {
+    
+    // Invoked by EmiReceiverBuffer
+    inline void gotReceiverBufferMessage(typename ERB::Entry *entry) {
         if (!_conn) return;
         
         if (!_conn->gotMessage(&entry->header, entry->data, entry->offset, true /* dontFlush */)) {
@@ -76,7 +71,17 @@ public:
             // exactly in order.
             SockDelegate::panic();
         }
-    }),
+    }
+    
+    EmiConn(const ConnDelegate& delegate, uint16_t inboundPort, const Address& address, ES *socket, bool initiator) :
+    _inboundPort(inboundPort),
+    _address(address),
+    _conn(NULL),
+    _delegate(delegate),
+    _emisock(socket),
+    _initiator(initiator),
+    _senderBuffer(_emisock->config.senderBufferSize),
+    _receiverBuffer(_emisock->config.receiverBufferSize, *this),
     _sendQueue(this),
     _time(),
     _receivedDataSinceLastHeartbeat(false),

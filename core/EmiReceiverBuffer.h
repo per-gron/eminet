@@ -14,7 +14,7 @@
 #include <set>
 #include <vector>
 
-template<class Data>
+template<class Data, class Receiver>
 class EmiReceiverBuffer {
 public:
     class Entry {
@@ -28,8 +28,6 @@ public:
     };
     
 protected:
-    
-    typedef void (^EmiReveiverBufferGotMessageBlock)(Entry *entry);
     
     struct EmiReceiverBufferTreeCmp {
         bool operator()(Entry *a, Entry *b) const {
@@ -52,7 +50,7 @@ protected:
     EmiReceiverBufferTree _tree;
     size_t _bufferSize;
     
-    EmiReveiverBufferGotMessageBlock _gotMessage;
+    Receiver &_receiver;
     
 private:
     // Private copy constructor and assignment operator
@@ -88,8 +86,8 @@ private:
     
 public:
     
-    EmiReceiverBuffer(size_t size, EmiReveiverBufferGotMessageBlock gotMessage) :
-    _size(size), _bufferSize(0), _gotMessage([gotMessage copy]) {}
+    EmiReceiverBuffer(size_t size, Receiver &receiver) :
+    _size(size), _bufferSize(0), _receiver(receiver) {}
     
     virtual ~EmiReceiverBuffer() {
         EmiReceiverBufferTreeIter iter = _tree.begin();
@@ -134,7 +132,7 @@ public:
             toBeRemoved.push_back(entry);
             
             if (entry->header.sequenceNumber == expectedSequenceNumber) {
-                _gotMessage(entry);
+                _receiver.gotReceiverBufferMessage(entry);
                 expectedSequenceNumber++;
             }
             
