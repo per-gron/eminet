@@ -2,6 +2,7 @@
 
 #include "EmiSocket.h"
 
+#include "EmiNodeUtil.h"
 #include "EmiConnection.h"
 
 #include <node.h>
@@ -32,8 +33,10 @@ void EmiSocket::Init(Handle<Object> target) {
       FunctionTemplate::New(Suspend)->GetFunction());
   tpl->PrototypeTemplate()->Set(String::NewSymbol("desuspend"),
       FunctionTemplate::New(Desuspend)->GetFunction());
-  tpl->PrototypeTemplate()->Set(String::NewSymbol("connect"),
-      FunctionTemplate::New(Connect)->GetFunction());
+  tpl->PrototypeTemplate()->Set(String::NewSymbol("connect4"),
+      FunctionTemplate::New(Connect4)->GetFunction());
+  tpl->PrototypeTemplate()->Set(String::NewSymbol("connect6"),
+      FunctionTemplate::New(Connect6)->GetFunction());
 
   Persistent<Function> constructor = Persistent<Function>::New(tpl->GetFunction());
   target->Set(String::NewSymbol("EmiSocket"), constructor);
@@ -95,7 +98,7 @@ Handle<Value> EmiSocket::Desuspend(const Arguments& args) {
   return scope.Close(Undefined());
 }
 
-Handle<Value> EmiSocket::Connect(const Arguments& args) {
+Handle<Value> EmiSocket::DoConnect(const Arguments& args, int family) {
   HandleScope scope;
   
   
@@ -111,14 +114,26 @@ Handle<Value> EmiSocket::Connect(const Arguments& args) {
     return scope.Close(Undefined());
   }
   
-  Local<String> host     = args[0]->ToString();
-  uint16_t      port     = (uint16_t) args[1]->NumberValue();
-  Local<Object> callback = args[2]->ToObject();
+  String::Utf8Value host(args[0]);
+  uint16_t          port((uint16_t) args[1]->NumberValue());
+  Local<Object>     callback(args[2]->ToObject());
   
   
-  /// Lookup host
+  /// Lookup IP
   
-  EmiSockDelegate::Address address; // TODO
+  sockaddr_storage *address;
+  if (AF_INET == family) {
+    struct sockaddr_in address4(uv_ip4_addr(*host, port));
+    address = (sockaddr_storage *)&address4;
+  }
+  else if (AF_INET6 == family) {
+    struct sockaddr_in6 address6(uv_ip6_addr(*host, port));
+    address = (sockaddr_storage *)&address6;
+  }
+  else {
+    ASSERT(0 && "unexpected address family");
+    abort();
+  }
   
   
   /// Do the actual connect
@@ -126,7 +141,7 @@ Handle<Value> EmiSocket::Connect(const Arguments& args) {
   EmiSocket* es = ObjectWrap::Unwrap<EmiSocket>(args.This());
   EmiError err;
   Persistent<Object> cookie(Persistent<Object>::New(callback));
-  if (!es->_sock.connect(EmiConnection::Now(), address, cookie, err)) {
+  if (!es->_sock.connect(EmiConnection::Now(), *address, cookie, err)) {
     // Since the connect operation failed, we need to dispose of the
     // cookie.  (If it succeeds, EmiSockDelegate::connectionOpened
     // will take care of the cookie disposal.)
@@ -139,4 +154,12 @@ Handle<Value> EmiSocket::Connect(const Arguments& args) {
   }
 
   return scope.Close(Undefined());
+}
+
+Handle<Value> EmiSocket::Connect4(const Arguments& args) {
+  return DoConnect(args, AF_INET);
+}
+
+Handle<Value> EmiSocket::Connect6(const Arguments& args) {
+  return DoConnect(args, AF_INET6);
 }

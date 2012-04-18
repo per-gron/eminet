@@ -28,7 +28,9 @@ class EmiSocket : public node::ObjectWrap {
   static v8::Handle<v8::Value> PlusOne(const v8::Arguments& args);
   static v8::Handle<v8::Value> Suspend(const v8::Arguments& args);
   static v8::Handle<v8::Value> Desuspend(const v8::Arguments& args);
-  static v8::Handle<v8::Value> Connect(const v8::Arguments& args);
+  static v8::Handle<v8::Value> DoConnect(const v8::Arguments& args, int family);
+  static v8::Handle<v8::Value> Connect4(const v8::Arguments& args);
+  static v8::Handle<v8::Value> Connect6(const v8::Arguments& args);
   
  public:
   static void Init(v8::Handle<v8::Object> target);

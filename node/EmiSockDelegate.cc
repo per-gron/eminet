@@ -2,28 +2,13 @@
 
 #include "EmiSockDelegate.h"
 
+#include "EmiNodeUtil.h"
 #include "EmiSocket.h"
 #include "EmiConnection.h"
 
 #include <stdexcept>
 
 using namespace v8;
-
-/* Have our own assert, so we are sure it does not get optimized away in
- * a release build.
- */
-#define ASSERT(expr)                                      \
- do {                                                     \
-  if (!(expr)) {                                          \
-    fprintf(stderr,                                       \
-            "Assertion failed in %s on line %d: %s\n",    \
-            __FILE__,                                     \
-            __LINE__,                                     \
-            #expr);                                       \
-    abort();                                              \
-  }                                                       \
- } while (0)
-
 
 static void send_cb(uv_udp_send_t* req, int status) {
   free(req);
