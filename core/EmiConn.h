@@ -58,7 +58,7 @@ private:
     }
     
 public:
-    EmiConn(const ConnDelegate& delegate, uint16_t inboundPort, Address address, ES *socket, bool initiator) :
+    EmiConn(const ConnDelegate& delegate, uint16_t inboundPort, const Address& address, ES *socket, bool initiator) :
     _inboundPort(inboundPort),
     _address(address),
     _conn(NULL),

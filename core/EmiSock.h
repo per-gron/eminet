@@ -123,7 +123,7 @@ protected:
     EmiClientSocketMap            _clientSockets;
     SockDelegate                  _delegate;
     
-    int32_t findFreeClientPort(Address address) {
+    int32_t findFreeClientPort(const Address& address) {
         EmiClientSocketKey key(address);
         
         typename EmiClientSocketMap::iterator iter = _clientSockets.begin();
@@ -139,7 +139,7 @@ protected:
         return -1;
     }
     
-    uint16_t openClientSocket(Address address, Error& err) {
+    uint16_t openClientSocket(const Address& address, Error& err) {
         // Ensure that the datagram sockets are open
         if (!desuspend(err)) {
             return 0;
@@ -244,7 +244,7 @@ public:
         return YES;
     }
     
-    void onMessage(EmiTimeInterval now, SocketHandle *sock, uint16_t inboundPort, Address address, Data data) {
+    void onMessage(EmiTimeInterval now, SocketHandle *sock, uint16_t inboundPort, const Address& address, Data data) {
         __block const char *err = NULL;
         
         size_t len = SockDelegate::extractLength(data);
@@ -416,7 +416,7 @@ public:
         return;
     }
     
-    bool connect(EmiTimeInterval now, Address address, EmiConnectionOpenedBlock block, Error& err) {
+    bool connect(EmiTimeInterval now, const Address& address, EmiConnectionOpenedBlock block, Error& err) {
         uint16_t inboundPort = openClientSocket(address, err);
         
         if (!inboundPort) {
