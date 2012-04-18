@@ -9,6 +9,18 @@
 
 using namespace v8;
 
+Persistent<String> EmiSocket::mtuSymbol;
+Persistent<String> EmiSocket::heartbeatFrequencySymbol;
+Persistent<String> EmiSocket::tickFrequencySymbol;
+Persistent<String> EmiSocket::heartbeatsBeforeConnectionWarningSymbol;
+Persistent<String> EmiSocket::connectionTimeoutSymbol;
+Persistent<String> EmiSocket::receiverBufferSizeSymbol;
+Persistent<String> EmiSocket::senderBufferSizeSymbol;
+Persistent<String> EmiSocket::acceptConnectionsSymbol;
+Persistent<String> EmiSocket::typeSymbol;
+Persistent<String> EmiSocket::portSymbol;
+Persistent<String> EmiSocket::addressSymbol;
+Persistent<String> EmiSocket::fabricatedPacketDropRateSymbol;
 
 Persistent<Function> EmiSocket::gotConnection;
 Persistent<Function> EmiSocket::connectionMessage;
@@ -22,6 +34,19 @@ EmiSocket::EmiSocket(const EmiSockConfig<EmiSockDelegate::Address>& sc) :
 EmiSocket::~EmiSocket() {}
 
 void EmiSocket::Init(Handle<Object> target) {
+  mtuSymbol = Persistent<String>::New(String::NewSymbol("mtu"));
+  heartbeatFrequencySymbol = Persistent<String>::New(String::NewSymbol("heartbeatFrequency"));
+  tickFrequencySymbol = Persistent<String>::New(String::NewSymbol("tickFrequency"));
+  heartbeatsBeforeConnectionWarningSymbol = Persistent<String>::New(String::NewSymbol("heartbeatsBeforeConnectionWarning"));
+  connectionTimeoutSymbol = Persistent<String>::New(String::NewSymbol("connectionTimeout"));
+  receiverBufferSizeSymbol = Persistent<String>::New(String::NewSymbol("receiverBufferSize"));
+  senderBufferSizeSymbol = Persistent<String>::New(String::NewSymbol("senderBufferSize"));
+  acceptConnectionsSymbol = Persistent<String>::New(String::NewSymbol("acceptConnections"));
+  typeSymbol = Persistent<String>::New(String::NewSymbol("type"));
+  portSymbol = Persistent<String>::New(String::NewSymbol("port"));
+  addressSymbol = Persistent<String>::New(String::NewSymbol("address"));
+  fabricatedPacketDropRateSymbol = Persistent<String>::New(String::NewSymbol("fabricatedPacketDropRate"));
+  
   // Prepare constructor template
   Local<FunctionTemplate> tpl = FunctionTemplate::New(New);
   tpl->SetClassName(String::NewSymbol("EmiSocket"));
@@ -42,24 +67,91 @@ void EmiSocket::Init(Handle<Object> target) {
   target->Set(String::NewSymbol("EmiSocket"), constructor);
 }
 
+#define THROW_TYPE_ERROR(err)                                 \
+  do {                                                        \
+    ThrowException(Exception::TypeError(String::New(err)));   \
+    return scope.Close(Undefined());                          \
+  } while (0)
+
 Handle<Value> EmiSocket::New(const Arguments& args) {
   HandleScope scope;
   
   EmiSockConfig<EmiSockDelegate::Address> sc;
   
+  size_t numArgs = args.Length();
+  if (0 != numArgs && 1 != numArgs) {
+    THROW_TYPE_ERROR("Wrong number of arguments");
+  }
+  
+  if (numArgs) {
+    if (!args[0]->IsObject()) {
+      THROW_TYPE_ERROR("Wrong arguments");
+    }
+    
+    Local<Object> conf(args[0]->ToObject());
+    
+#define X(sym) Local<Value> sym(conf->Get(mtu##Symbol))
+    X(mtu);
+    X(heartbeatFrequency);
+    X(tickFrequency);
+    X(heartbeatsBeforeConnectionWarning);
+    X(connectionTimeout);
+    X(receiverBufferSize);
+    X(senderBufferSize);
+    X(acceptConnections);
+    X(type);
+    X(port);
+    X(address);
+    X(fabricatedPacketDropRate);
+#undef X
+
+#define X(sym, pred, type, cast)                                     \
+  if (!sym.IsEmpty() && !sym->IsUndefined()) {                       \
+    if (!sym->pred()) {                                              \
+      THROW_TYPE_ERROR("Invalid socket configuration parameters");   \
+    }                                                                \
+    sc.sym = (type) sym->cast();                                     \
+  }
+    
+    X(mtu,                               IsNumber,  size_t,          NumberValue);
+    X(heartbeatFrequency,                IsNumber,  float,           NumberValue);
+    X(tickFrequency,                     IsNumber,  float,           NumberValue);
+    X(heartbeatsBeforeConnectionWarning, IsNumber,  float,           NumberValue);
+    X(connectionTimeout,                 IsNumber,  EmiTimeInterval, NumberValue);
+    X(senderBufferSize,                  IsNumber,  size_t,          NumberValue);
+    X(acceptConnections,                 IsBoolean, bool,            BooleanValue);
+    X(port,                              IsNumber,  uint16_t,        NumberValue);
+    X(fabricatedPacketDropRate,          IsNumber,  EmiTimeInterval, NumberValue);
+    
+    X(type,                              TODO,      TODO,            TODO);
+    X(address,                           TODO,      TODO,            TODO);
+
+#undef X
+  }
+  
   EmiSocket* obj = new EmiSocket(sc);
-  // TODO Call desuspend on the EmiSock
-  obj->counter_ = args[0]->IsUndefined() ? 0 : args[0]->NumberValue();
+  EmiError err;
+  if (!obj->_sock.desuspend(err)) {
+    delete obj;
+    
+    // TODO Add the information in err to the exception that is thrown
+    ThrowException(Exception::Error(String::New("Failed to open socket")));
+    return scope.Close(Undefined());
+  }
+  
+  obj->counter_ = 0;
   obj->Wrap(args.This());
-  // TODO Make the persistent handle weak
 
   return args.This();
 }
 
+#define UNWRAP(name, args)                                 \
+  EmiSocket *name(ObjectWrap::Unwrap<EmiSocket>(args.This())
+
 Handle<Value> EmiSocket::PlusOne(const Arguments& args) {
   HandleScope scope;
-
-  EmiSocket* obj = ObjectWrap::Unwrap<EmiSocket>(args.This());
+  
+  UNWRAP(args, obj);
   obj->counter_ += 1;
 
   return scope.Close(Number::New(obj->counter_));
@@ -69,11 +161,10 @@ Handle<Value> EmiSocket::Suspend(const Arguments& args) {
   HandleScope scope;
   
   if (0 != args.Length()) {
-    ThrowException(Exception::TypeError(String::New("Wrong number of arguments")));
-    return scope.Close(Undefined());
+    THROW_TYPE_ERROR("Wrong number of arguments");
   }
-
-  EmiSocket* es = ObjectWrap::Unwrap<EmiSocket>(args.This());
+  
+  UNWRAP(args, es);
   es->_sock.suspend();
 
   return scope.Close(Undefined());
@@ -83,11 +174,10 @@ Handle<Value> EmiSocket::Desuspend(const Arguments& args) {
   HandleScope scope;
   
   if (0 != args.Length()) {
-    ThrowException(Exception::TypeError(String::New("Wrong number of arguments")));
-    return scope.Close(Undefined());
+    THROW_TYPE_ERROR("Wrong number of arguments");
   }
 
-  EmiSocket* es = ObjectWrap::Unwrap<EmiSocket>(args.This());
+  UNWRAP(args, es);
   EmiError err;
   if (!es->_sock.desuspend(err)) {
     // TODO Add the information in err to the exception that is thrown
@@ -105,13 +195,11 @@ Handle<Value> EmiSocket::DoConnect(const Arguments& args, int family) {
   /// Extract arguments
   
   if (3 != args.Length()) {
-    ThrowException(Exception::TypeError(String::New("Wrong number of arguments")));
-    return scope.Close(Undefined());
+    THROW_TYPE_ERROR("Wrong number of arguments");
   }
   
   if (!args[0]->IsString() || !args[1]->IsNumber() || !args[2]->IsFunction()) {
-    ThrowException(Exception::TypeError(String::New("Wrong arguments")));
-    return scope.Close(Undefined());
+    THROW_TYPE_ERROR("Wrong arguments");
   }
   
   String::Utf8Value host(args[0]);
@@ -138,7 +226,7 @@ Handle<Value> EmiSocket::DoConnect(const Arguments& args, int family) {
   
   /// Do the actual connect
   
-  EmiSocket* es = ObjectWrap::Unwrap<EmiSocket>(args.This());
+  UNWRAP(args, es);
   EmiError err;
   Persistent<Object> cookie(Persistent<Object>::New(callback));
   if (!es->_sock.connect(EmiConnection::Now(), *address, cookie, err)) {

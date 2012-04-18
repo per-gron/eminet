@@ -157,9 +157,9 @@ Handle<Value> EmiConnection::Send(const Arguments& args) {
   EmiPriority priority = EMI_PRIORITY_DEFAULT;
   
   if (2 == numArgs) {
-    Local<Object> opts = args[1]->ToObject();
-    Local<Value>  cqv  = opts->Get(channelQualifierSymbol);
-    Local<Value>  pv   = opts->Get(prioritySymbol);
+    Local<Object> opts(args[1]->ToObject());
+    Local<Value>   cqv(opts->Get(channelQualifierSymbol));
+    Local<Value>    pv(opts->Get(prioritySymbol));
     
     if (!cqv.IsEmpty()) {
       if (!cqv->IsNumber()) {

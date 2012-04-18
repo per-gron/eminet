@@ -17,6 +17,19 @@ class EmiSocket : public node::ObjectWrap {
   ES _sock;
   double counter_;
   
+  static v8::Persistent<v8::String> mtuSymbol;
+  static v8::Persistent<v8::String> heartbeatFrequencySymbol;
+  static v8::Persistent<v8::String> tickFrequencySymbol;
+  static v8::Persistent<v8::String> heartbeatsBeforeConnectionWarningSymbol;
+  static v8::Persistent<v8::String> connectionTimeoutSymbol;
+  static v8::Persistent<v8::String> receiverBufferSizeSymbol;
+  static v8::Persistent<v8::String> senderBufferSizeSymbol;
+  static v8::Persistent<v8::String> acceptConnectionsSymbol;
+  static v8::Persistent<v8::String> typeSymbol;
+  static v8::Persistent<v8::String> portSymbol;
+  static v8::Persistent<v8::String> addressSymbol;
+  static v8::Persistent<v8::String> fabricatedPacketDropRateSymbol;
+  
   // Private copy constructor and assignment operator
   inline EmiSocket(const EmiSocket& other);
   inline EmiSocket& operator=(const EmiSocket& other);
