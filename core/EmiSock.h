@@ -29,7 +29,7 @@ public:
     senderBufferSize(EMI_DEFAULT_SENDER_BUFFER_SIZE),
     acceptConnections(false),
     port(0),
-    address(NULL) {}
+    address() {}
     
     size_t mtu;
     float heartbeatFrequency;

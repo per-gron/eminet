@@ -276,7 +276,7 @@ public:
         else if (EMI_CHANNEL_TYPE_RELIABLE_ORDERED == channelType) {
             if (header->flags & EMI_SACK_FLAG) EMI_GOT_INVALID_PACKET("SACK is not implemented");
             
-            BOOL hasSequenceNumber = -1 != header->sequenceNumber;
+            bool hasSequenceNumber = -1 != header->sequenceNumber;
             int32_t seqDiff = 0;
             if (hasSequenceNumber) {
                 seqDiff = sequenceNumberDifference(header, false);
@@ -380,7 +380,7 @@ public:
             _reliableSequencedBuffer[channelQualifier] = msg->sequenceNumber;
         }
         
-        BOOL reliable = (EMI_CHANNEL_TYPE_RELIABLE_SEQUENCED == channelType ||
+        bool reliable = (EMI_CHANNEL_TYPE_RELIABLE_SEQUENCED == channelType ||
                          EMI_CHANNEL_TYPE_RELIABLE_ORDERED == channelType);
         if (!_conn->enqueueMessage(now, msg, reliable, err)) {
             // _sequenceMemo[channelQualifier] has been bumped by _makeDataMessage. Since the message wasn't sent: Undo that
