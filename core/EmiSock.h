@@ -174,10 +174,8 @@ private:
 public:
     const EmiSockConfig<Address>  config;
     
-    EmiSock(const EmiSockConfig<Address>& config_, const SockDelegate& delegate, Error& err) :
-    config(config_), _delegate(delegate) {
-        desuspend(err);
-    }
+    EmiSock(const EmiSockConfig<Address>& config_, const SockDelegate& delegate) :
+    config(config_), _delegate(delegate) {}
     
     virtual ~EmiSock() {
         // EmiSock should not be deleted before all open connections are closed,

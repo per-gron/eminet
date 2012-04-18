@@ -84,8 +84,10 @@
 - (BOOL)startWithConfig:(EmiSocketConfig *)config error:(NSError **)errPtr {
     EmiSockConfig<NSData *> *sc = [config sockConfig];
     
+    _sock = new S(*sc, EmiSockDelegate(self));
+    
     NSError *err = nil;
-    _sock = new S(*sc, EmiSockDelegate(self), err);
+    ((S *)_sock)->desuspend(err);
     *errPtr = err;
     
     return !err;
