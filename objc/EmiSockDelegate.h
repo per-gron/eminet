@@ -9,6 +9,7 @@
 #ifndef emilir_EmiSockDelegate_h
 #define emilir_EmiSockDelegate_h
 
+#include "EmiTypes.h"
 #import <Foundation/Foundation.h>
 
 @class EmiSocket;
@@ -31,6 +32,7 @@ public:
     typedef GCDAsyncUdpSocket SocketHandle;
     typedef NSData* Address;
     typedef NSData* Data;
+    typedef void (^__strong ConnectionOpenedCallbackCookie)(NSError *err, EmiConnection *connection);
     
     EmiSockDelegate(EmiSocket *socket);
     
@@ -42,6 +44,8 @@ public:
     
     void sendData(GCDAsyncUdpSocket *socket, NSData *address, const uint8_t *data, size_t size);
     void gotConnection(EC *conn);
+    
+    static void connectionOpened(ConnectionOpenedCallbackCookie& cookie, bool error, EmiDisconnectReason reason, EC& ec);
     
     inline static void panic() {
         [NSException raise:@"EmiNetPanic" format:@"EmiNet internal error"];

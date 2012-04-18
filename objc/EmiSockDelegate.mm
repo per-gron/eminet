@@ -52,3 +52,15 @@ void EmiSockDelegate::sendData(GCDAsyncUdpSocket *socket, NSData *address, const
 void EmiSockDelegate::gotConnection(EC *conn) {
     [_socket.delegate emiSocketGotConnection:conn->getDelegate().getConn()];
 }
+
+void EmiSockDelegate::connectionOpened(ConnectionOpenedCallbackCookie& cookie, bool error, EmiDisconnectReason reason, EC& ec) {
+    if (cookie) {
+        if (error) {
+            cookie(makeError("com.emilir.eminet.disconnect", reason), nil);
+        }
+        else {
+            cookie(nil, ec.getDelegate().getConn());
+        }
+        cookie = nil; // Release the block memory
+    }
+}

@@ -25,14 +25,16 @@ template<class SockDelegate, class ConnDelegate>
 class EmiLogicalConnection {
     typedef typename SockDelegate::Error Error;
     typedef typename SockDelegate::Data  Data;
+    typedef typename SockDelegate::ConnectionOpenedCallbackCookie ConnectionOpenedCallbackCookie;
     typedef EmiConn<SockDelegate, ConnDelegate> EC;
-    typedef void (^EmiSynRstCallback)(bool error, EmiDisconnectReason reason, EC& ec);
     
     bool _closing;
     EC *_conn;
     EmiSequenceNumber _initialSequenceNumber;
     EmiSequenceNumber _otherHostInitialSequenceNumber;
-    EmiSynRstCallback _synRstCallback;
+    
+    ConnectionOpenedCallbackCookie _connectionOpenedCallbackCookie;
+    bool _sendingSyn;
     
     EmiLogicalConnectionMemo _sequenceMemo;
     EmiLogicalConnectionMemo _otherHostSequenceMemo;
@@ -46,14 +48,9 @@ private:
     inline EmiLogicalConnection& operator=(const EmiLogicalConnection& other);
     
     void invokeSynRstCallback(bool error, EmiDisconnectReason reason){
-        if (_synRstCallback) {
-            EmiSynRstCallback callback = _synRstCallback;
-            
-            // To make sure the callback isn't invoked twice, we have
-            // to remove the reference to it before we invoke it.
-            _synRstCallback = NULL;
-            
-            callback(error, reason, *_conn);
+        if (_sendingSyn) {
+            _sendingSyn = false;
+            SockDelegate::connectionOpened(_connectionOpenedCallbackCookie, error, reason, *_conn);
         }
     }
     void releaseSynMsg() {
@@ -135,7 +132,8 @@ private:
 public:
     
     EmiLogicalConnection(EC *connection, EmiTimeInterval now, EmiSequenceNumber sequenceNumber) :
-    _closing(false), _conn(connection), _otherHostInitialSequenceNumber(sequenceNumber), _synRstCallback(NULL) {
+    _closing(false), _conn(connection), _otherHostInitialSequenceNumber(sequenceNumber),
+    _sendingSyn(false), _connectionOpenedCallbackCookie() {
         commonInit();
         
         Error err;
@@ -145,9 +143,9 @@ public:
             SockDelegate::panic();
         }
     }
-    EmiLogicalConnection(EC *connection, EmiTimeInterval now, EmiSynRstCallback synRstCallback) :
-    _conn(connection), _otherHostInitialSequenceNumber(0) {
-        _synRstCallback = [synRstCallback copy];
+    EmiLogicalConnection(EC *connection, EmiTimeInterval now, ConnectionOpenedCallbackCookie connectionOpenedCallbackCookie) :
+    _conn(connection), _otherHostInitialSequenceNumber(0),
+    _sendingSyn(true), _connectionOpenedCallbackCookie(connectionOpenedCallbackCookie) {
         commonInit();
         
         Error err;
@@ -168,17 +166,16 @@ public:
     // initiator of the connection.
     bool resendInitMessage(EmiTimeInterval now, Error& err) {
         bool error = false;
-        bool sendSyn = !!_synRstCallback;
         
         releaseSynMsg();
         
-        EmiMessage<SockDelegate> *msg = sendSyn ? makeSynMessage(now) : makeSynRstMessage(now);
+        EmiMessage<SockDelegate> *msg = _sendingSyn ? makeSynMessage(now) : makeSynRstMessage(now);
         
-        if (sendSyn) {
+        if (_sendingSyn) {
             _synMsgSn = msg->sequenceNumber;
         }
         
-        if (!_conn->enqueueMessage(now, msg, /*reliable:*/sendSyn, err)) {
+        if (!_conn->enqueueMessage(now, msg, /*reliable:*/_sendingSyn, err)) {
             error = true;
         }
         
@@ -338,7 +335,7 @@ public:
         if (isOpening()) {
             // If the connection is not yet open, cancel the opening process
             releaseSynMsg();
-            invokeSynRstCallback(false, EMI_REASON_THIS_HOST_CLOSED);
+            invokeSynRstCallback(true, EMI_REASON_THIS_HOST_CLOSED);
         }
         
         // Send an RST (connection close) message
@@ -392,7 +389,7 @@ public:
     }
     
     bool isOpening() const {
-        return !!_synRstCallback;
+        return _sendingSyn;
     }
     bool isClosing() const {
         // Strictly speaking, checking if the connection is closed

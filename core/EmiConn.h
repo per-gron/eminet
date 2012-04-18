@@ -20,9 +20,10 @@
 
 template<class SockDelegate, class ConnDelegate>
 class EmiConn {
-    typedef typename SockDelegate::Error            Error;
-    typedef typename SockDelegate::Data             Data;
-    typedef typename SockDelegate::Address          Address;
+    typedef typename SockDelegate::Error   Error;
+    typedef typename SockDelegate::Data    Data;
+    typedef typename SockDelegate::Address Address;
+    typedef typename SockDelegate::ConnectionOpenedCallbackCookie ConnectionOpenedCallbackCookie;
     
     typedef EmiSock<SockDelegate, ConnDelegate> ES;
     typedef EmiLogicalConnection<SockDelegate, ConnDelegate> ELC;
@@ -285,8 +286,7 @@ public:
             return true;
         }
     }
-    template<class ConnectionOpenedFunctor>
-    bool open(EmiTimeInterval now, ConnectionOpenedFunctor block) {
+    bool open(EmiTimeInterval now, ConnectionOpenedCallbackCookie block) {
         if (_conn) {
             // We don't need to explicitly resend the init message here;
             // SYN connection init messages like this are reliable messages
