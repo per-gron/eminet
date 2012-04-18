@@ -117,7 +117,11 @@ class EmiSock {
     typedef std::map<uint16_t, EmiClientSocket> EmiClientSocketMap;
     
     
-protected:
+private:
+    // Private copy constructor and assignment operator
+    EmiSock(const EmiSock& other) {}
+    EmiSock& operator=(const EmiSock& other) { return *this; }
+    
     SocketHandle                 *_serverSocket;
     EmiConnectionMap              _conns;
     EmiClientSocketMap            _clientSockets;
