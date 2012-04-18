@@ -8,8 +8,8 @@
 
 #import "EmiConnDelegate.h"
 
-EmiConnDelegate::EmiConnDelegate(EmiConnection *conn_) :
-conn(conn_),
+EmiConnDelegate::EmiConnDelegate(EmiConnection *conn) :
+_conn(conn),
 _tickTimer(nil),
 _heartbeatTimer(nil),
 _rtoTimer(nil),
@@ -30,14 +30,14 @@ void EmiConnDelegate::invalidate() {
     
     // Just to be sure, since the ivar is __unsafe_unretained
     // Note that this code would be incorrect if connections supported reconnecting; It's correct only because after a forceClose, the delegate will never be called again.
-    conn.delegate = nil;
+    _conn.delegate = nil;
     
     // Because this is a strong reference, we need to nil it out to let ARC deallocate this connection for us
-    conn = nil;
+    _conn = nil;
 }
 
 void EmiConnDelegate::emiConnMessage(EmiChannelQualifier channelQualifier, NSData *data, NSUInteger offset, NSUInteger size) {
-    [conn.delegate emiConnectionMessage:conn
+    [_conn.delegate emiConnectionMessage:_conn
                         channelQualifier:channelQualifier 
                                     data:data
                                   offset:offset
@@ -47,7 +47,7 @@ void EmiConnDelegate::emiConnMessage(EmiChannelQualifier channelQualifier, NSDat
 void EmiConnDelegate::scheduleConnectionWarning(EmiTimeInterval warningTimeout) {
     [_connectionTimer invalidate];
     _connectionTimer = [NSTimer scheduledTimerWithTimeInterval:warningTimeout
-                                                        target:conn
+                                                        target:_conn
                                                       selector:@selector(_connectionWarningCallback:)
                                                       userInfo:[NSNumber numberWithDouble:warningTimeout]
                                                        repeats:NO];
@@ -56,7 +56,7 @@ void EmiConnDelegate::scheduleConnectionWarning(EmiTimeInterval warningTimeout) 
 void EmiConnDelegate::scheduleConnectionTimeout(EmiTimeInterval interval) {
     [_connectionTimer invalidate];
     _connectionTimer = [NSTimer scheduledTimerWithTimeInterval:interval
-                                                        target:conn
+                                                        target:_conn
                                                       selector:@selector(_connectionTimeoutCallback:) 
                                                       userInfo:nil 
                                                        repeats:NO];
@@ -65,7 +65,7 @@ void EmiConnDelegate::scheduleConnectionTimeout(EmiTimeInterval interval) {
 void EmiConnDelegate::ensureTickTimeout(EmiTimeInterval interval) {
     if (!_tickTimer || ![_tickTimer isValid]) {
         _tickTimer = [NSTimer scheduledTimerWithTimeInterval:interval
-                                                      target:conn
+                                                      target:_conn
                                                     selector:@selector(_tickTimeoutCallback:)
                                                     userInfo:nil 
                                                      repeats:NO];
@@ -75,7 +75,7 @@ void EmiConnDelegate::ensureTickTimeout(EmiTimeInterval interval) {
 void EmiConnDelegate::scheduleHeartbeatTimeout(EmiTimeInterval interval) {
     [_heartbeatTimer invalidate];
     _heartbeatTimer = [NSTimer scheduledTimerWithTimeInterval:interval
-                                                       target:conn
+                                                       target:_conn
                                                      selector:@selector(_heartbeatTimeoutCallback:)
                                                      userInfo:nil 
                                                       repeats:NO];
@@ -88,7 +88,7 @@ void EmiConnDelegate::ensureRtoTimeout(EmiTimeInterval rto) {
         // the timeout was set, not when it fires. That's why we store
         // rto with the NSTimer.
         _rtoTimer = [NSTimer scheduledTimerWithTimeInterval:rto
-                                                     target:conn
+                                                     target:_conn
                                                    selector:@selector(_rtoTimeoutCallback:)
                                                    userInfo:[NSNumber numberWithDouble:rto]
                                                     repeats:NO];
@@ -101,13 +101,13 @@ void EmiConnDelegate::invalidateRtoTimeout() {
 }
 
 void EmiConnDelegate::emiConnLost() {
-    [conn.delegate emiConnectionLost:conn];
+    [_conn.delegate emiConnectionLost:_conn];
 }
 
 void EmiConnDelegate::emiConnRegained() {
-    [conn.delegate emiConnectionRegained:conn];
+    [_conn.delegate emiConnectionRegained:_conn];
 }
 
 void EmiConnDelegate::emiConnDisconnect(EmiDisconnectReason reason) {
-    [conn.delegate emiConnectionDisconnect:conn forReason:reason];
+    [_conn.delegate emiConnectionDisconnect:_conn forReason:reason];
 }

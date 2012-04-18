@@ -110,7 +110,7 @@ class EmiSock {
     };
     
     typedef EmiConn<SockDelegate, ConnDelegate> EC;
-    typedef void (^EmiConnectionOpenedBlock)(const Error& err, const EC& connection);
+    typedef void (^EmiConnectionOpenedBlock)(const Error& err, EC& connection);
     typedef EmiSendQueue<SockDelegate, ConnDelegate> ESQ;
     
     typedef std::map<EmiConnectionKey, EC*> EmiConnectionMap;

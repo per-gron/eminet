@@ -16,8 +16,9 @@ class EmiConnDelegate {
     NSTimer *_heartbeatTimer;
     NSTimer *_rtoTimer;
     NSTimer *_connectionTimer;
+    
+    EmiConnection *_conn;
 public:
-    EmiConnection* conn;
     
     EmiConnDelegate(EmiConnection *conn);
     
@@ -38,6 +39,8 @@ public:
     void emiConnLost();
     void emiConnRegained();
     void emiConnDisconnect(EmiDisconnectReason reason);
+    
+    inline EmiConnection *getConn() { return _conn; }
 };
 
 #endif

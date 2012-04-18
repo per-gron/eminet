@@ -24,7 +24,7 @@ class EmiConn {
     typedef typename SockDelegate::Data             Data;
     typedef typename SockDelegate::Address          Address;
     
-    typedef void (^EmiConnectionOpenedBlock)(const Error& err, const EmiConn& connection);
+    typedef void (^EmiConnectionOpenedBlock)(const Error& err, EmiConn& connection);
     typedef EmiSock<SockDelegate, ConnDelegate> ES;
     typedef EmiLogicalConnection<SockDelegate, ConnDelegate> ELC;
     typedef EmiSendQueue<SockDelegate, ConnDelegate> ESQ;

@@ -44,5 +44,5 @@ void EmiSockDelegate::sendData(GCDAsyncUdpSocket *socket, NSData *address, const
 }
 
 void EmiSockDelegate::gotConnection(EC *conn) {
-    [_socket.delegate emiSocketGotConnection:conn->getDelegate().conn];
+    [_socket.delegate emiSocketGotConnection:conn->getDelegate().getConn()];
 }
