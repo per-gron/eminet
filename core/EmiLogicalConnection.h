@@ -349,24 +349,29 @@ public:
     }
     // Returns false if the sender buffer was full and the message couldn't be sent
     bool send(const Data& data, EmiTimeInterval now, EmiChannelQualifier channelQualifier, EmiPriority priority, Error& err) {
-        if (isClosed()) {
-            err = SockDelegate::makeError("com.emilir.eminet.closed", 0);
-            return false;
-        }
-        
-        if (0 == SockDelegate::extractLength(data)) {
-            err = SockDelegate::makeError("com.emilir.eminet.emptymessage", 0);
-            return false;
-        }
-        
         bool error = false;
         
-        // This has to be called before _makeDataMessage
+        // This has to be called before makeDataMessage
         EmiChannelQualifier prevSeqMemo = sequenceMemoForChannelQualifier(channelQualifier);
         
         EmiMessage<SockDelegate> *msg = makeDataMessage(channelQualifier, data, priority, now);
         
         EmiChannelType channelType = EMI_CHANNEL_QUALIFIER_TYPE(channelQualifier);
+        
+        bool reliable = (EMI_CHANNEL_TYPE_RELIABLE_SEQUENCED == channelType ||
+                         EMI_CHANNEL_TYPE_RELIABLE_ORDERED == channelType);
+        
+        if (isClosed()) {
+            err = SockDelegate::makeError("com.emilir.eminet.closed", 0);
+            error = true;
+            goto cleanup;
+        }
+        
+        if (0 == SockDelegate::extractLength(data)) {
+            err = SockDelegate::makeError("com.emilir.eminet.emptymessage", 0);
+            error = true;
+            goto cleanup;
+        }
         
         if (EMI_CHANNEL_TYPE_RELIABLE_SEQUENCED == channelType) {
             EmiLogicalConnectionMemo::iterator cur = _reliableSequencedBuffer.find(channelQualifier);
@@ -376,14 +381,14 @@ public:
             _reliableSequencedBuffer[channelQualifier] = msg->sequenceNumber;
         }
         
-        bool reliable = (EMI_CHANNEL_TYPE_RELIABLE_SEQUENCED == channelType ||
-                         EMI_CHANNEL_TYPE_RELIABLE_ORDERED == channelType);
         if (!_conn->enqueueMessage(now, msg, reliable, err)) {
             // _sequenceMemo[channelQualifier] has been bumped by _makeDataMessage. Since the message wasn't sent: Undo that
             _sequenceMemo[channelQualifier] = prevSeqMemo;
             error = true;
+            goto cleanup;
         }
         
+    cleanup:
         msg->release();
         return !error;
     }

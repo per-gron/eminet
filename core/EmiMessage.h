@@ -12,6 +12,11 @@
 // A message, as it is represented in the sender side of the pipeline
 template<class SockDelegate>
 class EmiMessage {
+private:
+    // Private copy constructor and assignment operator
+    inline EmiMessage(const EmiMessage& other);
+    inline EmiMessage& operator=(const EmiMessage& other);
+    
     typedef typename SockDelegate::Data Data;
     
     size_t _refCount;
@@ -32,6 +37,10 @@ public:
     
     EmiMessage() : data() {
         commonInit();
+    }
+    
+    ~EmiMessage() {
+        SockDelegate::releaseData(data);
     }
     
     inline void retain() {

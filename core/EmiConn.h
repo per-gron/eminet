@@ -362,9 +362,14 @@ public:
     }
     
     // Delegates to EmiLogicalConnection
+    //
+    // This method assumes ownership over the data parameter, and will release it
+    // with SockDelegate::releaseData when it's done with it. The buffer must not
+    // be modified until after SockDelegate::releaseData has been called on it.
     bool send(EmiTimeInterval now, const Data& data, EmiChannelQualifier channelQualifier, EmiPriority priority, Error& err) {
         if (!_conn || _conn->isClosing()) {
             err = SockDelegate::makeError("com.emilir.eminet.closed", 0);
+            SockDelegate::releaseData(data);
             return false;
         }
         else {

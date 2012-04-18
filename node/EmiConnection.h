@@ -15,6 +15,8 @@ class EmiConnection : public node::ObjectWrap {
   
  private:
   EC _conn;
+  static v8::Persistent<v8::String>   channelQualifierSymbol;
+  static v8::Persistent<v8::String>   prioritySymbol;
   static v8::Persistent<v8::Function> constructor;
   
   EmiConnection(EmiSocket *es, const struct sockaddr_storage& address, uint16_t inboundPort, bool initiator);

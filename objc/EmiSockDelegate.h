@@ -57,6 +57,10 @@ public:
                                userInfo:nil];
     }
     
+    inline static void releaseData(NSData *data) {
+        // Because of ARC, we can leave this as a no-op
+    }
+    
     inline static const uint8_t *extractData(NSData *data) {
         return (const uint8_t *)[data bytes];
     }
