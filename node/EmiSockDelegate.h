@@ -46,6 +46,10 @@ class EmiSockDelegate {
   inline static EmiError makeError(const char *domain, int32_t code) {
     return EmiError(domain, code);
   }
+  
+  inline static void releaseData(v8::Persistent<v8::Object> buf) {
+    buf.Dispose();
+  }
     
   inline static const uint8_t *extractData(v8::Handle<v8::Object> data) {
     return (const uint8_t *)node::Buffer::Data(data);

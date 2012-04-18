@@ -151,7 +151,7 @@ Handle<Value> EmiConnection::Send(const Arguments& args) {
   }
   
   
-  /// Extract options
+  /// Extract arguments
   
   EmiChannelQualifier channelQualifier = EMI_CHANNEL_QUALIFIER_DEFAULT;
   EmiPriority priority = EMI_PRIORITY_DEFAULT;
@@ -185,7 +185,7 @@ Handle<Value> EmiConnection::Send(const Arguments& args) {
   
   EmiConnection* ec = ObjectWrap::Unwrap<EmiConnection>(args.This());
   EmiError err;
-  if (!ec->_conn.send(Now(), args[0]->ToObject(), channelQualifier, priority, err)) {
+  if (!ec->_conn.send(Now(), Persistent<Object>::New(args[0]->ToObject()), channelQualifier, priority, err)) {
     // TODO Add the information in err to the exception that is thrown
     ThrowException(Exception::Error(String::New("Failed to send message")));
     return scope.Close(Undefined());
