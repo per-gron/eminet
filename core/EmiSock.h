@@ -379,9 +379,7 @@ public:
                     
                     // Regardless of whether we still have a connection up, respond with a SYN-RST-ACK message
                     ESQ::sendSynRstAckPacket(^(uint8_t *buf, size_t size) {
-                        [sock sendData:[NSData dataWithBytes:buf length:size]
-                             toAddress:address
-                           withTimeout:-1 tag:0];
+                        _delegate.sendData(sock, address, buf, size);
                     });
                 }
                 else if (!synFlag && !rstFlag) {
