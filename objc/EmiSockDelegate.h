@@ -36,6 +36,7 @@ public:
     
     static void closeSocket(GCDAsyncUdpSocket *socket);
     GCDAsyncUdpSocket *openSocket(uint16_t port, Error& err);
+    static uint16_t extractLocalPort(GCDAsyncUdpSocket *socket);
     
     EC *makeConnection(NSData *address, uint16_t inboundPort, bool initiator);
     

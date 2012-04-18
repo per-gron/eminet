@@ -12,6 +12,8 @@
 #include "EmiTypes.h"
 
 #include <stdint.h>
+#include <cstddef>
+#include <netinet/in.h>
 
 struct EmiMessageHeader;
 
@@ -50,8 +52,8 @@ struct EmiMessageHeader {
         // connection ack message, not a normal message with ack
         bool messageHasAckData = ackFlag && !(rstFlag && synFlag);
         
-        NSUInteger lengthOffset = length ? 3 : (synFlag ? 2 : 0);
-        NSUInteger headerLength = EMI_HEADER_LENGTH + lengthOffset + (messageHasAckData ? 2 : 0);
+        size_t lengthOffset = length ? 3 : (synFlag ? 2 : 0);
+        size_t headerLength = EMI_HEADER_LENGTH + lengthOffset + (messageHasAckData ? 2 : 0);
         
         if (headerLength > bufSize) return false;
         

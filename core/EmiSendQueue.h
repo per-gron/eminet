@@ -16,6 +16,7 @@
 #include <vector>
 #include <map>
 #include <set>
+#include <algorithm>
 
 template<class SockDelegate, class ConnDelegate>
 class EmiConn;
@@ -89,7 +90,7 @@ private:
         }
         
         *((uint8_t*)  (buf+pos)) = flags; pos += 1;
-        *((uint8_t*)  (buf+pos)) = MAX(0, channelQualifier); pos += 1; // Channel qualifier. cq == -1 means SYN/RST message
+        *((uint8_t*)  (buf+pos)) = std::max(0, channelQualifier); pos += 1; // Channel qualifier. cq == -1 means SYN/RST message
         *((uint16_t*) (buf+pos)) = htons(msgLength); pos += 2;
         if (0 != msgLength || flags & EMI_SYN_FLAG) {
             *((uint16_t*) (buf+pos)) = htons(sequenceNumber); pos += 2;
@@ -197,7 +198,7 @@ public:
                 }
                 acksInThisPacket.insert(msg->channelQualifier);
                 
-                BOOL hasAck = cur != ackEnd;
+                bool hasAck = cur != ackEnd;
                 pos += EmiSendQueue::writeMsg(_buf, /* buf */
                                               _bufLength, /* bufSize */
                                               pos, /* offset */

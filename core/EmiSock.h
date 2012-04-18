@@ -151,7 +151,7 @@ protected:
             if (!socket) {
                 return 0;
             }
-            inboundPort = [socket localPort];
+            inboundPort = SockDelegate::extractLocalPort(socket);
             
             _clientSockets.insert(typename EmiClientSocketMap::value_type(inboundPort, EmiClientSocket(this, inboundPort, socket)));
         }
@@ -241,7 +241,7 @@ public:
             }
         }
         
-        return YES;
+        return true;
     }
     
     void onMessage(EmiTimeInterval now, SocketHandle *sock, uint16_t inboundPort, const Address& address, Data data) {

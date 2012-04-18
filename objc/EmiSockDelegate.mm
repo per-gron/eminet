@@ -33,6 +33,10 @@ GCDAsyncUdpSocket *EmiSockDelegate::openSocket(uint16_t port, Error& err) {
     return socket;
 }
 
+uint16_t EmiSockDelegate::extractLocalPort(GCDAsyncUdpSocket *socket) {
+    return [socket localPort];
+}
+
 EC *EmiSockDelegate::makeConnection(NSData *address, uint16_t inboundPort, bool initiator) {
     return [[EmiConnection alloc] initWithSocket:_socket address:address inboundPort:inboundPort initiator:initiator].conn;
 }
