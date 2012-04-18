@@ -52,8 +52,13 @@ private:
     EmiConn(const EmiConn& other) {}
     EmiConn& operator=(const EmiConn& other) { return *this; }
     
+    void deregister() {
+        _emisock->deregisterConnection(this);
+        _delegate.invalidate();
+    }
+    
 public:
-    EmiConn(ConnDelegate delegate, uint16_t inboundPort, Address address, ES *socket, bool initiator) :
+    EmiConn(const ConnDelegate& delegate, uint16_t inboundPort, Address address, ES *socket, bool initiator) :
     _inboundPort(inboundPort),
     _address(address),
     _conn(NULL),
@@ -84,6 +89,8 @@ public:
             delete _conn;
             _conn = NULL;
         }
+        
+        deregister();
     }
     
     EmiTimeInterval timeBeforeConnectionWarning() const {
@@ -184,9 +191,7 @@ public:
             conn->wasClosed(reason);
         }
         
-        _emisock->deregisterConnection(this);
-        
-        _delegate.invalidate();
+        deregister();
     }
     
     // Returns the time relative to when the connection was initiated

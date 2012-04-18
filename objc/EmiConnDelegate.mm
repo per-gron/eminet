@@ -31,6 +31,9 @@ void EmiConnDelegate::invalidate() {
     // Just to be sure, since the ivar is __unsafe_unretained
     // Note that this code would be incorrect if connections supported reconnecting; It's correct only because after a forceClose, the delegate will never be called again.
     conn.delegate = nil;
+    
+    // Because this is a strong reference, we need to nil it out to let ARC deallocate this connection for us
+    conn = nil;
 }
 
 void EmiConnDelegate::emiConnMessage(EmiChannelQualifier channelQualifier, NSData *data, NSUInteger offset, NSUInteger size) {

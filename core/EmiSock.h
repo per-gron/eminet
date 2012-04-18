@@ -50,7 +50,6 @@ class EmiSock {
     typedef typename SockDelegate::Address          Address;
     typedef typename SockDelegate::AddressCmp       AddressCmp;
     typedef typename SockDelegate::SocketHandle     SocketHandle;
-    typedef typename SockDelegate::ConnectionHandle ConnectionHandle;
     
     class EmiConnectionKey {
         const AddressCmp _cmp;
@@ -110,12 +109,12 @@ class EmiSock {
         }
     };
     
-    typedef std::map<EmiConnectionKey, ConnectionHandle> EmiConnectionMap;
-    typedef std::map<uint16_t, EmiClientSocket> EmiClientSocketMap;
-    
     typedef EmiConn<SockDelegate, ConnDelegate> EC;
     typedef void (^EmiConnectionOpenedBlock)(const Error& err, const EC& connection);
     typedef EmiSendQueue<SockDelegate, ConnDelegate> ESQ;
+    
+    typedef std::map<EmiConnectionKey, EC*> EmiConnectionMap;
+    typedef std::map<uint16_t, EmiClientSocket> EmiClientSocketMap;
     
     
 protected:
@@ -178,7 +177,20 @@ public:
     }
     
     virtual ~EmiSock() {
-        suspend(); // This will close (which, depending on the binding, might mean deallocate) all sockets
+        // EmiSock should not be deleted before all open connections are closed,
+        // but just to be sure, we close all remaining connections.
+        typename EmiConnectionMap::iterator iter = _conns.begin();
+        typename EmiConnectionMap::iterator end  = _conns.end();
+        while (iter != end) {
+            (*iter).second->forceClose();
+            _conns.erase(iter);
+            ++iter;
+        }
+        
+        // This will close (which, depending on the binding, might mean deallocate)
+        // all sockets. (By now all sockets except possibly the server should be closed
+        // already.)
+        suspend();
     }
     
     SockDelegate& getDelegate() {
@@ -239,9 +251,7 @@ public:
         
         EmiConnectionKey ckey(address, inboundPort);
         typename EmiConnectionMap::iterator cur = _conns.find(ckey);
-        ConnectionHandle nativeConn = _conns.end() == cur ? NULL : (*cur).second;
-        
-        __block EC *conn = nativeConn ? SockDelegate::extractConn(nativeConn) : NULL;
+        __block EC *conn = _conns.end() == cur ? NULL : (*cur).second;
         
         if (conn) conn->gotPacket();
         
@@ -292,18 +302,15 @@ public:
                         conn = NULL;
                     }
                     
-                    ConnectionHandle openedNativeConn(nativeConn);
-                    
                     if (!conn) {
-                        openedNativeConn = _delegate.makeConnection(address, inboundPort, /*initiator:*/false);
-                        conn = SockDelegate::extractConn(openedNativeConn);
-                        _conns[ckey] = openedNativeConn;
+                        conn = _delegate.makeConnection(address, inboundPort, /*initiator:*/false);
+                        _conns.insert(std::make_pair(ckey, conn));
                     }
                     
                     conn->gotTimestamp(now, data);
                     
                     if (conn->open(now, header->sequenceNumber)) {
-                        _delegate.gotConnection(openedNativeConn);
+                        _delegate.gotConnection(conn);
                     }
                 }
                 else if (synFlag && rstFlag) {
@@ -425,9 +432,9 @@ public:
         }
         
         
-        ConnectionHandle ec = _delegate.makeConnection(address, inboundPort, /*initiator:*/true);
-        _conns[key] = ec;
-        SockDelegate::extractConn(ec)->open(now, block);
+        EC *ec(_delegate.makeConnection(address, inboundPort, /*initiator:*/true));
+        _conns.insert(std::make_pair(key, ec));
+        ec->open(now, block);
         
         return true;
     }

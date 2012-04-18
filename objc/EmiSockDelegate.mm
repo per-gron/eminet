@@ -33,12 +33,8 @@ GCDAsyncUdpSocket *EmiSockDelegate::openSocket(uint16_t port, Error& err) {
     return socket;
 }
 
-EC *EmiSockDelegate::extractConn(EmiConnection *conn) {
-    return conn.conn;
-}
-
-EmiConnection *EmiSockDelegate::makeConnection(NSData *address, uint16_t inboundPort, bool initiator) {
-    return [[EmiConnection alloc] initWithSocket:_socket address:address inboundPort:inboundPort initiator:initiator];
+EC *EmiSockDelegate::makeConnection(NSData *address, uint16_t inboundPort, bool initiator) {
+    return [[EmiConnection alloc] initWithSocket:_socket address:address inboundPort:inboundPort initiator:initiator].conn;
 }
 
 void EmiSockDelegate::sendData(GCDAsyncUdpSocket *socket, NSData *address, const uint8_t *data, size_t size) {
@@ -47,6 +43,6 @@ void EmiSockDelegate::sendData(GCDAsyncUdpSocket *socket, NSData *address, const
          withTimeout:-1 tag:0];
 }
 
-void EmiSockDelegate::gotConnection(EmiConnection *conn) {
-    [_socket.delegate emiSocketGotConnection:conn];
+void EmiSockDelegate::gotConnection(EC *conn) {
+    [_socket.delegate emiSocketGotConnection:conn->getDelegate().conn];
 }

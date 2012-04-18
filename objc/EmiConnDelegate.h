@@ -17,7 +17,7 @@ class EmiConnDelegate {
     NSTimer *_rtoTimer;
     NSTimer *_connectionTimer;
 public:
-    EmiConnection* const conn;
+    EmiConnection* conn;
     
     EmiConnDelegate(EmiConnection *conn);
     

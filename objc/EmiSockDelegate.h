@@ -27,7 +27,6 @@ class EmiSockDelegate {
 public:
     
     typedef __strong NSError* Error;
-    typedef __strong EmiConnection* ConnectionHandle;
     typedef EmiAddressCmp AddressCmp;
     typedef GCDAsyncUdpSocket SocketHandle;
     typedef NSData* Address;
@@ -38,11 +37,10 @@ public:
     static void closeSocket(GCDAsyncUdpSocket *socket);
     GCDAsyncUdpSocket *openSocket(uint16_t port, Error& err);
     
-    static EC *extractConn(EmiConnection *conn);
-    EmiConnection *makeConnection(NSData *address, uint16_t inboundPort, bool initiator);
+    EC *makeConnection(NSData *address, uint16_t inboundPort, bool initiator);
     
     void sendData(GCDAsyncUdpSocket *socket, NSData *address, const uint8_t *data, size_t size);
-    void gotConnection(EmiConnection *conn);
+    void gotConnection(EC *conn);
     
     inline static void panic() {
         [NSException raise:@"EmiNetPanic" format:@"EmiNet internal error"];
