@@ -17,6 +17,7 @@
 #include <map>
 #include <set>
 #include <algorithm>
+#include <cmath>
 
 template<class SockDelegate, class ConnDelegate>
 class EmiConn;
