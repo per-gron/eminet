@@ -150,7 +150,6 @@ void EmiSockDelegate::sendData(uv_udp_t *socket,
 }
 
 void EmiSockDelegate::gotConnection(EC& conn) {
-  // TODO Call a real function with real arguments
   HandleScope scope;
   
   const unsigned argc = 2;
@@ -164,8 +163,23 @@ void EmiSockDelegate::gotConnection(EC& conn) {
 void EmiSockDelegate::connectionOpened(ConnectionOpenedCallbackCookie& cookie,
                                        bool error,
                                        EmiDisconnectReason reason,
-                                       EC& ec) {
-  // TODO
+                                       EC& conn) {
+  
+  const unsigned argc = 3;
+  Handle<Value> argv[argc];
+  argv[0] = conn.getEmiSock().getDelegate()._es.handle_;
+  
+  // TODO Give the error as something better than just the error code
+  argv[1] = error ? Number::New(reason) : Null();
+  
+  if (error) {
+    argv[2] = Null();
+  }
+  else {
+    argv[2] = conn.getDelegate().getConnection().handle_;
+  }
+  
+  cookie->CallAsFunction(Context::GetCurrent()->Global(), argc, argv);
   
   cookie.Dispose();
 }
