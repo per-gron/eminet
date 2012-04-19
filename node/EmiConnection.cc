@@ -75,11 +75,15 @@ Handle<Value> EmiConnection::New(const Arguments& args) {
   }
   
   EmiConnectionParams *ecp =
-    ObjectWrap::Unwrap<EmiConnectionParams>(args[0]->ToObject());
+    (EmiConnectionParams *)args[0]->ToObject()->GetPointerFromInternalField(0);
+  
   EmiConnection *ec = new EmiConnection(ecp->es,
                                         ecp->address,
                                         ecp->inboundPort,
                                         ecp->initiator);
+  
+  delete ecp;
+  
   ec->Wrap(args.This());
   
   return args.This();

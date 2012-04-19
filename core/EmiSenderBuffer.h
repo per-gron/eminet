@@ -88,9 +88,7 @@ private:
     
 public:
     
-    EmiSenderBuffer(size_t size) {
-        _sendBufferSize = 0;
-    }
+    EmiSenderBuffer(size_t size) : _size(size), _sendBufferSize(0) {}
     virtual ~EmiSenderBuffer() {
         EmiSenderBufferSendBufferIter iter = _sendBuffer.begin();
         EmiSenderBufferSendBufferIter end = _sendBuffer.end();

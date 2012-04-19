@@ -59,10 +59,10 @@ class EmiSockDelegate {
   }
     
   inline static const uint8_t *extractData(v8::Handle<v8::Object> data) {
-    return (const uint8_t *)node::Buffer::Data(data);
+    return (const uint8_t *)(data.IsEmpty() ? NULL : node::Buffer::Data(data));
   }
   inline static size_t extractLength(v8::Handle<v8::Object> data) {
-    return node::Buffer::Length(data);
+    return data.IsEmpty() ? 0 : node::Buffer::Length(data);
   }
 };
 

@@ -82,14 +82,11 @@ void EmiSocket::Init(Handle<Object> target) {
   Local<FunctionTemplate> tpl = FunctionTemplate::New(New);
   tpl->SetClassName(String::NewSymbol("EmiSocket"));
   tpl->InstanceTemplate()->SetInternalFieldCount(1);
-  tpl->Set(String::NewSymbol("setCallbacks"),
-           FunctionTemplate::New(SetCallbacks)->GetFunction());
   
   // Prototype
 #define X(sym, name)                                        \
   tpl->PrototypeTemplate()->Set(String::NewSymbol(name),    \
       FunctionTemplate::New(sym)->GetFunction());
-  X(PlusOne,   "plusOne");
   X(Suspend,   "suspend");
   X(Desuspend, "desuspend");
   X(Connect4,  "connect4");
@@ -98,6 +95,9 @@ void EmiSocket::Init(Handle<Object> target) {
 
   Persistent<Function> constructor = Persistent<Function>::New(tpl->GetFunction());
   target->Set(String::NewSymbol("EmiSocket"), constructor);
+  
+  target->Set(String::NewSymbol("setCallbacks"),
+              FunctionTemplate::New(SetCallbacks)->GetFunction());
 }
 
 #define THROW_TYPE_ERROR(err)                                 \
@@ -155,7 +155,7 @@ Handle<Value> EmiSocket::New(const Arguments& args) {
     
     Local<Object> conf(args[0]->ToObject());
     
-#define EXPAND_SYM(sym) Local<Value> sym(conf->Get(mtu##Symbol));
+#define EXPAND_SYM(sym) Local<Value> sym(conf->Get(sym##Symbol));
     EXPAND_SYMS
 #undef EXPAND_SYM
 
@@ -214,22 +214,12 @@ Handle<Value> EmiSocket::New(const Arguments& args) {
     return scope.Close(Undefined());
   }
   
-  obj->counter_ = 0;
   obj->Wrap(args.This());
 
   return args.This();
 }
 
 #define UNWRAP(name, args) EmiSocket *name(ObjectWrap::Unwrap<EmiSocket>(args.This()))
-
-Handle<Value> EmiSocket::PlusOne(const Arguments& args) {
-  HandleScope scope;
-  
-  UNWRAP(obj, args);
-  obj->counter_ += 1;
-
-  return scope.Close(Number::New(obj->counter_));
-}
 
 Handle<Value> EmiSocket::Suspend(const Arguments& args) {
   HandleScope scope;

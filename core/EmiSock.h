@@ -177,7 +177,7 @@ public:
     const EmiSockConfig<Address>  config;
     
     EmiSock(const EmiSockConfig<Address>& config_, const SockDelegate& delegate) :
-    config(config_), _delegate(delegate) {}
+    config(config_), _delegate(delegate), _serverSocket(NULL) {}
     
     virtual ~EmiSock() {
         // EmiSock should not be deleted before all open connections are closed,

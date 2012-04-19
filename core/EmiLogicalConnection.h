@@ -144,7 +144,7 @@ public:
         }
     }
     EmiLogicalConnection(EC *connection, EmiTimeInterval now, const ConnectionOpenedCallbackCookie& connectionOpenedCallbackCookie) :
-    _conn(connection), _otherHostInitialSequenceNumber(0),
+    _closing(false), _conn(connection), _otherHostInitialSequenceNumber(0),
     _sendingSyn(true), _connectionOpenedCallbackCookie(connectionOpenedCallbackCookie) {
         commonInit();
         
