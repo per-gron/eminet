@@ -186,7 +186,7 @@ public:
     
     // Invoked by EmiConnection
     void wasClosed(EmiDisconnectReason reason) {
-        invokeSynRstCallback(true, EMI_REASON_OTHER_HOST_DID_NOT_RESPOND);
+        invokeSynRstCallback(true, reason);
         
         _conn->emitDisconnect(reason);
         _conn = NULL;

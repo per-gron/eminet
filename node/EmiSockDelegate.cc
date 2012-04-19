@@ -164,7 +164,6 @@ void EmiSockDelegate::connectionOpened(ConnectionOpenedCallbackCookie& cookie,
                                        bool error,
                                        EmiDisconnectReason reason,
                                        EC& conn) {
-  
   const unsigned argc = 3;
   Handle<Value> argv[argc];
   argv[0] = conn.getEmiSock().getDelegate()._es.handle_;

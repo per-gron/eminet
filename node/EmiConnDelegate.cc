@@ -154,5 +154,5 @@ void EmiConnDelegate::emiConnDisconnect(EmiDisconnectReason reason) {
     _conn.handle_,
     Integer::New(reason) // TODO Give something better than just the error code
   };
-  EmiSocket::connectionRegained->Call(Context::GetCurrent()->Global(), argc, argv);
+  EmiSocket::connectionDisconnect->Call(Context::GetCurrent()->Global(), argc, argv);
 }

@@ -33,27 +33,27 @@ var lookup6 = function(address, callback) {
 
 var gotConnection = function() {
     // TODO
-    console.log("!!! Got connection");
+    console.log("!!! Got connection", arguments);
 };
 
 var connectionMessage = function() {
     // TODO
-    console.log("!!! Connection message");
+    console.log("!!! Connection message", arguments);
 };
 
 var connectionLost = function() {
     // TODO
-    console.log("!!! Connection lost");
+    console.log("!!! Connection lost", arguments);
 };
 
 var connectionRegained = function() {
     // TODO
-    console.log("!!! Connection regained");
+    console.log("!!! Connection regained", arguments);
 };
 
 var connectionDisconnect = function() {
     // TODO
-    console.log("!!! Connection disconnect");
+    console.log("!!! Connection disconnect", arguments);
 };
 
 EmiNetAddon.setCallbacks(
