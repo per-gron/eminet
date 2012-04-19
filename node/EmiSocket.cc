@@ -82,6 +82,8 @@ void EmiSocket::Init(Handle<Object> target) {
   Local<FunctionTemplate> tpl = FunctionTemplate::New(New);
   tpl->SetClassName(String::NewSymbol("EmiSocket"));
   tpl->InstanceTemplate()->SetInternalFieldCount(1);
+  tpl->Set(String::NewSymbol("setCallbacks"),
+           FunctionTemplate::New(SetCallbacks)->GetFunction());
   
   // Prototype
 #define X(sym, name)                                        \
@@ -103,6 +105,38 @@ void EmiSocket::Init(Handle<Object> target) {
     ThrowException(Exception::TypeError(String::New(err)));   \
     return scope.Close(Undefined());                          \
   } while (0)
+
+Handle<Value> EmiSocket::SetCallbacks(const Arguments& args) {
+  HandleScope scope;
+  
+  size_t numArgs = args.Length();
+  if (5 != numArgs) {
+    THROW_TYPE_ERROR("Wrong number of arguments");
+  }
+  
+  if (!args[0]->IsFunction() ||
+      !args[1]->IsFunction() ||
+      !args[2]->IsFunction() ||
+      !args[3]->IsFunction() ||
+      !args[4]->IsFunction()) {
+    THROW_TYPE_ERROR("Wrong arguments");
+  }
+  
+#define X(name, num)                                          \
+  if (!name.IsEmpty()) name.Dispose();                        \
+  Local<Function> name##Fn(Local<Function>::Cast(args[num])); \
+  name = Persistent<Function>::New(name##Fn);
+  
+  X(gotConnection, 0);
+  X(connectionMessage, 1);
+  X(connectionLost, 2);
+  X(connectionRegained, 3);
+  X(connectionDisconnect, 4);
+  
+#undef X
+  
+  return scope.Close(Undefined());
+}
 
 Handle<Value> EmiSocket::New(const Arguments& args) {
   HandleScope scope;

@@ -36,7 +36,8 @@ class EmiSocket : public node::ObjectWrap {
   
   EmiSocket(const EmiSockConfig<EmiSockDelegate::Address>& sc);
   virtual ~EmiSocket();
-
+  
+  static v8::Handle<v8::Value> SetCallbacks(const v8::Arguments& args);
   static v8::Handle<v8::Value> New(const v8::Arguments& args);
   static v8::Handle<v8::Value> PlusOne(const v8::Arguments& args);
   static v8::Handle<v8::Value> Suspend(const v8::Arguments& args);
