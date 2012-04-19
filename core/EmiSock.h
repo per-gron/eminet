@@ -11,7 +11,6 @@
 
 #include "EmiMessageHeader.h"
 #include "EmiSendQueue.h"
-#include "EmiConnDelegate.h"
 
 #include <map>
 #include <set>

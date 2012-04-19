@@ -12,6 +12,7 @@
 #include "EmiConn.h"
 #include "EmiAddressCmp.h"
 #include "EmiSockDelegate.h"
+#include "EmiConnDelegate.h"
 
 typedef EmiSock<EmiSockDelegate, EmiConnDelegate> S;
 typedef EmiConn<EmiSockDelegate, EmiConnDelegate> EC;
