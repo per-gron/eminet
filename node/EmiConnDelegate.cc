@@ -34,7 +34,8 @@ void EmiConnDelegate::heartbeatTimeout(uv_timer_t *handle, int status) {
 
 void EmiConnDelegate::rtoTimeout(uv_timer_t *handle, int status) {
   EmiConnDelegate *ecd = (EmiConnDelegate *)handle->data;
-  ecd->_conn._conn.rtoTimeoutCallback(EmiConnection::Now(), ecd->_rtoWhenRtoTimerWasScheduled);
+  ecd->_conn._conn.rtoTimeoutCallback(EmiConnection::Now(),
+                                      ecd->_rtoWhenRtoTimerWasScheduled);
 }
 
 EmiConnDelegate::EmiConnDelegate(EmiConnection& conn) : _conn(conn) {
@@ -80,23 +81,35 @@ void EmiConnDelegate::emiConnMessage(EmiChannelQualifier channelQualifier, const
 void EmiConnDelegate::scheduleConnectionWarning(EmiTimeInterval warningTimeout) {
   uv_timer_stop(_connectionTimer);
   _warningTimeoutWhenWarningTimerWasScheduled = warningTimeout;
-  uv_timer_start(_connectionTimer, EmiConnDelegate::warningTimeout, warningTimeout*NSECS_PER_SEC, /*repeats:*/0);
+  uv_timer_start(_connectionTimer,
+                 EmiConnDelegate::warningTimeout,
+                 warningTimeout*NSECS_PER_SEC,
+                 /*repeats:*/0);
 }
 
 void EmiConnDelegate::scheduleConnectionTimeout(EmiTimeInterval interval) {
   uv_timer_stop(_connectionTimer);
-  uv_timer_start(_connectionTimer, EmiConnDelegate::connectionTimeout, interval*NSECS_PER_SEC, /*repeats:*/0);
+  uv_timer_start(_connectionTimer,
+                 EmiConnDelegate::connectionTimeout,
+                 interval*NSECS_PER_SEC,
+                 /*repeats:*/0);
 }
 
 void EmiConnDelegate::ensureTickTimeout(EmiTimeInterval interval) {
   if (!uv_is_active((uv_handle_t *)_tickTimer)) {
-    uv_timer_start(_tickTimer, EmiConnDelegate::tickTimeout, interval*NSECS_PER_SEC, /*repeats:*/0);
+    uv_timer_start(_tickTimer,
+                   EmiConnDelegate::tickTimeout,
+                   interval*NSECS_PER_SEC,
+                   /*repeats:*/0);
   }
 }
 
 void EmiConnDelegate::scheduleHeartbeatTimeout(EmiTimeInterval interval) {
   uv_timer_stop(_heartbeatTimer);
-  uv_timer_start(_heartbeatTimer, EmiConnDelegate::heartbeatTimeout, interval*NSECS_PER_SEC, /*repeats:*/0);
+  uv_timer_start(_heartbeatTimer,
+                 EmiConnDelegate::heartbeatTimeout,
+                 interval*NSECS_PER_SEC,
+                 /*repeats:*/0);
 }
 
 void EmiConnDelegate::ensureRtoTimeout(EmiTimeInterval rto) {
@@ -106,7 +119,10 @@ void EmiConnDelegate::ensureRtoTimeout(EmiTimeInterval rto) {
     // the timeout was set, not when it fires. That's why we store
     // rto with the NSTimer.
     _rtoWhenRtoTimerWasScheduled = rto;
-    uv_timer_start(_rtoTimer, EmiConnDelegate::rtoTimeout, rto*NSECS_PER_SEC, /*repeats:*/0);
+    uv_timer_start(_rtoTimer,
+                   EmiConnDelegate::rtoTimeout,
+                   rto*NSECS_PER_SEC,
+                   /*repeats:*/0);
   }
 }
 
@@ -115,28 +131,28 @@ void EmiConnDelegate::invalidateRtoTimeout() {
 }
 
 void EmiConnDelegate::emiConnLost() {
-  // TODO Call a real function with real arguments
   HandleScope scope;
   
-  const unsigned argc = 0;
-  Handle<Value> argv[argc] = { };
+  const unsigned argc = 1;
+  Handle<Value> argv[argc] = { _conn.handle_ };
   EmiSocket::connectionLost->Call(Context::GetCurrent()->Global(), argc, argv);
 }
 
 void EmiConnDelegate::emiConnRegained() {
-  // TODO Call a real function with real arguments
   HandleScope scope;
   
-  const unsigned argc = 0;
-  Handle<Value> argv[argc] = { };
+  const unsigned argc = 1;
+  Handle<Value> argv[argc] = { _conn.handle_ };
   EmiSocket::connectionRegained->Call(Context::GetCurrent()->Global(), argc, argv);
 }
 
 void EmiConnDelegate::emiConnDisconnect(EmiDisconnectReason reason) {
-  // TODO Call a real function with real arguments
   HandleScope scope;
   
-  const unsigned argc = 1;
-  Handle<Value> argv[argc] = { Integer::New(reason) };
+  const unsigned argc = 2;
+  Handle<Value> argv[argc] = {
+    _conn.handle_,
+    Integer::New(reason) // TODO Give something better than just the error code
+  };
   EmiSocket::connectionRegained->Call(Context::GetCurrent()->Global(), argc, argv);
 }
