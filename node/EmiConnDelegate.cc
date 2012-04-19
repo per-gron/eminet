@@ -13,46 +13,47 @@ static void close_cb(uv_handle_t* handle) {
 }
 
 void EmiConnDelegate::warningTimeout(uv_timer_t *handle, int status) {
-    EmiConnDelegate *ecd = (EmiConnDelegate *)handle->data;
-    ecd->_conn._conn.connectionWarningCallback(ecd->_warningTimeoutWhenWarningTimerWasScheduled);
+    EmiConnection *conn = (EmiConnection *)handle->data;
+    conn->_conn.connectionWarningCallback(conn->_conn.getDelegate()._warningTimeoutWhenWarningTimerWasScheduled);
 }
 
 void EmiConnDelegate::connectionTimeout(uv_timer_t *handle, int status) {
-    EmiConnDelegate *ecd = (EmiConnDelegate *)handle->data;
-    ecd->_conn._conn.connectionTimeoutCallback();
+    EmiConnection *conn = (EmiConnection *)handle->data;
+    conn->_conn.connectionTimeoutCallback();
 }
 
 void EmiConnDelegate::tickTimeout(uv_timer_t *handle, int status) {
-    EmiConnDelegate *ecd = (EmiConnDelegate *)handle->data;
-    ecd->_conn._conn.tickTimeoutCallback(EmiConnection::Now());
+    EmiConnection *conn = (EmiConnection *)handle->data;
+    fprintf(stderr, "!! this: %d\n", conn);
+    conn->_conn.tickTimeoutCallback(EmiConnection::Now());
 }
 
 void EmiConnDelegate::heartbeatTimeout(uv_timer_t *handle, int status) {
-    EmiConnDelegate *ecd = (EmiConnDelegate *)handle->data;
-    ecd->_conn._conn.heartbeatTimeoutCallback(EmiConnection::Now());
+    EmiConnection *conn = (EmiConnection *)handle->data;
+    conn->_conn.heartbeatTimeoutCallback(EmiConnection::Now());
 }
 
 void EmiConnDelegate::rtoTimeout(uv_timer_t *handle, int status) {
-    EmiConnDelegate *ecd = (EmiConnDelegate *)handle->data;
-    ecd->_conn._conn.rtoTimeoutCallback(EmiConnection::Now(),
-                                        ecd->_rtoWhenRtoTimerWasScheduled);
+    EmiConnection *conn = (EmiConnection *)handle->data;
+    conn->_conn.rtoTimeoutCallback(EmiConnection::Now(),
+                                        conn->_conn.getDelegate()._rtoWhenRtoTimerWasScheduled);
 }
 
 EmiConnDelegate::EmiConnDelegate(EmiConnection& conn) : _conn(conn) {
     _tickTimer = (uv_timer_t *)malloc(sizeof(uv_timer_t));
-    _tickTimer->data = this;
+    _tickTimer->data = &conn;
     uv_timer_init(uv_default_loop(), _tickTimer);
     
     _heartbeatTimer = (uv_timer_t *)malloc(sizeof(uv_timer_t));
-    _heartbeatTimer->data = this;
+    _heartbeatTimer->data = &conn;
     uv_timer_init(uv_default_loop(), _heartbeatTimer);
     
     _rtoTimer = (uv_timer_t *)malloc(sizeof(uv_timer_t));
-    _rtoTimer->data = this;
+    _rtoTimer->data = &conn;
     uv_timer_init(uv_default_loop(), _rtoTimer);
     
     _connectionTimer = (uv_timer_t *)malloc(sizeof(uv_timer_t));
-    _connectionTimer->data = this;
+    _connectionTimer->data = &conn;
     uv_timer_init(uv_default_loop(), _connectionTimer);
 }
 
