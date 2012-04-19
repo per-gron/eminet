@@ -19,11 +19,14 @@ class EmiSockDelegate;
 class EmiConnDelegate;
 class EmiAddressCmp;
 template<class SockDelegate, class ConnDelegate>
+class EmiSock;
+template<class SockDelegate, class ConnDelegate>
 class EmiConn;
 
-typedef EmiConn<EmiSockDelegate, EmiConnDelegate> EC;
-
 class EmiSockDelegate {
+    typedef EmiSock<EmiSockDelegate, EmiConnDelegate> ES;
+    typedef EmiConn<EmiSockDelegate, EmiConnDelegate> EC;
+    
     EmiSocket *_socket;
 public:
     
@@ -36,8 +39,8 @@ public:
     
     EmiSockDelegate(EmiSocket *socket);
     
-    static void closeSocket(GCDAsyncUdpSocket *socket);
-    GCDAsyncUdpSocket *openSocket(uint16_t port, Error& err);
+    static void closeSocket(ES& sock, GCDAsyncUdpSocket *socket);
+    GCDAsyncUdpSocket *openSocket(ES& sock, uint16_t port, Error& err);
     static uint16_t extractLocalPort(GCDAsyncUdpSocket *socket);
     
     EC *makeConnection(NSData *address, uint16_t inboundPort, bool initiator);

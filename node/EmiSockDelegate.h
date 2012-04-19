@@ -14,11 +14,14 @@ class EmiSockDelegate;
 class EmiConnDelegate;
 class EmiAddressCmp;
 template<class SockDelegate, class ConnDelegate>
+class EmiSock;
+template<class SockDelegate, class ConnDelegate>
 class EmiConn;
 
-typedef EmiConn<EmiSockDelegate, EmiConnDelegate> EC;
-
 class EmiSockDelegate {
+    typedef EmiSock<EmiSockDelegate, EmiConnDelegate> ES;
+    typedef EmiConn<EmiSockDelegate, EmiConnDelegate> EC;
+    
     EmiSocket& _es;
 public:
     
@@ -31,8 +34,8 @@ public:
     
     EmiSockDelegate(EmiSocket& es);
     
-    static void closeSocket(uv_udp_t *socket);
-    uv_udp_t *openSocket(uint16_t port, Error& err);
+    static void closeSocket(ES& sock, uv_udp_t *socket);
+    uv_udp_t *openSocket(ES& sock, uint16_t port, Error& err);
     static uint16_t extractLocalPort(uv_udp_t *socket);
     
     EC *makeConnection(const Address& address, uint16_t inboundPort, bool initiator);

@@ -15,11 +15,11 @@
 
 EmiSockDelegate::EmiSockDelegate(EmiSocket *socket) : _socket(socket) {}
 
-void EmiSockDelegate::closeSocket(GCDAsyncUdpSocket *socket) {
+void EmiSockDelegate::closeSocket(EmiSockDelegate::ES& sock, GCDAsyncUdpSocket *socket) {
     [socket close];
 }
 
-GCDAsyncUdpSocket *EmiSockDelegate::openSocket(uint16_t port, Error& err) {
+GCDAsyncUdpSocket *EmiSockDelegate::openSocket(EmiSockDelegate::ES& sock, uint16_t port, Error& err) {
     GCDAsyncUdpSocket *socket = [[GCDAsyncUdpSocket alloc] initWithDelegate:_socket delegateQueue:dispatch_get_current_queue()];
     
     if (![socket bindToPort:port error:&err]) {

@@ -40,11 +40,11 @@ static void close_cb(uv_handle_t* handle) {
 
 EmiSockDelegate::EmiSockDelegate(EmiSocket& es) : _es(es) {}
 
-void EmiSockDelegate::closeSocket(uv_udp_t *socket) {
+void EmiSockDelegate::closeSocket(EmiSockDelegate::ES& sock, uv_udp_t *socket) {
     uv_close((uv_handle_t *)socket, close_cb);
 }
 
-uv_udp_t *EmiSockDelegate::openSocket(uint16_t port, Error& error) {
+uv_udp_t *EmiSockDelegate::openSocket(EmiSockDelegate::ES& sock, uint16_t port, Error& error) {
     int err;
     uv_udp_t *socket = (uv_udp_t *)malloc(sizeof(uv_udp_t));
     
@@ -97,9 +97,9 @@ uint16_t EmiSockDelegate::extractLocalPort(uv_udp_t *socket) {
     }
 }
 
-EC *EmiSockDelegate::makeConnection(const Address& address,
-                                    uint16_t inboundPort,
-                                    bool initiator) {
+EmiSockDelegate::EC *EmiSockDelegate::makeConnection(const Address& address,
+                                                     uint16_t inboundPort,
+                                                     bool initiator) {
     HandleScope scope;
     
     // TODO I think the HandleScope will dispose of EmiConnection after

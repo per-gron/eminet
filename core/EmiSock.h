@@ -89,24 +89,24 @@ class EmiSock {
     };
     
     struct EmiClientSocket {
-        EmiClientSocket(EmiSock *emiSock_, uint16_t port_, SocketHandle *socket_) :
+        EmiClientSocket(EmiSock& emiSock_, uint16_t port_, SocketHandle *socket_) :
         emiSock(emiSock_), port(port_), socket(socket_) {}
         
-        EmiSock *emiSock;
+        EmiSock& emiSock;
         uint16_t port;
         SocketHandle *socket;
         std::set<EmiClientSocketKey> addresses;
         
         bool open(Error& err) {
             if (!socket) {
-                socket = emiSock->_delegate.openSocket(port, err);
+                socket = emiSock._delegate.openSocket(emiSock, port, err);
             }
             
             return !!socket;
         }
         
         void close() {
-            SockDelegate::closeSocket(socket);
+            SockDelegate::closeSocket(emiSock, socket);
             socket = NULL;
         }
     };
@@ -152,13 +152,13 @@ private:
         
         int32_t inboundPort = findFreeClientPort(address);
         if (-1 == inboundPort) {
-            SocketHandle *socket = _delegate.openSocket(0, err);
+            SocketHandle *socket = _delegate.openSocket(*this, 0, err);
             if (!socket) {
                 return 0;
             }
             inboundPort = SockDelegate::extractLocalPort(socket);
             
-            _clientSockets.insert(typename EmiClientSocketMap::value_type(inboundPort, EmiClientSocket(this, inboundPort, socket)));
+            _clientSockets.insert(typename EmiClientSocketMap::value_type(inboundPort, EmiClientSocket(*this, inboundPort, socket)));
         }
         
         (*(_clientSockets.find(inboundPort))).second.addresses.insert(EmiClientSocketKey(address));
@@ -227,7 +227,7 @@ public:
     void suspend() {
         if (isOpen()) {
             if (_serverSocket) {
-                SockDelegate::closeSocket(_serverSocket);
+                SockDelegate::closeSocket(*this, _serverSocket);
                 _serverSocket = NULL;
             }
             
@@ -243,7 +243,7 @@ public:
     bool desuspend(Error& err) {
         if (!isOpen()) {
             if (config.acceptConnections || !_conns.empty()) {
-                _serverSocket = _delegate.openSocket(config.port, err);
+                _serverSocket = _delegate.openSocket(*this, config.port, err);
                 if (!_serverSocket) return false;
             }
             
