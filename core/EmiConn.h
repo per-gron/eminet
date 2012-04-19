@@ -87,7 +87,7 @@ public:
     _initiator(initiator),
     _senderBuffer(_emisock.config.senderBufferSize),
     _receiverBuffer(_emisock.config.receiverBufferSize, *this),
-    _sendQueue(this),
+    _sendQueue(*this),
     _time(),
     _receivedDataSinceLastHeartbeat(false),
     _issuedConnectionWarning(false) {

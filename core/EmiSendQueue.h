@@ -34,7 +34,7 @@ class EmiSendQueue {
     typedef std::set<EmiChannelQualifier> EmiSendQueueAcksSet;
     typedef EmiConn<SockDelegate, ConnDelegate> EC;
     
-    EC *_conn;
+    EC& _conn;
     
     EmiSendQueueVector _queue;
     size_t _queueSize;
@@ -61,10 +61,10 @@ private:
     void fillTimestamps(void *data, EmiTimeInterval now) {
         uint16_t *buf = (uint16_t *)data;
         
-        buf[0] = htons(floor(_conn->getCurrentTime(now)*1000));
-        if (_conn->hasReceivedTime()) {
-            buf[1] = htons(_conn->largestReceivedTime());
-            buf[2] = htons(floor((now - _conn->gotLargestReceivedTimeAt())*1000));
+        buf[0] = htons(floor(_conn.getCurrentTime(now)*1000));
+        if (_conn.hasReceivedTime()) {
+            buf[1] = htons(_conn.largestReceivedTime());
+            buf[2] = htons(floor((now - _conn.gotLargestReceivedTimeAt())*1000));
         }
         else {
             buf[1] = htons(0);
@@ -115,19 +115,17 @@ private:
     
 public:
     
-    EmiSendQueue(EC *conn) :
-    _conn(conn), _enqueueHeartbeat(false) {
-        _queueSize = 0;
-        
-        _bufLength = conn->getEmiSock().config.mtu;
+    EmiSendQueue(EC& conn) :
+    _conn(conn),
+    _enqueueHeartbeat(false),
+    _queueSize(0) {
+        _bufLength = conn.getEmiSock().config.mtu;
         _buf = (uint8_t *)malloc(_bufLength);
     }
     virtual ~EmiSendQueue() {
         clearQueue();
         
         _enqueueHeartbeat = false;
-        
-        _conn = NULL; // Just to be sure
         
         if (NULL != _buf) {
             _bufLength = 0;
@@ -140,13 +138,13 @@ public:
         _enqueueHeartbeat = true;
     }
     void sendHeartbeat(bool isResponse, EmiTimeInterval now) {
-        if (_conn->isOpen()) {
+        if (_conn.isOpen()) {
             const size_t bufLen = EMI_TIMESTAMP_LENGTH+1;
             uint8_t buf[bufLen];
             fillTimestamps(buf, now);
             buf[EMI_TIMESTAMP_LENGTH] = isResponse ? 1 : 0;
             
-            _conn->sendDatagram(buf, bufLen);
+            _conn.sendDatagram(buf, bufLen);
         }
     }
     static void sendSynRstAckPacket(SendSynRstAckPacketCallback callback) {
@@ -235,7 +233,7 @@ public:
             
             if (EMI_TIMESTAMP_LENGTH != pos) {
                 if (pos <= _bufLength) { // Just to be sure, this should always be true
-                    _conn->sendDatagram(_buf, pos);
+                    _conn.sendDatagram(_buf, pos);
                     sentPacket = true;
                 }
             }
