@@ -41,6 +41,7 @@ public:
     bool acceptConnections;
     uint16_t port;
     Address address;
+    float fabricatedPacketDropRate; // To be implemented
 };
 
 template<class SockDelegate, class ConnDelegate>

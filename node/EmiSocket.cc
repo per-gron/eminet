@@ -6,8 +6,40 @@
 #include "EmiConnection.h"
 
 #include <node.h>
+#include <stdlib.h>
 
 using namespace v8;
+
+static void parseIp(const char* host,
+                    uint16_t port,
+                    int family,
+                    sockaddr_storage *out) {
+  if (AF_INET == family) {
+    struct sockaddr_in address4(uv_ip4_addr(host, port));
+    memcpy(out, &address4, sizeof(struct sockaddr_in));
+  }
+  else if (AF_INET6 == family) {
+    struct sockaddr_in6 address6(uv_ip6_addr(host, port));
+    memcpy(out, &address6, sizeof(struct sockaddr_in));
+  }
+  else {
+    ASSERT(0 && "unexpected address family");
+    abort();
+  }
+}
+
+static int parseAddressFamily(const char* typeStr) {
+  if (0 == strcmp(typeStr, "udp4")) {
+    return AF_INET;
+  }
+  else if (0 == strcmp(typeStr, "udp6")) {
+    return AF_INET6;
+  }
+  else {
+    ASSERT(0 && "unexpected address family");
+    abort();
+  }
+}
 
 Persistent<String> EmiSocket::mtuSymbol;
 Persistent<String> EmiSocket::heartbeatFrequencySymbol;
@@ -105,13 +137,20 @@ Handle<Value> EmiSocket::New(const Arguments& args) {
     X(fabricatedPacketDropRate);
 #undef X
 
+#define CHECK_PARAM(sym, pred)                                       \
+    do {                                                             \
+      if (sym.IsEmpty() || !sym->pred()) {                           \
+        THROW_TYPE_ERROR("Invalid socket configuration parameters"); \
+      }                                                              \
+    } while (0)
+#define HAS_PARAM(sym) (!sym.IsEmpty() && !sym->IsUndefined())
 #define X(sym, pred, type, cast)                                     \
-  if (!sym.IsEmpty() && !sym->IsUndefined()) {                       \
-    if (!sym->pred()) {                                              \
-      THROW_TYPE_ERROR("Invalid socket configuration parameters");   \
-    }                                                                \
-    sc.sym = (type) sym->cast();                                     \
-  }
+    do {                                                             \
+      if (HAS_PARAM(sym)) {                                          \
+        CHECK_PARAM(sym, pred);                                      \
+        sc.sym = (type) sym->cast();                                 \
+      }                                                              \
+    } while (0)
     
     X(mtu,                               IsNumber,  size_t,          NumberValue);
     X(heartbeatFrequency,                IsNumber,  float,           NumberValue);
@@ -123,9 +162,19 @@ Handle<Value> EmiSocket::New(const Arguments& args) {
     X(port,                              IsNumber,  uint16_t,        NumberValue);
     X(fabricatedPacketDropRate,          IsNumber,  EmiTimeInterval, NumberValue);
     
-    X(type,                              TODO,      TODO,            TODO);
-    X(address,                           TODO,      TODO,            TODO);
+    if (HAS_PARAM(type) || HAS_PARAM(address)) {
+      CHECK_PARAM(type, IsString);
+      CHECK_PARAM(address, IsString);
+      
+      String::Utf8Value typeStr(type);
+      int family(parseAddressFamily(*typeStr));
+      
+      String::Utf8Value host(address);
+      parseIp(*host, sc.port, family, &sc.address);
+    }
 
+#undef CHECK_PARAM
+#undef HAS_PARAM
 #undef X
   }
   
@@ -145,13 +194,12 @@ Handle<Value> EmiSocket::New(const Arguments& args) {
   return args.This();
 }
 
-#define UNWRAP(name, args)                                 \
-  EmiSocket *name(ObjectWrap::Unwrap<EmiSocket>(args.This())
+#define UNWRAP(name, args) EmiSocket *name(ObjectWrap::Unwrap<EmiSocket>(args.This()))
 
 Handle<Value> EmiSocket::PlusOne(const Arguments& args) {
   HandleScope scope;
   
-  UNWRAP(args, obj);
+  UNWRAP(obj, args);
   obj->counter_ += 1;
 
   return scope.Close(Number::New(obj->counter_));
@@ -164,7 +212,7 @@ Handle<Value> EmiSocket::Suspend(const Arguments& args) {
     THROW_TYPE_ERROR("Wrong number of arguments");
   }
   
-  UNWRAP(args, es);
+  UNWRAP(es, args);
   es->_sock.suspend();
 
   return scope.Close(Undefined());
@@ -177,7 +225,7 @@ Handle<Value> EmiSocket::Desuspend(const Arguments& args) {
     THROW_TYPE_ERROR("Wrong number of arguments");
   }
 
-  UNWRAP(args, es);
+  UNWRAP(es, args);
   EmiError err;
   if (!es->_sock.desuspend(err)) {
     // TODO Add the information in err to the exception that is thrown
@@ -209,27 +257,16 @@ Handle<Value> EmiSocket::DoConnect(const Arguments& args, int family) {
   
   /// Lookup IP
   
-  sockaddr_storage *address;
-  if (AF_INET == family) {
-    struct sockaddr_in address4(uv_ip4_addr(*host, port));
-    address = (sockaddr_storage *)&address4;
-  }
-  else if (AF_INET6 == family) {
-    struct sockaddr_in6 address6(uv_ip6_addr(*host, port));
-    address = (sockaddr_storage *)&address6;
-  }
-  else {
-    ASSERT(0 && "unexpected address family");
-    abort();
-  }
+  sockaddr_storage address;
+  parseIp(*host, port, family, &address);
   
   
   /// Do the actual connect
   
-  UNWRAP(args, es);
+  UNWRAP(es, args);
   EmiError err;
   Persistent<Object> cookie(Persistent<Object>::New(callback));
-  if (!es->_sock.connect(EmiConnection::Now(), *address, cookie, err)) {
+  if (!es->_sock.connect(EmiConnection::Now(), address, cookie, err)) {
     // Since the connect operation failed, we need to dispose of the
     // cookie.  (If it succeeds, EmiSockDelegate::connectionOpened
     // will take care of the cookie disposal.)
