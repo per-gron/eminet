@@ -21,8 +21,11 @@ EmiTimeInterval EmiConnection::Now() {
 }
 
 void EmiConnection::Init(Handle<Object> target) {
-  channelQualifierSymbol = Persistent<String>::New(String::NewSymbol("channelQualifier"));
-  prioritySymbol = Persistent<String>::New(String::NewSymbol("priority"));
+  // Load symbols
+#define X(sym) sym##Symbol = Persistent<String>::New(String::NewSymbol(#sym));
+  X(channelQualifier);
+  X(priority);
+#undef X
   
   // Prepare constructor template
   Local<FunctionTemplate> tpl = FunctionTemplate::New(New);
@@ -30,16 +33,15 @@ void EmiConnection::Init(Handle<Object> target) {
   tpl->InstanceTemplate()->SetInternalFieldCount(1);
   
   // Prototype
-  tpl->PrototypeTemplate()->Set(String::NewSymbol("close"),
-                                FunctionTemplate::New(Close)->GetFunction());
-  tpl->PrototypeTemplate()->Set(String::NewSymbol("forceClose"),
-                                FunctionTemplate::New(ForceClose)->GetFunction());
-  tpl->PrototypeTemplate()->Set(String::NewSymbol("closeOrForceClose"),
-                                FunctionTemplate::New(CloseOrForceClose)->GetFunction());
-  tpl->PrototypeTemplate()->Set(String::NewSymbol("flush"),
-                                FunctionTemplate::New(Flush)->GetFunction());
-  tpl->PrototypeTemplate()->Set(String::NewSymbol("send"),
-                                FunctionTemplate::New(Send)->GetFunction());
+#define X(sym, name)                                        \
+  tpl->PrototypeTemplate()->Set(String::NewSymbol(name),    \
+      FunctionTemplate::New(sym)->GetFunction());
+  X(Close,             "close");
+  X(ForceClose,        "forceClose");
+  X(CloseOrForceClose, "closeOrForceClose");
+  X(Flush,             "flush");
+  X(Send,              "send");
+#undef X
 
   constructor = Persistent<Function>::New(tpl->GetFunction());
 }
@@ -54,12 +56,17 @@ Handle<Object> EmiConnection::NewInstance(EmiSocket *es, const struct sockaddr_s
   return scope.Close(instance);
 }
 
+#define THROW_TYPE_ERROR(err)                                 \
+  do {                                                        \
+    ThrowException(Exception::TypeError(String::New(err)));   \
+    return scope.Close(Undefined());                          \
+  } while (0)
+
 Handle<Value> EmiConnection::New(const Arguments& args) {
   HandleScope scope;
   
   if (1 != args.Length()) {
-    ThrowException(Exception::TypeError(String::New("Wrong number of arguments")));
-    return scope.Close(Undefined());
+    THROW_TYPE_ERROR("Wrong number of arguments");
   }
   
   EmiConnectionParams *ecp = ObjectWrap::Unwrap<EmiConnectionParams>(args[0]->ToObject());
@@ -73,8 +80,7 @@ Handle<Value> EmiConnection::Close(const Arguments& args) {
   HandleScope scope;
   
   if (0 != args.Length()) {
-    ThrowException(Exception::TypeError(String::New("Wrong number of arguments")));
-    return scope.Close(Undefined());
+    THROW_TYPE_ERROR("Wrong number of arguments");
   }
 
   EmiConnection* ec = ObjectWrap::Unwrap<EmiConnection>(args.This());
@@ -92,8 +98,7 @@ Handle<Value> EmiConnection::ForceClose(const Arguments& args) {
   HandleScope scope;
   
   if (0 != args.Length()) {
-    ThrowException(Exception::TypeError(String::New("Wrong number of arguments")));
-    return scope.Close(Undefined());
+    THROW_TYPE_ERROR("Wrong number of arguments");
   }
 
   EmiConnection* ec = ObjectWrap::Unwrap<EmiConnection>(args.This());
@@ -106,8 +111,7 @@ Handle<Value> EmiConnection::CloseOrForceClose(const Arguments& args) {
   HandleScope scope;
   
   if (0 != args.Length()) {
-    ThrowException(Exception::TypeError(String::New("Wrong number of arguments")));
-    return scope.Close(Undefined());
+    THROW_TYPE_ERROR("Wrong number of arguments");
   }
 
   EmiConnection* ec = ObjectWrap::Unwrap<EmiConnection>(args.This());
@@ -123,8 +127,7 @@ Handle<Value> EmiConnection::Flush(const Arguments& args) {
   HandleScope scope;
   
   if (0 != args.Length()) {
-    ThrowException(Exception::TypeError(String::New("Wrong number of arguments")));
-    return scope.Close(Undefined());
+    THROW_TYPE_ERROR("Wrong number of arguments");
   }
 
   EmiConnection* ec = ObjectWrap::Unwrap<EmiConnection>(args.This());
@@ -141,13 +144,11 @@ Handle<Value> EmiConnection::Send(const Arguments& args) {
   
   size_t numArgs = args.Length();
   if (!(1 == numArgs || 2 == numArgs)) {
-    ThrowException(Exception::TypeError(String::New("Wrong number of arguments")));
-    return scope.Close(Undefined());
+    THROW_TYPE_ERROR("Wrong number of arguments");
   }
   
   if (!args[0]->IsObject() || (2 == numArgs && !args[1]->IsObject())) {
-    ThrowException(Exception::TypeError(String::New("Wrong arguments")));
-    return scope.Close(Undefined());
+    THROW_TYPE_ERROR("Wrong arguments");
   }
   
   
@@ -163,8 +164,7 @@ Handle<Value> EmiConnection::Send(const Arguments& args) {
     
     if (!cqv.IsEmpty()) {
       if (!cqv->IsNumber()) {
-        ThrowException(Exception::TypeError(String::New("Wrong arguments")));
-        return scope.Close(Undefined());
+        THROW_TYPE_ERROR("Wrong arguments");
       }
       
       channelQualifier = (EmiChannelQualifier) cqv->NumberValue();
@@ -172,8 +172,7 @@ Handle<Value> EmiConnection::Send(const Arguments& args) {
     
     if (!pv.IsEmpty()) {
       if (!pv->IsNumber()) {
-        ThrowException(Exception::TypeError(String::New("Wrong arguments")));
-        return scope.Close(Undefined());
+        THROW_TYPE_ERROR("Wrong arguments");
       }
       
       priority = (EmiPriority) pv->NumberValue();

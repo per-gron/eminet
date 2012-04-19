@@ -66,34 +66,37 @@ EmiSocket::EmiSocket(const EmiSockConfig<EmiSockDelegate::Address>& sc) :
 EmiSocket::~EmiSocket() {}
 
 void EmiSocket::Init(Handle<Object> target) {
-  mtuSymbol = Persistent<String>::New(String::NewSymbol("mtu"));
-  heartbeatFrequencySymbol = Persistent<String>::New(String::NewSymbol("heartbeatFrequency"));
-  tickFrequencySymbol = Persistent<String>::New(String::NewSymbol("tickFrequency"));
-  heartbeatsBeforeConnectionWarningSymbol = Persistent<String>::New(String::NewSymbol("heartbeatsBeforeConnectionWarning"));
-  connectionTimeoutSymbol = Persistent<String>::New(String::NewSymbol("connectionTimeout"));
-  receiverBufferSizeSymbol = Persistent<String>::New(String::NewSymbol("receiverBufferSize"));
-  senderBufferSizeSymbol = Persistent<String>::New(String::NewSymbol("senderBufferSize"));
-  acceptConnectionsSymbol = Persistent<String>::New(String::NewSymbol("acceptConnections"));
-  typeSymbol = Persistent<String>::New(String::NewSymbol("type"));
-  portSymbol = Persistent<String>::New(String::NewSymbol("port"));
-  addressSymbol = Persistent<String>::New(String::NewSymbol("address"));
-  fabricatedPacketDropRateSymbol = Persistent<String>::New(String::NewSymbol("fabricatedPacketDropRate"));
+  // Load symbols
+#define X(sym) sym##Symbol = Persistent<String>::New(String::NewSymbol(#sym));
+  X(mtu);
+  X(heartbeatFrequency);
+  X(tickFrequency);
+  X(heartbeatsBeforeConnectionWarning);
+  X(connectionTimeout);
+  X(receiverBufferSize);
+  X(senderBufferSize);
+  X(acceptConnections);
+  X(type);
+  X(port);
+  X(address);
+  X(fabricatedPacketDropRate);
+#undef X
   
   // Prepare constructor template
   Local<FunctionTemplate> tpl = FunctionTemplate::New(New);
   tpl->SetClassName(String::NewSymbol("EmiSocket"));
   tpl->InstanceTemplate()->SetInternalFieldCount(1);
+  
   // Prototype
-  tpl->PrototypeTemplate()->Set(String::NewSymbol("plusOne"),
-      FunctionTemplate::New(PlusOne)->GetFunction());
-  tpl->PrototypeTemplate()->Set(String::NewSymbol("suspend"),
-      FunctionTemplate::New(Suspend)->GetFunction());
-  tpl->PrototypeTemplate()->Set(String::NewSymbol("desuspend"),
-      FunctionTemplate::New(Desuspend)->GetFunction());
-  tpl->PrototypeTemplate()->Set(String::NewSymbol("connect4"),
-      FunctionTemplate::New(Connect4)->GetFunction());
-  tpl->PrototypeTemplate()->Set(String::NewSymbol("connect6"),
-      FunctionTemplate::New(Connect6)->GetFunction());
+#define X(sym, name)                                        \
+  tpl->PrototypeTemplate()->Set(String::NewSymbol(name),    \
+      FunctionTemplate::New(sym)->GetFunction());
+  X(PlusOne,   "plusOne");
+  X(Suspend,   "suspend");
+  X(Desuspend, "desuspend");
+  X(Connect4,  "connect4");
+  X(Connect6,  "connect6");
+#undef X
 
   Persistent<Function> constructor = Persistent<Function>::New(tpl->GetFunction());
   target->Set(String::NewSymbol("EmiSocket"), constructor);
