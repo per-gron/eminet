@@ -79,7 +79,7 @@ EmiNetAddon.EmiSocket.prototype.connect = function(address, port, cb) {
 };
 
 var open = function(args) {
-    var s = new EmiNetAddon.EmiSocket();
+    var s = new EmiNetAddon.EmiSocket(args);
     
     for (var key in args) {
         s[key] = args[key];

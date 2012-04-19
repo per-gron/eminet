@@ -148,7 +148,7 @@ Handle<Value> EmiSocket::New(const Arguments& args) {
         THROW_TYPE_ERROR("Wrong number of arguments");
     }
     
-    if (numArgs) {
+    if (numArgs && !args[0].IsEmpty() && !args[0]->IsUndefined()) {
         if (!args[0]->IsObject()) {
             THROW_TYPE_ERROR("Wrong arguments");
         }
@@ -205,6 +205,11 @@ Handle<Value> EmiSocket::New(const Arguments& args) {
     }
     
     EmiSocket* obj = new EmiSocket(sc);
+    // We need to Wrap the object now, or failing to desuspend
+    // would result in a memory leak. (We rely on Wrap to deallocate
+    // obj when it's no longer used.)
+    obj->Wrap(args.This());
+    
     EmiError err;
     if (!obj->_sock.desuspend(err)) {
         delete obj;
@@ -213,8 +218,6 @@ Handle<Value> EmiSocket::New(const Arguments& args) {
         ThrowException(Exception::Error(String::New("Failed to open socket")));
         return scope.Close(Undefined());
     }
-    
-    obj->Wrap(args.This());
     
     return args.This();
 }
