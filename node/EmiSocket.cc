@@ -52,6 +52,32 @@ static void parseIp(const char* host,
     }
 }
 
+static void anyIp(uint16_t port,
+                  int family,
+                  sockaddr_storage *out) {
+    if (AF_INET6 == family) {
+        struct sockaddr_in6& addr6(*((struct sockaddr_in6 *)out));
+        addr6.sin6_len       = sizeof(struct sockaddr_in6);
+        addr6.sin6_family    = AF_INET6;
+        addr6.sin6_port      = htons(port);
+        addr6.sin6_flowinfo  = 0;
+        addr6.sin6_addr      = in6addr_any;
+        addr6.sin6_scope_id  = 0;
+    }
+    else if (AF_INET == family) {
+		struct sockaddr_in& addr(*((struct sockaddr_in *)out));
+		addr.sin_len         = sizeof(struct sockaddr_in);
+		addr.sin_family      = AF_INET;
+		addr.sin_port        = htons(port);
+		addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+		memset(&(addr.sin_zero), 0, sizeof(addr.sin_zero));
+    }
+    else {
+        ASSERT(0 && "unexpected address family");
+        abort();
+    }
+}
+
 static bool parseAddressFamily(const char* typeStr, int *family) {
     if (0 == strcmp(typeStr, "udp4")) {
         *family = AF_INET;
@@ -148,61 +174,73 @@ Handle<Value> EmiSocket::New(const Arguments& args) {
         THROW_TYPE_ERROR("Wrong number of arguments");
     }
     
+    Local<Object> conf;
+    
     if (numArgs && !args[0].IsEmpty() && !args[0]->IsUndefined()) {
         if (!args[0]->IsObject()) {
             THROW_TYPE_ERROR("Wrong arguments");
         }
         
-        Local<Object> conf(args[0]->ToObject());
+        conf = args[0]->ToObject();
+    }
         
-#define EXPAND_SYM(sym) Local<Value> sym(conf->Get(sym##Symbol));
-        EXPAND_SYMS
+#define EXPAND_SYM(sym)                                \
+    Local<Value> sym;                                  \
+    if (!conf.IsEmpty()) sym = conf->Get(sym##Symbol)
+    EXPAND_SYMS
 #undef EXPAND_SYM
 
-#define CHECK_PARAM(sym, pred)                                               \
-        do {                                                                 \
-            if (sym.IsEmpty() || !sym->pred()) {                             \
-                THROW_TYPE_ERROR("Invalid socket configuration parameters"); \
-            }                                                                \
-        } while (0)
+#define CHECK_PARAM(sym, pred)                                           \
+    do {                                                                 \
+        if (sym.IsEmpty() || !sym->pred()) {                             \
+            THROW_TYPE_ERROR("Invalid socket configuration parameters"); \
+        }                                                                \
+    } while (0)
 #define HAS_PARAM(sym) (!sym.IsEmpty() && !sym->IsUndefined())
-#define X(sym, pred, type, cast)                                     \
-        do {                                                         \
-            if (HAS_PARAM(sym)) {                                    \
-                CHECK_PARAM(sym, pred);                              \
-                sc.sym = (type) sym->cast();                         \
-            }                                                        \
-        } while (0)
+#define X(sym, pred, type, cast)                                 \
+    do {                                                         \
+        if (HAS_PARAM(sym)) {                                    \
+            CHECK_PARAM(sym, pred);                              \
+            sc.sym = (type) sym->cast();                         \
+        }                                                        \
+    } while (0)
+    
+    X(mtu,                               IsNumber,  size_t,          NumberValue);
+    X(heartbeatFrequency,                IsNumber,  float,           NumberValue);
+    X(tickFrequency,                     IsNumber,  float,           NumberValue);
+    X(heartbeatsBeforeConnectionWarning, IsNumber,  float,           NumberValue);
+    X(connectionTimeout,                 IsNumber,  EmiTimeInterval, NumberValue);
+    X(senderBufferSize,                  IsNumber,  size_t,          NumberValue);
+    X(acceptConnections,                 IsBoolean, bool,            BooleanValue);
+    X(port,                              IsNumber,  uint16_t,        NumberValue);
+    X(fabricatedPacketDropRate,          IsNumber,  EmiTimeInterval, NumberValue);
+    
+    int family;
+    if (HAS_PARAM(type)) {
+        CHECK_PARAM(type, IsString);
         
-        X(mtu,                               IsNumber,  size_t,          NumberValue);
-        X(heartbeatFrequency,                IsNumber,  float,           NumberValue);
-        X(tickFrequency,                     IsNumber,  float,           NumberValue);
-        X(heartbeatsBeforeConnectionWarning, IsNumber,  float,           NumberValue);
-        X(connectionTimeout,                 IsNumber,  EmiTimeInterval, NumberValue);
-        X(senderBufferSize,                  IsNumber,  size_t,          NumberValue);
-        X(acceptConnections,                 IsBoolean, bool,            BooleanValue);
-        X(port,                              IsNumber,  uint16_t,        NumberValue);
-        X(fabricatedPacketDropRate,          IsNumber,  EmiTimeInterval, NumberValue);
-        
-        if (HAS_PARAM(type) || HAS_PARAM(address)) {
-            CHECK_PARAM(type, IsString);
-            CHECK_PARAM(address, IsString);
-            
-            String::Utf8Value typeStr(type);
-            int family;
-            if (!parseAddressFamily(*typeStr, &family)) {
-                ThrowException(Exception::Error(String::New("Unknown address family")));
-                return scope.Close(Undefined());
-            }
-            
-            String::Utf8Value host(address);
-            parseIp(*host, sc.port, family, &sc.address);
+        String::Utf8Value typeStr(type);
+        if (!parseAddressFamily(*typeStr, &family)) {
+            ThrowException(Exception::Error(String::New("Unknown address family")));
+            return scope.Close(Undefined());
         }
-        
+    }
+    else {
+        family = AF_INET;
+    }
+    
+    if (HAS_PARAM(address)) {
+        CHECK_PARAM(address, IsString);
+        String::Utf8Value host(address);
+        parseIp(*host, sc.port, family, &sc.address);
+    }
+    else {
+        anyIp(sc.port, family, &sc.address);
+    }
+    
 #undef CHECK_PARAM
 #undef HAS_PARAM
 #undef X
-    }
     
     EmiSocket* obj = new EmiSocket(sc);
     // We need to Wrap the object now, or failing to desuspend

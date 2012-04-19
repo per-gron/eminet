@@ -56,17 +56,27 @@ uv_udp_t *EmiSockDelegate::openSocket(EmiSockDelegate::ES& sock, uint16_t port, 
         goto error;
     }
     
-    struct sockaddr_in6 addr6;
-    addr6.sin6_len       = sizeof(struct sockaddr_in6);
-    addr6.sin6_family    = AF_INET6;
-    addr6.sin6_port      = htons(port);
-    addr6.sin6_flowinfo  = 0;
-    addr6.sin6_addr      = in6addr_any;
-    addr6.sin6_scope_id  = 0;
-    
-    err = uv_udp_bind6(socket, addr6, /*flags:*/0);
-    if (0 != err) {
-        goto error;
+    if (AF_INET == sock.config.address.ss_family) {
+        struct sockaddr_in& addr(*((struct sockaddr_in *)&sock.config.address));
+        
+        char buf[100];
+        uv_ip4_name(&addr, buf, sizeof(buf));
+        
+        err = uv_udp_bind(socket, addr, /*flags:*/0);
+        if (0 != err) {
+            goto error;
+        }
+    }
+    else if (AF_INET6 == sock.config.address.ss_family) {
+        struct sockaddr_in6& addr6(*((struct sockaddr_in6 *)&sock.config.address));
+        err = uv_udp_bind6(socket, addr6, /*flags:*/0);
+        if (0 != err) {
+            goto error;
+        }
+    }
+    else {
+        ASSERT(0 && "unexpected address family");
+        abort();
     }
     
     err = uv_udp_recv_start(socket, alloc_cb, recv_cb);
