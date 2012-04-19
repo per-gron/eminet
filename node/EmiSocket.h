@@ -13,6 +13,8 @@
 class EmiSocket : public node::ObjectWrap {
     typedef EmiSock<EmiSockDelegate, EmiConnDelegate> ES;
     
+    friend class EmiSockDelegate;
+    
 private:
     ES _sock;
     

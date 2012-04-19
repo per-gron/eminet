@@ -41,6 +41,9 @@ static void close_cb(uv_handle_t* handle) {
 EmiSockDelegate::EmiSockDelegate(EmiSocket& es) : _es(es) {}
 
 void EmiSockDelegate::closeSocket(EmiSockDelegate::ES& sock, uv_udp_t *socket) {
+    // This allows V8's GC to reclaim the EmiSocket when no UDP sockets are open
+    sock.getDelegate()._es.Unref();
+    
     uv_close((uv_handle_t *)socket, close_cb);
 }
 
@@ -70,6 +73,9 @@ uv_udp_t *EmiSockDelegate::openSocket(EmiSockDelegate::ES& sock, uint16_t port, 
     if (0 != err) {
         goto error;
     }
+    
+    // This prevents V8's GC to reclaim the EmiSocket while UDP sockets are open
+    sock.getDelegate()._es.Ref();
     
     return socket;
     
