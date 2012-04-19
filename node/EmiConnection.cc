@@ -13,8 +13,8 @@ Persistent<String>   EmiConnection::channelQualifierSymbol;
 Persistent<String>   EmiConnection::prioritySymbol;
 Persistent<Function> EmiConnection::constructor;
 
-EmiConnection::EmiConnection(EmiSocket *es, const struct sockaddr_storage& address, uint16_t inboundPort, bool initiator) :
-  _conn(EmiConnDelegate(*this), inboundPort, address, es->getSock(), initiator) {};
+EmiConnection::EmiConnection(EmiSocket& es, const struct sockaddr_storage& address, uint16_t inboundPort, bool initiator) :
+  _conn(EmiConnDelegate(*this), inboundPort, address, es.getSock(), initiator) {};
 
 EmiTimeInterval EmiConnection::Now() {
   return ((double)uv_hrtime())/NSECS_PER_SEC;
@@ -46,7 +46,7 @@ void EmiConnection::Init(Handle<Object> target) {
   constructor = Persistent<Function>::New(tpl->GetFunction());
 }
 
-Handle<Object> EmiConnection::NewInstance(EmiSocket *es,
+Handle<Object> EmiConnection::NewInstance(EmiSocket& es,
                                           const struct sockaddr_storage& address,
                                           uint16_t inboundPort,
                                           bool initiator) {

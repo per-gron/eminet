@@ -38,7 +38,7 @@ static void close_cb(uv_handle_t* handle) {
   free(handle);
 }
 
-EmiSockDelegate::EmiSockDelegate(EmiSocket *es) : _es(es) {}
+EmiSockDelegate::EmiSockDelegate(EmiSocket& es) : _es(es) {}
 
 void EmiSockDelegate::closeSocket(uv_udp_t *socket) {
   uv_close((uv_handle_t *)socket, close_cb);
@@ -155,7 +155,7 @@ void EmiSockDelegate::gotConnection(EC& conn) {
   
   const unsigned argc = 2;
   Handle<Value> argv[argc] = {
-    conn.getEmiSock().getDelegate()._es->handle_,
+    conn.getEmiSock().getDelegate()._es.handle_,
     conn.getDelegate().getConnection().handle_
   };
   EmiSocket::gotConnection->Call(Context::GetCurrent()->Global(), argc, argv);

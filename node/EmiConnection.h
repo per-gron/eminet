@@ -24,14 +24,14 @@ class EmiConnection : public node::ObjectWrap {
   inline EmiConnection(const EmiConnection& other);
   inline EmiConnection& operator=(const EmiConnection& other);
   
-  EmiConnection(EmiSocket *es, const struct sockaddr_storage& address, uint16_t inboundPort, bool initiator);
+  EmiConnection(EmiSocket& es, const struct sockaddr_storage& address, uint16_t inboundPort, bool initiator);
   
  public:
   static EmiTimeInterval Now();
   
   static void Init(v8::Handle<v8::Object> target);
   
-  static v8::Handle<v8::Object> NewInstance(EmiSocket *es, const struct sockaddr_storage& address, uint16_t inboundPort, bool initiator);
+  static v8::Handle<v8::Object> NewInstance(EmiSocket& es, const struct sockaddr_storage& address, uint16_t inboundPort, bool initiator);
   
   inline EC& getConn() { return _conn; }
   inline const EC& getConn() const { return _conn; }

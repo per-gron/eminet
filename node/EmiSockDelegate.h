@@ -19,7 +19,7 @@ template<class SockDelegate, class ConnDelegate>
 typedef EmiConn<EmiSockDelegate, EmiConnDelegate> EC;
 
 class EmiSockDelegate {
-  EmiSocket *_es;
+  EmiSocket& _es;
  public:
     
   typedef EmiError                   Error;
@@ -29,7 +29,7 @@ class EmiSockDelegate {
   typedef v8::Persistent<v8::Object> Data;
   typedef v8::Persistent<v8::Object> ConnectionOpenedCallbackCookie;
     
-  EmiSockDelegate(EmiSocket *es);
+  EmiSockDelegate(EmiSocket& es);
     
   static void closeSocket(uv_udp_t *socket);
   uv_udp_t *openSocket(uint16_t port, Error& err);

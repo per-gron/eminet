@@ -67,7 +67,7 @@ static bool parseAddressFamily(const char* typeStr, int *family) {
 }
 
 EmiSocket::EmiSocket(const EmiSockConfig<EmiSockDelegate::Address>& sc) :
-  _sock(sc, EmiSockDelegate(this)) {}
+  _sock(sc, EmiSockDelegate(*this)) {}
 
 EmiSocket::~EmiSocket() {}
 
