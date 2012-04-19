@@ -28,16 +28,17 @@ static void parseIp(const char* host,
   }
 }
 
-static int parseAddressFamily(const char* typeStr) {
+static bool parseAddressFamily(const char* typeStr, int *family) {
   if (0 == strcmp(typeStr, "udp4")) {
-    return AF_INET;
+    *family = AF_INET;
+    return true;
   }
   else if (0 == strcmp(typeStr, "udp6")) {
-    return AF_INET6;
+    *family = AF_INET6;
+    return true;
   }
   else {
-    ASSERT(0 && "unexpected address family");
-    abort();
+    return false;
   }
 }
 
@@ -170,7 +171,11 @@ Handle<Value> EmiSocket::New(const Arguments& args) {
       CHECK_PARAM(address, IsString);
       
       String::Utf8Value typeStr(type);
-      int family(parseAddressFamily(*typeStr));
+      int family;
+      if (!parseAddressFamily(*typeStr, &family)) {
+        ThrowException(Exception::Error(String::New("Unknown address family")));
+        return scope.Close(Undefined());
+      }
       
       String::Utf8Value host(address);
       parseIp(*host, sc.port, family, &sc.address);
