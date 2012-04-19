@@ -10,6 +10,30 @@
 
 using namespace v8;
 
+#define EXPAND_SYMS                                        \
+  EXPAND_SYM(mtu);                                         \
+  EXPAND_SYM(heartbeatFrequency);                          \
+  EXPAND_SYM(tickFrequency);                               \
+  EXPAND_SYM(heartbeatsBeforeConnectionWarning);           \
+  EXPAND_SYM(connectionTimeout);                           \
+  EXPAND_SYM(receiverBufferSize);                          \
+  EXPAND_SYM(senderBufferSize);                            \
+  EXPAND_SYM(acceptConnections);                           \
+  EXPAND_SYM(type);                                        \
+  EXPAND_SYM(port);                                        \
+  EXPAND_SYM(address);                                     \
+  EXPAND_SYM(fabricatedPacketDropRate);                    \
+
+#define EXPAND_SYM(sym) Persistent<String> EmiSocket::sym##Symbol;
+EXPAND_SYMS
+#undef EXPAND_SYM
+
+Persistent<Function> EmiSocket::gotConnection;
+Persistent<Function> EmiSocket::connectionMessage;
+Persistent<Function> EmiSocket::connectionLost;
+Persistent<Function> EmiSocket::connectionRegained;
+Persistent<Function> EmiSocket::connectionDisconnect;
+
 static void parseIp(const char* host,
                     uint16_t port,
                     int family,
@@ -42,25 +66,6 @@ static bool parseAddressFamily(const char* typeStr, int *family) {
   }
 }
 
-Persistent<String> EmiSocket::mtuSymbol;
-Persistent<String> EmiSocket::heartbeatFrequencySymbol;
-Persistent<String> EmiSocket::tickFrequencySymbol;
-Persistent<String> EmiSocket::heartbeatsBeforeConnectionWarningSymbol;
-Persistent<String> EmiSocket::connectionTimeoutSymbol;
-Persistent<String> EmiSocket::receiverBufferSizeSymbol;
-Persistent<String> EmiSocket::senderBufferSizeSymbol;
-Persistent<String> EmiSocket::acceptConnectionsSymbol;
-Persistent<String> EmiSocket::typeSymbol;
-Persistent<String> EmiSocket::portSymbol;
-Persistent<String> EmiSocket::addressSymbol;
-Persistent<String> EmiSocket::fabricatedPacketDropRateSymbol;
-
-Persistent<Function> EmiSocket::gotConnection;
-Persistent<Function> EmiSocket::connectionMessage;
-Persistent<Function> EmiSocket::connectionLost;
-Persistent<Function> EmiSocket::connectionRegained;
-Persistent<Function> EmiSocket::connectionDisconnect;
-
 EmiSocket::EmiSocket(const EmiSockConfig<EmiSockDelegate::Address>& sc) :
   _sock(sc, EmiSockDelegate(this)) {}
 
@@ -68,20 +73,10 @@ EmiSocket::~EmiSocket() {}
 
 void EmiSocket::Init(Handle<Object> target) {
   // Load symbols
-#define X(sym) sym##Symbol = Persistent<String>::New(String::NewSymbol(#sym));
-  X(mtu);
-  X(heartbeatFrequency);
-  X(tickFrequency);
-  X(heartbeatsBeforeConnectionWarning);
-  X(connectionTimeout);
-  X(receiverBufferSize);
-  X(senderBufferSize);
-  X(acceptConnections);
-  X(type);
-  X(port);
-  X(address);
-  X(fabricatedPacketDropRate);
-#undef X
+#define EXPAND_SYM(sym) \
+  sym##Symbol = Persistent<String>::New(String::NewSymbol(#sym));
+  EXPAND_SYMS
+#undef EXPAND_SYM
   
   // Prepare constructor template
   Local<FunctionTemplate> tpl = FunctionTemplate::New(New);
@@ -126,20 +121,9 @@ Handle<Value> EmiSocket::New(const Arguments& args) {
     
     Local<Object> conf(args[0]->ToObject());
     
-#define X(sym) Local<Value> sym(conf->Get(mtu##Symbol))
-    X(mtu);
-    X(heartbeatFrequency);
-    X(tickFrequency);
-    X(heartbeatsBeforeConnectionWarning);
-    X(connectionTimeout);
-    X(receiverBufferSize);
-    X(senderBufferSize);
-    X(acceptConnections);
-    X(type);
-    X(port);
-    X(address);
-    X(fabricatedPacketDropRate);
-#undef X
+#define EXPAND_SYM(sym) Local<Value> sym(conf->Get(mtu##Symbol));
+    EXPAND_SYMS
+#undef EXPAND_SYM
 
 #define CHECK_PARAM(sym, pred)                                       \
     do {                                                             \
