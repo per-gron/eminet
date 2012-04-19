@@ -182,12 +182,25 @@ public:
     virtual ~EmiSock() {
         // EmiSock should not be deleted before all open connections are closed,
         // but just to be sure, we close all remaining connections.
+        size_t numConns = _conns.size();
         typename EmiConnectionMap::iterator iter = _conns.begin();
         typename EmiConnectionMap::iterator end  = _conns.end();
         while (iter != end) {
+            // This will remove the connection from _conns
             (*iter).second->forceClose();
-            _conns.erase(iter);
-            ++iter;
+            
+            // We do this check to make sure we don't enter an infinite loop.
+            // It shouldn't be required.
+            size_t newNumConns = _conns.size();
+            if (newNumConns >= numConns) {
+                SockDelegate::panic();
+            }
+            numConns = newNumConns;
+            
+            // We can't increment iter, it has been
+            // invalidated because the connection was
+            // removed from _conns
+            iter = _conns.begin();
         }
         
         // This will close (which, depending on the binding, might mean deallocate)
