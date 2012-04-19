@@ -90,7 +90,7 @@ void EmiConnDelegate::scheduleConnectionWarning(EmiTimeInterval warningTimeout) 
     _warningTimeoutWhenWarningTimerWasScheduled = warningTimeout;
     uv_timer_start(_connectionTimer,
                    EmiConnDelegate::warningTimeout,
-                   warningTimeout*NSECS_PER_SEC,
+                   warningTimeout*MSECS_PER_SEC,
                    /*repeats:*/0);
 }
 
@@ -98,7 +98,7 @@ void EmiConnDelegate::scheduleConnectionTimeout(EmiTimeInterval interval) {
     uv_timer_stop(_connectionTimer);
     uv_timer_start(_connectionTimer,
                    EmiConnDelegate::connectionTimeout,
-                   interval*NSECS_PER_SEC,
+                   interval*MSECS_PER_SEC,
                    /*repeats:*/0);
 }
 
@@ -106,7 +106,7 @@ void EmiConnDelegate::ensureTickTimeout(EmiTimeInterval interval) {
     if (!uv_is_active((uv_handle_t *)_tickTimer)) {
         uv_timer_start(_tickTimer,
                        EmiConnDelegate::tickTimeout,
-                       interval*NSECS_PER_SEC,
+                       interval*MSECS_PER_SEC,
                        /*repeats:*/0);
     }
 }
@@ -115,7 +115,7 @@ void EmiConnDelegate::scheduleHeartbeatTimeout(EmiTimeInterval interval) {
     uv_timer_stop(_heartbeatTimer);
     uv_timer_start(_heartbeatTimer,
                    EmiConnDelegate::heartbeatTimeout,
-                   interval*NSECS_PER_SEC,
+                   interval*MSECS_PER_SEC,
                    /*repeats:*/0);
 }
 
@@ -128,7 +128,7 @@ void EmiConnDelegate::ensureRtoTimeout(EmiTimeInterval rto) {
         _rtoWhenRtoTimerWasScheduled = rto;
         uv_timer_start(_rtoTimer,
                        EmiConnDelegate::rtoTimeout,
-                       rto*NSECS_PER_SEC,
+                       rto*MSECS_PER_SEC,
                        /*repeats:*/0);
     }
 }
