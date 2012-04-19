@@ -194,7 +194,7 @@ public:
     }
     
     void gotRst() {
-        _conn->deregisterConnection(EMI_REASON_OTHER_HOST_CLOSED);
+        _conn->forceClose(EMI_REASON_OTHER_HOST_CLOSED);
     }
     void gotSynRstAck() {
         // Technically, the other host could just send a
@@ -207,9 +207,9 @@ public:
         // that the other host initiated the close (which,
         // even though it did in an incorrect way, is closer
         // to the truth than saying that this host closed)
-        _conn->deregisterConnection(isClosing() ?
-                                    EMI_REASON_THIS_HOST_CLOSED :
-                                    EMI_REASON_OTHER_HOST_CLOSED);
+        _conn->forceClose(isClosing() ?
+                          EMI_REASON_THIS_HOST_CLOSED :
+                          EMI_REASON_OTHER_HOST_CLOSED);
     }
     // Returns false if the connection not in the opening state (that's an error)
     bool gotSynRst(EmiSequenceNumber otherHostInitialSequenceNumber) {

@@ -53,13 +53,11 @@ private:
     inline EmiConn(const EmiConn& other);
     inline EmiConn& operator=(const EmiConn& other);
     
-    void deregister() {
+    void deleteELC(ELC *elc) {
         // This if ensures that ConnDelegate::invalidate is only invoked once.
-        if (_conn) {
-            _emisock.deregisterConnection(this);
+        if (elc) {
             _delegate.invalidate();
-            delete _conn;
-            _conn = NULL;
+            delete elc;
         }
     }
     
@@ -95,7 +93,8 @@ public:
     }
     
     virtual ~EmiConn() {
-        deregister();
+        _emisock.deregisterConnection(this);
+        deleteELC(_conn);
     }
     
     EmiTimeInterval timeBeforeConnectionWarning() const {
@@ -179,27 +178,23 @@ public:
         }
     }
     
-    // Invoked by LogicalConnection
-    void deregisterConnection(EmiDisconnectReason reason) {
-        if (_conn) {
-            _conn->wasClosed(reason);
-            _conn = NULL; // This has to be done before forceClose
-            forceClose(reason);
-        }
-    }
-    
     void forceClose(EmiDisconnectReason reason) {
+        _emisock.deregisterConnection(this);
+        
         if (_conn) {
             ELC *conn = _conn;
             
-            // _conn is niled out to ensure that we don't fire several disconnect events,
-            // which would happen if the disconnect delegate callback calls forceClose.
+            // _conn is NULLed out to ensure that we don't fire
+            // several disconnect events, which would happen if
+            // the disconnect delegate callback calls forceClose.
             _conn = NULL;
             
             conn->wasClosed(reason);
+            
+            // Because we just NULLed out _conn, we need to delete
+            // it.
+            deleteELC(conn);
         }
-        
-        deregister();
     }
     
     // Returns the time relative to when the connection was initiated

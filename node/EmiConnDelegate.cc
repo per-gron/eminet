@@ -24,7 +24,6 @@ void EmiConnDelegate::connectionTimeout(uv_timer_t *handle, int status) {
 
 void EmiConnDelegate::tickTimeout(uv_timer_t *handle, int status) {
     EmiConnection *conn = (EmiConnection *)handle->data;
-    fprintf(stderr, "!! this: %d\n", conn);
     conn->_conn.tickTimeoutCallback(EmiConnection::Now());
 }
 
