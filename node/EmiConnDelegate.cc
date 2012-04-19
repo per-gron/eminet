@@ -68,6 +68,10 @@ void EmiConnDelegate::invalidate() {
     
     uv_timer_stop(_connectionTimer);
     uv_close((uv_handle_t *)_connectionTimer, close_cb);
+    
+    // This allows V8's GC to reclaim the EmiConnection when it's been closed
+    // The corresponding Ref is in EmiConnection::New
+    _conn.Unref();
 }
 
 void EmiConnDelegate::emiConnMessage(EmiChannelQualifier channelQualifier,

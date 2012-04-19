@@ -89,6 +89,10 @@ Handle<Value> EmiConnection::New(const Arguments& args) {
     
     ec->Wrap(args.This());
     
+    // This prevents V8's GC to reclaim the EmiConnection before it's closed
+    // The corresponding Unref is in EmiConnDelegate::invalidate
+    ec->Ref();
+    
     return args.This();
 }
 
