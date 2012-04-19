@@ -31,7 +31,7 @@
            initiator:(BOOL)initiator {
     if (self = [super init]) {
         _emiSocket = socket;
-        _ec = new EC(EmiConnDelegate(self), inboundPort, address, socket.sock, initiator);
+        _ec = new EC(EmiConnDelegate(self), inboundPort, address, *socket.sock, initiator);
     }
     
     return self;

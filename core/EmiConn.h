@@ -33,7 +33,7 @@ class EmiConn {
     const uint16_t _inboundPort;
     const Address _address;
     
-    ES *_emisock;
+    ES &_emisock;
     bool _initiator;
     
     ELC *_conn;
@@ -54,7 +54,7 @@ private:
     inline EmiConn& operator=(const EmiConn& other);
     
     void deregister() {
-        _emisock->deregisterConnection(this);
+        _emisock.deregisterConnection(this);
         _delegate.invalidate();
     }
     
@@ -73,15 +73,15 @@ public:
         }
     }
     
-    EmiConn(const ConnDelegate& delegate, uint16_t inboundPort, const Address& address, ES *socket, bool initiator) :
+    EmiConn(const ConnDelegate& delegate, uint16_t inboundPort, const Address& address, ES& socket, bool initiator) :
     _inboundPort(inboundPort),
     _address(address),
     _conn(NULL),
     _delegate(delegate),
     _emisock(socket),
     _initiator(initiator),
-    _senderBuffer(_emisock->config.senderBufferSize),
-    _receiverBuffer(_emisock->config.receiverBufferSize, *this),
+    _senderBuffer(_emisock.config.senderBufferSize),
+    _receiverBuffer(_emisock.config.receiverBufferSize, *this),
     _sendQueue(this),
     _time(),
     _receivedDataSinceLastHeartbeat(false),
@@ -99,14 +99,14 @@ public:
     }
     
     EmiTimeInterval timeBeforeConnectionWarning() const {
-        return 1/_emisock->config.heartbeatFrequency * _emisock->config.heartbeatsBeforeConnectionWarning;
+        return 1/_emisock.config.heartbeatFrequency * _emisock.config.heartbeatsBeforeConnectionWarning;
     }
     
     void connectionTimeoutCallback() {
         forceClose(EMI_REASON_CONNECTION_TIMED_OUT);
     }
     void connectionWarningCallback(EmiTimeInterval alreadyWaitedTime) {
-        EmiTimeInterval connectionTimeout = _emisock->config.connectionTimeout;
+        EmiTimeInterval connectionTimeout = _emisock.config.connectionTimeout;
         
         _issuedConnectionWarning = true;
         _delegate.scheduleConnectionTimeout(connectionTimeout - alreadyWaitedTime);
@@ -115,7 +115,7 @@ public:
     }
     void resetConnectionTimeout() {
         EmiTimeInterval warningTimeout = timeBeforeConnectionWarning();
-        EmiTimeInterval connectionTimeout = _emisock->config.connectionTimeout;
+        EmiTimeInterval connectionTimeout = _emisock.config.connectionTimeout;
         
         if (warningTimeout < connectionTimeout) {
             _delegate.scheduleConnectionWarning(warningTimeout);
@@ -136,7 +136,7 @@ public:
         }
     }
     void ensureTickTimeout() {
-        _delegate.ensureTickTimeout(1/_emisock->config.tickFrequency);
+        _delegate.ensureTickTimeout(1/_emisock.config.tickFrequency);
     }
     
     void heartbeatTimeoutCallback(EmiTimeInterval now) {
@@ -152,7 +152,7 @@ public:
     }
     void resetHeartbeatTimeout() {
         _receivedDataSinceLastHeartbeat = false;
-        _delegate.scheduleHeartbeatTimeout(1/_emisock->config.heartbeatFrequency);
+        _delegate.scheduleHeartbeatTimeout(1/_emisock.config.heartbeatFrequency);
     }
     
     void rtoTimeoutCallback(EmiTimeInterval now, EmiTimeInterval rto) {
@@ -224,7 +224,7 @@ public:
         }
     }
     void gotTimestamp(EmiTimeInterval now, const Data& data) {
-        _time.gotTimestamp(_emisock->config.heartbeatFrequency, now,
+        _time.gotTimestamp(_emisock.config.heartbeatFrequency, now,
                            SockDelegate::extractData(data), SockDelegate::extractLength(data));
     }
     
@@ -414,11 +414,11 @@ public:
     
     // Invoked by EmiSendQueue
     void sendDatagram(const uint8_t *data, size_t size) {
-        _emisock->sendDatagram(this, data, size);
+        _emisock.sendDatagram(this, data, size);
     }
     
     inline ES &getEmiSock() {
-        return *_emisock;
+        return _emisock;
     }
 };
 
