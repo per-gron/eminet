@@ -9,9 +9,9 @@
 using namespace v8;
 
 void InitAll(Handle<Object> target) {
-  EmiSocket::Init(target);
-  EmiConnection::Init(target);
-  EmiConnectionParams::Init(target);
+    EmiSocket::Init(target);
+    EmiConnection::Init(target);
+    EmiConnectionParams::Init(target);
 }
 
 NODE_MODULE(eminet, InitAll)

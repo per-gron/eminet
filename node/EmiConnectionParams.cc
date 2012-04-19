@@ -18,19 +18,22 @@ inboundPort(inboundPort_),
 initiator(initiator_) {}
 
 void EmiConnectionParams::Init(Handle<Object> target) {
-  HandleScope scope;
-  
-  Local<ObjectTemplate> tpl(ObjectTemplate::New());
-  tpl->SetInternalFieldCount(1);
-  constructor = Persistent<ObjectTemplate>::New(tpl);
+    HandleScope scope;
+    
+    Local<ObjectTemplate> tpl(ObjectTemplate::New());
+    tpl->SetInternalFieldCount(1);
+    constructor = Persistent<ObjectTemplate>::New(tpl);
 }
 
-Handle<Object> EmiConnectionParams::NewInstance(EmiSocket& es, const struct sockaddr_storage& address, uint16_t inboundPort, bool initiator) {
-  HandleScope scope;
-  
-  EmiConnectionParams *ecp = new EmiConnectionParams(es, address, inboundPort, initiator);
-  Local<Object> obj(constructor->NewInstance());
-  obj->SetPointerInInternalField(0, ecp);
-
-  return scope.Close(obj);
+Handle<Object> EmiConnectionParams::NewInstance(EmiSocket& es,
+                                                const struct sockaddr_storage& address,
+                                                uint16_t inboundPort,
+                                                bool initiator) {
+    HandleScope scope;
+    
+    EmiConnectionParams *ecp = new EmiConnectionParams(es, address, inboundPort, initiator);
+    Local<Object> obj(constructor->NewInstance());
+    obj->SetPointerInInternalField(0, ecp);
+    
+    return scope.Close(obj);
 }

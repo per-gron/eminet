@@ -33,7 +33,10 @@ public:
     
     void invalidate();
     
-    void emiConnMessage(EmiChannelQualifier channelQualifier, const unsigned char *data, size_t offset, size_t size);
+    void emiConnMessage(EmiChannelQualifier channelQualifier,
+                        const unsigned char *data,
+                        size_t offset,
+                        size_t size);
     
     void scheduleConnectionWarning(EmiTimeInterval warningTimeout);
     void scheduleConnectionTimeout(EmiTimeInterval interval);
