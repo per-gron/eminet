@@ -43,7 +43,7 @@ public:
     EC *makeConnection(NSData *address, uint16_t inboundPort, bool initiator);
     
     void sendData(GCDAsyncUdpSocket *socket, NSData *address, const uint8_t *data, size_t size);
-    void gotConnection(EC *conn);
+    void gotConnection(EC& conn);
     
     static void connectionOpened(ConnectionOpenedCallbackCookie& cookie, bool error, EmiDisconnectReason reason, EC& ec);
     

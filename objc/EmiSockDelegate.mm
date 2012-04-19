@@ -49,8 +49,8 @@ void EmiSockDelegate::sendData(GCDAsyncUdpSocket *socket, NSData *address, const
          withTimeout:-1 tag:0];
 }
 
-void EmiSockDelegate::gotConnection(EC *conn) {
-    [_socket.delegate emiSocketGotConnection:conn->getDelegate().getConn()];
+void EmiSockDelegate::gotConnection(EC& conn) {
+    [_socket.delegate emiSocketGotConnection:conn.getDelegate().getConn()];
 }
 
 void EmiSockDelegate::connectionOpened(ConnectionOpenedCallbackCookie& cookie, bool error, EmiDisconnectReason reason, EC& ec) {

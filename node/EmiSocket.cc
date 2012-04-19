@@ -22,7 +22,7 @@ using namespace v8;
   EXPAND_SYM(type);                                        \
   EXPAND_SYM(port);                                        \
   EXPAND_SYM(address);                                     \
-  EXPAND_SYM(fabricatedPacketDropRate);                    \
+  EXPAND_SYM(fabricatedPacketDropRate);
 
 #define EXPAND_SYM(sym) Persistent<String> EmiSocket::sym##Symbol;
 EXPAND_SYMS

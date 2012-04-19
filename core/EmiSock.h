@@ -313,7 +313,7 @@ public:
                     conn->gotTimestamp(now, data);
                     
                     if (conn->opened(now, header->sequenceNumber)) {
-                        _delegate.gotConnection(conn);
+                        _delegate.gotConnection(*conn);
                     }
                 }
                 else if (synFlag && rstFlag) {

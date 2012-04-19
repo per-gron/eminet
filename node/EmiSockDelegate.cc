@@ -97,31 +97,50 @@ uint16_t EmiSockDelegate::extractLocalPort(uv_udp_t *socket) {
   }
 }
 
-EC *EmiSockDelegate::makeConnection(const Address& address, uint16_t inboundPort, bool initiator) {
+EC *EmiSockDelegate::makeConnection(const Address& address,
+                                    uint16_t inboundPort,
+                                    bool initiator) {
   HandleScope scope;
   
   // TODO I think the HandleScope will dispose of EmiConnection after
   // this function, which is not what we want... Exactly what will
   // happen?
   
-  Handle<Object> obj(EmiConnection::NewInstance(_es, address, inboundPort, initiator));
+  Handle<Object> obj(EmiConnection::NewInstance(_es,
+                                                address,
+                                                inboundPort,
+                                                initiator));
   EmiConnection *ec = node::ObjectWrap::Unwrap<EmiConnection>(obj);
   return &ec->getConn();
 }
 
-void EmiSockDelegate::sendData(uv_udp_t *socket, const Address& address, const uint8_t *data, size_t size) {
-  uv_udp_send_t *req = (uv_udp_send_t *)malloc(sizeof(uv_udp_send_t)+sizeof(uv_buf_t));
+void EmiSockDelegate::sendData(uv_udp_t *socket,
+                               const Address& address,
+                               const uint8_t *data,
+                               size_t size) {
+  uv_udp_send_t *req = (uv_udp_send_t *)malloc(sizeof(uv_udp_send_t)+
+                                               sizeof(uv_buf_t));
   uv_buf_t      *buf = (uv_buf_t *)&req[1];
   
   *buf = uv_buf_init((char *)data, size);
   
   if (AF_INET == address.ss_family) {
-    if (0 != uv_udp_send(req, socket, buf, /*bufcnt:*/1, *((struct sockaddr_in *)&address), send_cb)) {
+    if (0 != uv_udp_send(req,
+                         socket,
+                         buf,
+                         /*bufcnt:*/1,
+                         *((struct sockaddr_in *)&address),
+                         send_cb)) {
       free(req);
     }
   }
   else if (AF_INET6 == address.ss_family) {
-    if (0 != uv_udp_send6(req, socket, buf, /*bufcnt:*/1, *((struct sockaddr_in6 *)&address), send_cb)) {
+    if (0 != uv_udp_send6(req,
+                          socket,
+                          buf,
+                          /*bufcnt:*/1,
+                          *((struct sockaddr_in6 *)&address),
+                          send_cb)) {
       free(req);
     }
   }
@@ -130,7 +149,7 @@ void EmiSockDelegate::sendData(uv_udp_t *socket, const Address& address, const u
   }
 }
 
-void EmiSockDelegate::gotConnection(EC *conn) {
+void EmiSockDelegate::gotConnection(EC& conn) {
   // TODO Call a real function with real arguments
   HandleScope scope;
   
@@ -139,7 +158,10 @@ void EmiSockDelegate::gotConnection(EC *conn) {
   EmiSocket::gotConnection->Call(Context::GetCurrent()->Global(), argc, argv);
 }
 
-void EmiSockDelegate::connectionOpened(ConnectionOpenedCallbackCookie& cookie, bool error, EmiDisconnectReason reason, EC& ec) {
+void EmiSockDelegate::connectionOpened(ConnectionOpenedCallbackCookie& cookie,
+                                       bool error,
+                                       EmiDisconnectReason reason,
+                                       EC& ec) {
   // TODO
   
   cookie.Dispose();
