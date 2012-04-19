@@ -8,7 +8,7 @@
 class EmiConnection;
 
 class EmiConnDelegate {
-    EmiConnection *_conn;
+    EmiConnection& _conn;
     
     // We must use pointers to malloc'ed memory for the timers,
     // because the memory can't be freed in this class' destructor,
@@ -29,7 +29,7 @@ class EmiConnDelegate {
     static void rtoTimeout(uv_timer_t *handle, int status);
     
 public:
-    EmiConnDelegate(EmiConnection *conn);
+    EmiConnDelegate(EmiConnection& conn);
     
     void invalidate();
     
@@ -48,6 +48,9 @@ public:
     void emiConnLost();
     void emiConnRegained();
     void emiConnDisconnect(EmiDisconnectReason reason);
+    
+    inline EmiConnection& getConnection() { return _conn; }
+    inline const EmiConnection& getConnection() const { return _conn; }
 };
 
 #endif

@@ -14,30 +14,30 @@ static void close_cb(uv_handle_t* handle) {
 
 void EmiConnDelegate::warningTimeout(uv_timer_t *handle, int status) {
   EmiConnDelegate *ecd = (EmiConnDelegate *)handle->data;
-  ecd->_conn->_conn.connectionWarningCallback(ecd->_warningTimeoutWhenWarningTimerWasScheduled);
+  ecd->_conn._conn.connectionWarningCallback(ecd->_warningTimeoutWhenWarningTimerWasScheduled);
 }
 
 void EmiConnDelegate::connectionTimeout(uv_timer_t *handle, int status) {
   EmiConnDelegate *ecd = (EmiConnDelegate *)handle->data;
-  ecd->_conn->_conn.connectionTimeoutCallback();
+  ecd->_conn._conn.connectionTimeoutCallback();
 }
 
 void EmiConnDelegate::tickTimeout(uv_timer_t *handle, int status) {
   EmiConnDelegate *ecd = (EmiConnDelegate *)handle->data;
-  ecd->_conn->_conn.tickTimeoutCallback(EmiConnection::Now());
+  ecd->_conn._conn.tickTimeoutCallback(EmiConnection::Now());
 }
 
 void EmiConnDelegate::heartbeatTimeout(uv_timer_t *handle, int status) {
   EmiConnDelegate *ecd = (EmiConnDelegate *)handle->data;
-  ecd->_conn->_conn.heartbeatTimeoutCallback(EmiConnection::Now());
+  ecd->_conn._conn.heartbeatTimeoutCallback(EmiConnection::Now());
 }
 
 void EmiConnDelegate::rtoTimeout(uv_timer_t *handle, int status) {
   EmiConnDelegate *ecd = (EmiConnDelegate *)handle->data;
-  ecd->_conn->_conn.rtoTimeoutCallback(EmiConnection::Now(), ecd->_rtoWhenRtoTimerWasScheduled);
+  ecd->_conn._conn.rtoTimeoutCallback(EmiConnection::Now(), ecd->_rtoWhenRtoTimerWasScheduled);
 }
 
-EmiConnDelegate::EmiConnDelegate(EmiConnection *conn) : _conn(conn) {
+EmiConnDelegate::EmiConnDelegate(EmiConnection& conn) : _conn(conn) {
   _tickTimer = (uv_timer_t *)malloc(sizeof(uv_timer_t));
   _tickTimer->data = this;
   uv_timer_init(uv_default_loop(), _tickTimer);

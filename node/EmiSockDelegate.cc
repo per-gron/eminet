@@ -153,8 +153,11 @@ void EmiSockDelegate::gotConnection(EC& conn) {
   // TODO Call a real function with real arguments
   HandleScope scope;
   
-  const unsigned argc = 0;
-  Handle<Value> argv[argc] = { };
+  const unsigned argc = 2;
+  Handle<Value> argv[argc] = {
+    conn.getEmiSock().getDelegate()._es->handle_,
+    conn.getDelegate().getConnection().handle_
+  };
   EmiSocket::gotConnection->Call(Context::GetCurrent()->Global(), argc, argv);
 }
 

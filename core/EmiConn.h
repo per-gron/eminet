@@ -417,8 +417,8 @@ public:
         _emisock->sendDatagram(this, data, size);
     }
     
-    ES *getEmiSock() {
-        return _emisock;
+    inline ES &getEmiSock() {
+        return *_emisock;
     }
 };
 

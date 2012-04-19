@@ -119,7 +119,7 @@ public:
     _conn(conn), _enqueueHeartbeat(false) {
         _queueSize = 0;
         
-        _bufLength = conn->getEmiSock()->config.mtu;
+        _bufLength = conn->getEmiSock().config.mtu;
         _buf = (uint8_t *)malloc(_bufLength);
     }
     virtual ~EmiSendQueue() {
