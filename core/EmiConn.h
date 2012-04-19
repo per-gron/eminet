@@ -54,8 +54,13 @@ private:
     inline EmiConn& operator=(const EmiConn& other);
     
     void deregister() {
-        _emisock.deregisterConnection(this);
-        _delegate.invalidate();
+        // This if ensures that ConnDelegate::invalidate is only invoked once.
+        if (_conn) {
+            _emisock.deregisterConnection(this);
+            _delegate.invalidate();
+            delete _conn;
+            _conn = NULL;
+        }
     }
     
 public:
@@ -90,11 +95,6 @@ public:
     }
     
     virtual ~EmiConn() {
-        if (_conn) {
-            delete _conn;
-            _conn = NULL;
-        }
-        
         deregister();
     }
     
