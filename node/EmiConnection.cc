@@ -46,11 +46,16 @@ void EmiConnection::Init(Handle<Object> target) {
   constructor = Persistent<Function>::New(tpl->GetFunction());
 }
 
-Handle<Object> EmiConnection::NewInstance(EmiSocket *es, const struct sockaddr_storage& address, uint16_t inboundPort, bool initiator) {
+Handle<Object> EmiConnection::NewInstance(EmiSocket *es,
+                                          const struct sockaddr_storage& address,
+                                          uint16_t inboundPort,
+                                          bool initiator) {
   HandleScope scope;
   
   const unsigned argc = 1;
-  Handle<Value> argv[argc] = { EmiConnectionParams::NewInstance(es, address, inboundPort, initiator) };
+  Handle<Value> argv[argc] = {
+    EmiConnectionParams::NewInstance(es, address, inboundPort, initiator)
+  };
   Local<Object> instance = constructor->NewInstance(argc, argv);
 
   return scope.Close(instance);
@@ -69,8 +74,12 @@ Handle<Value> EmiConnection::New(const Arguments& args) {
     THROW_TYPE_ERROR("Wrong number of arguments");
   }
   
-  EmiConnectionParams *ecp = ObjectWrap::Unwrap<EmiConnectionParams>(args[0]->ToObject());
-  EmiConnection *ec = new EmiConnection(ecp->es, ecp->address, ecp->inboundPort, ecp->initiator);
+  EmiConnectionParams *ecp =
+    ObjectWrap::Unwrap<EmiConnectionParams>(args[0]->ToObject());
+  EmiConnection *ec = new EmiConnection(ecp->es,
+                                        ecp->address,
+                                        ecp->inboundPort,
+                                        ecp->initiator);
   ec->Wrap(args.This());
   
   return args.This();
@@ -184,7 +193,11 @@ Handle<Value> EmiConnection::Send(const Arguments& args) {
   
   EmiConnection* ec = ObjectWrap::Unwrap<EmiConnection>(args.This());
   EmiError err;
-  if (!ec->_conn.send(Now(), Persistent<Object>::New(args[0]->ToObject()), channelQualifier, priority, err)) {
+  if (!ec->_conn.send(Now(),
+                      Persistent<Object>::New(args[0]->ToObject()),
+                      channelQualifier,
+                      priority,
+                      err)) {
     // TODO Add the information in err to the exception that is thrown
     ThrowException(Exception::Error(String::New("Failed to send message")));
     return scope.Close(Undefined());
