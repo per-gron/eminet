@@ -191,7 +191,7 @@ Handle<Value> EmiConnection::Send(const Arguments& args) {
                 THROW_TYPE_ERROR("Wrong arguments");
             }
             
-            channelQualifier = (EmiChannelQualifier) cqv->NumberValue();
+            channelQualifier = (EmiChannelQualifier) cqv->Uint32Value();
         }
         
         if (!pv.IsEmpty()) {
@@ -199,7 +199,7 @@ Handle<Value> EmiConnection::Send(const Arguments& args) {
                 THROW_TYPE_ERROR("Wrong arguments");
             }
             
-            priority = (EmiPriority) pv->NumberValue();
+            priority = (EmiPriority) pv->Uint32Value();
         }
     }
     

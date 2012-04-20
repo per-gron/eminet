@@ -83,11 +83,17 @@ void EmiConnDelegate::emiConnMessage(EmiChannelQualifier channelQualifier,
                                      const v8::Local<v8::Object>& data,
                                      size_t offset,
                                      size_t size) {
-    // TODO Pass some useful arguments to the callback
     HandleScope scope;
     
-    const unsigned argc = 0;
-    Handle<Value> argv[argc] = { };
+    const unsigned argc = 6;
+    Handle<Value> argv[argc] = {
+        _conn._jsHandle.IsEmpty() ? Handle<Value>(Undefined()) : _conn._jsHandle,
+        _conn.handle_,
+        Number::New(channelQualifier),
+        data,
+        Number::New(offset),
+        Number::New(size)
+    };
     EmiSocket::connectionMessage->Call(Context::GetCurrent()->Global(), argc, argv);
 }
 

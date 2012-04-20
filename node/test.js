@@ -20,6 +20,11 @@ es.on('connection', function(socket) {
   socket.on('regained', function() {
     console.log("-- Client connection regained");
   });
+  
+  socket.on('message', function(channelQualifier, buf) {
+    console.log("-- Client sent message", channelQualifier, buf.toString());
+    socket.send(new Buffer("hej tillbaka"));
+  });
 });
 
 es2.connect('127.0.0.1', 5001, function(err, socket) {
@@ -29,10 +34,15 @@ es2.connect('127.0.0.1', 5001, function(err, socket) {
   
   socket.on('disconnect', function() {
     console.log("-- Disconnected");
-  })
+  });
+  
+  socket.on('message', function(channelQualifier, buf) {
+    console.log("-- Got message", channelQualifier, buf.toString());
+  });
   
   console.log("-- Connected", socket);
-  socket.forceClose();
+  
+  socket.send(new Buffer("hej"));
 });
 
 
