@@ -27,8 +27,10 @@ public:
         inline Entry& operator=(const Entry& other);
         
     public:
-        Entry(const TemporaryData &data_) :
-        data(SockDelegate::makePersistentData(data_)) {}
+        Entry(const EmiMessageHeader& header_, const TemporaryData &data_, size_t offset_) :
+        header(header_),
+        data(SockDelegate::makePersistentData(data_)),
+        offset(offset_) {}
         Entry() {}
         ~Entry() {
             SockDelegate::releasePersistentData(data);
@@ -113,12 +115,8 @@ public:
         _bufferSize = 0;
     }
     
-    void bufferMessage(EmiMessageHeader *header, const TemporaryData& buf, int offset) {
-        Entry *entry = new Entry(buf);
-        memcpy(&entry->header, header, sizeof(EmiMessageHeader));
-        entry->offset = offset;
-        
-        insert(entry);
+    void bufferMessage(const EmiMessageHeader& header, const TemporaryData& buf, size_t offset) {
+        insert(new Entry(header, buf, offset));
     }
     void flushBuffer(EmiChannelQualifier channelQualifier, EmiSequenceNumber sequenceNumber) {
         if (_tree.empty()) return;

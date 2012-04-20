@@ -243,7 +243,7 @@ public:
     }
     
     /// Delegates to EmiReceiverBuffer
-    void bufferMessage(EmiMessageHeader *header, const TemporaryData& buf, size_t offset) {
+    void bufferMessage(const EmiMessageHeader& header, const TemporaryData& buf, size_t offset) {
         _receiverBuffer.bufferMessage(header, buf, offset);
     }
     void flushBuffer(EmiChannelQualifier channelQualifier, EmiSequenceNumber sequenceNumber) {
