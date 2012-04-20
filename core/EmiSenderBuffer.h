@@ -154,8 +154,10 @@ public:
                 toBeRemoved.push_back(msg);
             }
             
+            if (iter == begin) break;
+            
             --iter;
-        } while (iter != begin);
+        } while (1);
         
         bool wasInReliableTree = false;
         
