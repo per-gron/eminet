@@ -1,8 +1,8 @@
-// CXX=clang node-waf configure build && node eminet.js
+// CXX=clang node-waf configure build && node test.js
 
 var EmiNetAddon = require('./build/Release/eminet');
 
-// lazily loaded
+// Lazily loaded
 var Dns = null,
     Net = null;
 
@@ -91,7 +91,7 @@ EmiNetAddon.EmiSocket.prototype.connect = function(address, port, cb) {
     }
 };
 
-var open = function(args) {
+exports.open = function(args) {
     var s = new EmiNetAddon.EmiSocket(args);
     
     for (var key in args) {
@@ -102,16 +102,3 @@ var open = function(args) {
     
     return s;
 };
-
-var es2 = open();
-var es = open({
-    acceptConnections: true,
-    port: 5001
-});
-
-es2.connect('127.0.0.1', 5001, function(err, socket) {
-    console.log("!!! Connected", arguments);
-});
-
-
-console.log("Hej", es, es2);

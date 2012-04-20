@@ -70,8 +70,6 @@ static void recv_cb(uv_udp_t *handle,
                                                nread < 0 ? 0 : nread);
     if (nread == 0) return;
     
-    printf("!? recv_cb %p %ld\n", wrap, nread);
-    
     if (nread < 0) {
         const unsigned argc = 2;
         Handle<Value> argv[argc] = {
@@ -249,18 +247,17 @@ void EmiSockDelegate::connectionOpened(ConnectionOpenedCallbackCookie& cookie,
                                        bool error,
                                        EmiDisconnectReason reason,
                                        EC& conn) {
-    const unsigned argc = 3;
+    const unsigned argc = 2;
     Handle<Value> argv[argc];
-    argv[0] = conn.getEmiSock().getDelegate()._es.handle_;
     
     // TODO Give the error as something better than just the error code
-    argv[1] = error ? Number::New(reason) : Null();
+    argv[0] = error ? Number::New(reason) : Null();
     
     if (error) {
-        argv[2] = Null();
+        argv[1] = Null();
     }
     else {
-        argv[2] = conn.getDelegate().getConnection().handle_;
+        argv[1] = conn.getDelegate().getConnection().handle_;
     }
     
     cookie->CallAsFunction(Context::GetCurrent()->Global(), argc, argv);
