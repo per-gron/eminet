@@ -259,7 +259,7 @@ public:
         return true;
     }
     
-    void onMessage(EmiTimeInterval now, SocketHandle *sock, uint16_t inboundPort, const Address& address, Data data) {
+    void onMessage(EmiTimeInterval now, SocketHandle *sock, uint16_t inboundPort, const Address& address, const Data& data) {
         __block const char *err = NULL;
         
         size_t len = SockDelegate::extractLength(data);
