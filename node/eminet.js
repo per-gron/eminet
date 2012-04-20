@@ -42,7 +42,7 @@ var lookup6 = function(address, callback) {
 
 var gotConnection = function(sock, sockHandle, connHandle) {
   var conn = new EmiConnection(false, sockHandle, connHandle);
-  sock.emit('connection', conn);
+  sock && sock.emit('connection', conn);
   return conn;
 };
 
@@ -62,7 +62,7 @@ var connectionRegained = function() {
 };
 
 var connectionDisconnect = function(conn, reason) {
-  conn.emit('disconnect', reason);
+  conn && conn.emit('disconnect', reason);
 };
 
 var connectionError = function() {
@@ -88,7 +88,15 @@ var EmiConnection = function(initiator, sockHandle, address, port, cb) {
     
     var wrappedCb = function(err, conn) {
       self._handle = conn;
-      cb(err, conn && self);
+      
+      // We want to wait with invoking cb until this function
+      // has returned, to make sure that the C++ wrapper code
+      // has access to the self object when cb is invoked,
+      // which might be necessary for instance if the callback
+      // invokes forceClose.
+      process.nextTick(function() {
+        cb(err, conn && self);
+      });
       
       return self;
     };
@@ -112,6 +120,22 @@ Util.inherits(EmiConnection, Events.EventEmitter);
 
 EmiConnection.prototype.close = function() {
   return this._handle.close.apply(this._handle, arguments);
+};
+
+EmiConnection.prototype.forceClose = function() {
+  return this._handle.forceClose.apply(this._handle, arguments);
+};
+
+EmiConnection.prototype.closeOrForceClose = function() {
+  return this._handle.closeOrForceClose.apply(this._handle, arguments);
+};
+
+EmiConnection.prototype.flush = function() {
+  return this._handle.flush.apply(this._handle, arguments);
+};
+
+EmiConnection.prototype.send = function() {
+  return this._handle.send.apply(this._handle, arguments);
 };
 
 

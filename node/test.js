@@ -24,7 +24,7 @@ es2.connect('127.0.0.1', 5001, function(err, socket) {
   })
   
   console.log("-- Connected", socket);
-  socket.close();
+  socket.forceClose();
 });
 
 
