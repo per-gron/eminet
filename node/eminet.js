@@ -40,9 +40,13 @@ var lookup6 = function(address, callback) {
     return lookup(address || '::0', 6, callback);
 };
 
-var gotConnection = function() {
+var gotConnection = function(sockHandle, connHandle) {
     // TODO
     console.log("!!! Got connection", arguments);
+    
+    var conn = new EmiConnection(false, sockHandle, connHandle);
+    
+    return conn;
 };
 
 var connectionMessage = function() {
@@ -78,7 +82,8 @@ EmiNetAddon.setCallbacks(
     connectionError
 );
 
-var EmiConnection = function(sockHandle, address, port, cb) {
+var EmiConnection = function(initiator, sockHandle, address, port, cb) {
+  if (initiator) {
     var self = this;
     
     var type = this.type || 'udp4';
@@ -99,6 +104,10 @@ var EmiConnection = function(sockHandle, address, port, cb) {
     else {
         throw new Error('Bad socket type. Valid types: udp4, udp6');
     }
+  }
+  else {
+    this._handle = address;
+  }
 };
 
 Util.inherits(EmiConnection, Events.EventEmitter);
@@ -108,17 +117,17 @@ EmiConnection.prototype.close = function() {
 };
 
 EmiNetAddon.EmiSocket.prototype.connect = function(address, port, cb) {
-  return new EmiConnection(this, address, port, cb);
+  return new EmiConnection(/*initiator:*/true, this, address, port, cb);
 };
 
 exports.open = function(args) {
-    var s = new EmiNetAddon.EmiSocket(args);
-    
-    for (var key in args) {
-        s[key] = args[key];
-    }
-    
-    Object.freeze(s);
-    
-    return s;
+  var s = new EmiNetAddon.EmiSocket(args);
+  
+  for (var key in args) {
+    s[key] = args[key];
+  }
+  
+  Object.freeze(s);
+  
+  return s;
 };

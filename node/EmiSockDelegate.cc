@@ -240,7 +240,11 @@ void EmiSockDelegate::gotConnection(EC& conn) {
         conn.getEmiSock().getDelegate()._es.handle_,
         conn.getDelegate().getConnection().handle_
     };
-    EmiSocket::gotConnection->Call(Context::GetCurrent()->Global(), argc, argv);
+    Local<Value> ret = EmiSocket::gotConnection->Call(Context::GetCurrent()->Global(), argc, argv);
+    
+    if (!ret.IsEmpty() && ret->IsObject()) {
+        conn.getDelegate().getConnection().setJsHandle(ret->ToObject());
+    }
 }
 
 void EmiSockDelegate::connectionOpened(ConnectionOpenedCallbackCookie& cookie,
