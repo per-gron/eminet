@@ -129,6 +129,18 @@ EmiSocket.prototype.connect = function(address, port, cb) {
   return new EmiConnection(/*initiator:*/true, this._handle, address, port, cb);
 };
 
+// TODO suspend doesn't seem to work when you call it on a disconnect
+// callback. I suspect this is a libuv bug, because the assert that
+// triggers is removed by this commit:
+// https://github.com/joyent/libuv/commit/28b0867f0312e3ccdc45d7fde0218d065ed40c65
+EmiSocket.prototype.suspend = function() {
+  return this._handle.suspend.apply(this._handle, arguments);
+};
+
+EmiSocket.prototype.desuspend = function() {
+  return this._handle.desuspend.apply(this._handle, arguments);
+};
+
 
 exports.open = function(args) {
   return new EmiSocket(args);
