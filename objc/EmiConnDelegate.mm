@@ -39,9 +39,7 @@ void EmiConnDelegate::invalidate() {
 void EmiConnDelegate::emiConnMessage(EmiChannelQualifier channelQualifier, NSData *data, NSUInteger offset, NSUInteger size) {
     [_conn.delegate emiConnectionMessage:_conn
                         channelQualifier:channelQualifier 
-                                    data:data
-                                  offset:offset
-                                    size:size];
+                                    data:[data subdataWithRange:NSMakeRange(offset, size)]];
 }
 
 void EmiConnDelegate::scheduleConnectionWarning(EmiTimeInterval warningTimeout) {

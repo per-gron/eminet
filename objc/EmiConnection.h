@@ -18,10 +18,8 @@
 - (void)emiConnectionRegained:(EmiConnection *)connection;
 - (void)emiConnectionDisconnect:(EmiConnection *)connection forReason:(EmiDisconnectReason)reason;
 - (void)emiConnectionMessage:(EmiConnection *)connection
-            channelQualifier:(EmiChannelQualifier)channelQualifier 
-                        data:(NSData *)data 
-                      offset:(NSUInteger)offset
-                        size:(NSUInteger)size;
+            channelQualifier:(EmiChannelQualifier)channelQualifier
+                        data:(NSData *)data;
 @end
 
 @interface EmiConnection : NSObject {
