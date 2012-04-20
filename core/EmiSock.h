@@ -14,6 +14,9 @@
 
 #include <map>
 #include <set>
+#include <cstdlib>
+
+#define ARC4RANDOM_MAX      0x100000000
 
 template<class Address>
 class EmiSockConfig {
@@ -28,7 +31,8 @@ public:
     senderBufferSize(EMI_DEFAULT_SENDER_BUFFER_SIZE),
     acceptConnections(false),
     port(0),
-    address() {}
+    address(),
+    fabricatedPacketDropRate(0) {}
     
     size_t mtu;
     float heartbeatFrequency;
@@ -40,7 +44,7 @@ public:
     bool acceptConnections;
     uint16_t port;
     Address address;
-    float fabricatedPacketDropRate; // To be implemented
+    float fabricatedPacketDropRate;
 };
 
 template<class SockDelegate, class ConnDelegate>
@@ -170,6 +174,12 @@ private:
             suspend();
         }
     }
+    
+    inline bool shouldArtificiallyDropPacket() {
+        if (0 == config.fabricatedPacketDropRate) return false;
+        
+        return ((float)arc4random() / ARC4RANDOM_MAX) < config.fabricatedPacketDropRate;
+    }
 
     
 public:
@@ -265,6 +275,10 @@ public:
                    const TemporaryData& data,
                    size_t offset,
                    size_t len) {
+        if (shouldArtificiallyDropPacket()) {
+            return;
+        }
+        
         __block const char *err = NULL;
         
         uint16_t inboundPort(SockDelegate::extractLocalPort(sock));
@@ -461,6 +475,10 @@ public:
     }
     
     void sendDatagram(EC *conn, const uint8_t *data, size_t size) {
+        if (shouldArtificiallyDropPacket()) {
+            return;
+        }
+        
         SocketHandle *socket = NULL;
         
         if (conn->isInitiator()) {
