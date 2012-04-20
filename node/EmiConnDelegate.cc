@@ -146,16 +146,22 @@ void EmiConnDelegate::invalidateRtoTimeout() {
 void EmiConnDelegate::emiConnLost() {
     HandleScope scope;
     
-    const unsigned argc = 1;
-    Handle<Value> argv[argc] = { _conn.handle_ };
+    const unsigned argc = 2;
+    Handle<Value> argv[argc] = {
+        _conn._jsHandle.IsEmpty() ? Handle<Value>(Undefined()) : _conn._jsHandle,
+        _conn.handle_
+    };
     EmiSocket::connectionLost->Call(Context::GetCurrent()->Global(), argc, argv);
 }
 
 void EmiConnDelegate::emiConnRegained() {
     HandleScope scope;
     
-    const unsigned argc = 1;
-    Handle<Value> argv[argc] = { _conn.handle_ };
+    const unsigned argc = 2;
+    Handle<Value> argv[argc] = {
+        _conn._jsHandle.IsEmpty() ? Handle<Value>(Undefined()) : _conn._jsHandle,
+        _conn.handle_
+    };
     EmiSocket::connectionRegained->Call(Context::GetCurrent()->Global(), argc, argv);
 }
 

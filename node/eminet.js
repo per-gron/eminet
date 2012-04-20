@@ -47,18 +47,16 @@ var gotConnection = function(sock, sockHandle, connHandle) {
 };
 
 var connectionMessage = function() {
-    // TODO
-    console.log("!!! Connection message", arguments);
+  // TODO
+  console.log("!!! Connection message", arguments);
 };
 
-var connectionLost = function() {
-    // TODO
-    console.log("!!! Connection lost", arguments);
+var connectionLost = function(conn, connHandle) {
+  conn && conn.emit('lost');
 };
 
-var connectionRegained = function() {
-    // TODO
-    console.log("!!! Connection regained", arguments);
+var connectionRegained = function(conn, connHandle) {
+  conn && conn.emit('regained');
 };
 
 var connectionDisconnect = function(conn, reason) {
@@ -66,8 +64,8 @@ var connectionDisconnect = function(conn, reason) {
 };
 
 var connectionError = function() {
-    // TODO
-    console.log("!!! Connection error", arguments);
+  // TODO
+  console.log("!!! Connection error", arguments);
 };
 
 EmiNetAddon.setCallbacks(

@@ -12,6 +12,14 @@ es.on('connection', function(socket) {
   socket.on('disconnect', function() {
     console.log("-- Client disconnected");
   });
+  
+  socket.on('lost', function() {
+    console.log("-- Client connection lost");
+  });
+  
+  socket.on('regained', function() {
+    console.log("-- Client connection regained");
+  });
 });
 
 es2.connect('127.0.0.1', 5001, function(err, socket) {
