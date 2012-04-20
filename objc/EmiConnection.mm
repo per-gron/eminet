@@ -140,10 +140,6 @@
     return ((EC *)_ec)->isOpening();
 }
 
-- (EmiSequenceNumber)otherHostInitialSequenceNumber {
-    return ((EC *)_ec)->getOtherHostInitialSequenceNumber();
-}
-
 - (EC *)conn {
     return (EC *)_ec;
 }
