@@ -115,25 +115,15 @@ var EmiConnection = function(initiator, sockHandle, address, port, cb) {
 
 Util.inherits(EmiConnection, Events.EventEmitter);
 
-EmiConnection.prototype.close = function() {
-  return this._handle.close.apply(this._handle, arguments);
-};
-
-EmiConnection.prototype.forceClose = function() {
-  return this._handle.forceClose.apply(this._handle, arguments);
-};
-
-EmiConnection.prototype.closeOrForceClose = function() {
-  return this._handle.closeOrForceClose.apply(this._handle, arguments);
-};
-
-EmiConnection.prototype.flush = function() {
-  return this._handle.flush.apply(this._handle, arguments);
-};
-
-EmiConnection.prototype.send = function() {
-  return this._handle.send.apply(this._handle, arguments);
-};
+[
+  'close', 'forceClose', 'closeOrForceClose', 'flush', 'send',
+  'hasIssuedConnectionWarning', 'getSocket', 'getAddressType',
+  'getPort', 'getAddress', 'getInboundPort', 'isOpen', 'isOpening'
+].forEach(function(name) {
+  EmiConnection.prototype[name] = function() {
+    return this._handle[name].apply(this._handle, arguments);
+  };
+});
 
 
 var EmiSocket = function(args) {

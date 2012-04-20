@@ -43,11 +43,19 @@ void EmiConnection::Init(Handle<Object> target) {
 #define X(sym, name)                                        \
   tpl->PrototypeTemplate()->Set(String::NewSymbol(name),    \
       FunctionTemplate::New(sym)->GetFunction());
-    X(Close,             "close");
-    X(ForceClose,        "forceClose");
-    X(CloseOrForceClose, "closeOrForceClose");
-    X(Flush,             "flush");
-    X(Send,              "send");
+    X(Close,                      "close");
+    X(ForceClose,                 "forceClose");
+    X(CloseOrForceClose,          "closeOrForceClose");
+    X(Flush,                      "flush");
+    X(Send,                       "send");
+    X(HasIssuedConnectionWarning, "hasIssuedConnectionWarning");
+    X(GetSocket,                  "getSocket");
+    X(GetAddressType,             "getAddressType");
+    X(GetPort,                    "getPort");
+    X(GetAddress,                 "getAddress");
+    X(GetInboundPort,             "getInboundPort");
+    X(IsOpen,                     "isOpen");
+    X(IsOpening,                  "isOpening");
 #undef X
     
     constructor = Persistent<Function>::New(tpl->GetFunction());
@@ -74,12 +82,21 @@ Handle<Object> EmiConnection::NewInstance(EmiSocket& es,
     return scope.Close(Undefined());                          \
   } while (0)
 
+#define ENSURE_NUM_ARGS(num, args)                            \
+  do {                                                        \
+    if (num != args.Length()) {                               \
+      THROW_TYPE_ERROR("Wrong number of arguments");          \
+    }                                                         \
+  } while (0)
+
+#define ENSURE_ZERO_ARGS(args) ENSURE_NUM_ARGS(0, args)
+
+#define UNWRAP(name, args) EmiConnection *name(ObjectWrap::Unwrap<EmiConnection>(args.This()))
+
 Handle<Value> EmiConnection::New(const Arguments& args) {
     HandleScope scope;
     
-    if (1 != args.Length()) {
-        THROW_TYPE_ERROR("Wrong number of arguments");
-    }
+    ENSURE_NUM_ARGS(1, args);
     
     EmiConnectionParams *ecp =
     (EmiConnectionParams *)args[0]->ToObject()->GetPointerFromInternalField(0);
@@ -103,11 +120,9 @@ Handle<Value> EmiConnection::New(const Arguments& args) {
 Handle<Value> EmiConnection::Close(const Arguments& args) {
     HandleScope scope;
     
-    if (0 != args.Length()) {
-        THROW_TYPE_ERROR("Wrong number of arguments");
-    }
+    ENSURE_ZERO_ARGS(args);
+    UNWRAP(ec, args);
     
-    EmiConnection* ec = ObjectWrap::Unwrap<EmiConnection>(args.This());
     EmiError err;
     if (!ec->_conn.close(Now(), err)) {
         // TODO Add the information in err to the exception that is thrown
@@ -121,11 +136,9 @@ Handle<Value> EmiConnection::Close(const Arguments& args) {
 Handle<Value> EmiConnection::ForceClose(const Arguments& args) {
     HandleScope scope;
     
-    if (0 != args.Length()) {
-        THROW_TYPE_ERROR("Wrong number of arguments");
-    }
+    ENSURE_ZERO_ARGS(args);
+    UNWRAP(ec, args);
     
-    EmiConnection* ec = ObjectWrap::Unwrap<EmiConnection>(args.This());
     ec->_conn.forceClose();
     
     return scope.Close(Undefined());
@@ -134,11 +147,9 @@ Handle<Value> EmiConnection::ForceClose(const Arguments& args) {
 Handle<Value> EmiConnection::CloseOrForceClose(const Arguments& args) {
     HandleScope scope;
     
-    if (0 != args.Length()) {
-        THROW_TYPE_ERROR("Wrong number of arguments");
-    }
+    ENSURE_ZERO_ARGS(args);
+    UNWRAP(ec, args);
     
-    EmiConnection* ec = ObjectWrap::Unwrap<EmiConnection>(args.This());
     EmiError err;
     if (!ec->_conn.close(Now(), err)) {
         ec->_conn.forceClose();
@@ -150,11 +161,9 @@ Handle<Value> EmiConnection::CloseOrForceClose(const Arguments& args) {
 Handle<Value> EmiConnection::Flush(const Arguments& args) {
     HandleScope scope;
     
-    if (0 != args.Length()) {
-        THROW_TYPE_ERROR("Wrong number of arguments");
-    }
+    ENSURE_ZERO_ARGS(args);
+    UNWRAP(ec, args);
     
-    EmiConnection* ec = ObjectWrap::Unwrap<EmiConnection>(args.This());
     ec->_conn.flush(Now());
     
     return scope.Close(Undefined());
@@ -206,7 +215,8 @@ Handle<Value> EmiConnection::Send(const Arguments& args) {
     
     // Do the actual send
     
-    EmiConnection* ec = ObjectWrap::Unwrap<EmiConnection>(args.This());
+    UNWRAP(ec, args);
+    
     EmiError err;
     if (!ec->_conn.send(Now(),
                         Persistent<Object>::New(args[0]->ToObject()),
@@ -219,4 +229,115 @@ Handle<Value> EmiConnection::Send(const Arguments& args) {
     }
     
     return scope.Close(Undefined());
+}
+
+Handle<Value> EmiConnection::HasIssuedConnectionWarning(const Arguments& args) {
+    HandleScope scope;
+    
+    ENSURE_ZERO_ARGS(args);
+    UNWRAP(ec, args);
+    
+    return scope.Close(Boolean::New(ec->_conn.issuedConnectionWarning()));
+}
+
+Handle<Value> EmiConnection::GetSocket(const Arguments& args) {
+    HandleScope scope;
+    
+    ENSURE_ZERO_ARGS(args);
+    UNWRAP(ec, args);
+    
+    return scope.Close(ec->_conn.getEmiSock().getDelegate().getEmiSocket().getJsHandle());
+}
+
+Handle<Value> EmiConnection::GetAddressType(const Arguments& args) {
+    HandleScope scope;
+    
+    ENSURE_ZERO_ARGS(args);
+    UNWRAP(ec, args);
+    
+    const char *type;
+    
+    const struct sockaddr_storage& addr(ec->_conn.getAddress());
+    if (AF_INET == addr.ss_family) {
+        type = "udp4";
+    }
+    else if (AF_INET6 == addr.ss_family) {
+        type = "udp6";
+    }
+    else {
+        ASSERT(0 && "unexpected address family");
+    }
+    
+    return scope.Close(String::New(type));
+}
+
+Handle<Value> EmiConnection::GetPort(const Arguments& args) {
+    HandleScope scope;
+    
+    ENSURE_ZERO_ARGS(args);
+    UNWRAP(ec, args);
+    
+    uint16_t port;
+    
+    const struct sockaddr_storage& addr(ec->_conn.getAddress());
+    if (AF_INET == addr.ss_family) {
+        port = ((struct sockaddr_in *)&addr)->sin_port;
+    }
+    else if (AF_INET6 == addr.ss_family) {
+        port = ((struct sockaddr_in6 *)&addr)->sin6_port;
+    }
+    else {
+        ASSERT(0 && "unexpected address family");
+    }
+    
+    return scope.Close(Number::New(port));
+}
+
+Handle<Value> EmiConnection::GetAddress(const Arguments& args) {
+    HandleScope scope;
+    
+    ENSURE_ZERO_ARGS(args);
+    UNWRAP(ec, args);
+    
+    char buf[256];
+    
+    const struct sockaddr_storage& addr(ec->_conn.getAddress());
+    if (AF_INET == addr.ss_family) {
+        uv_ip4_name((struct sockaddr_in *)&addr, buf, sizeof(buf));
+    }
+    else if (AF_INET6 == addr.ss_family) {
+        uv_ip6_name((struct sockaddr_in6 *)&addr, buf, sizeof(buf));
+    }
+    else {
+        ASSERT(0 && "unexpected address family");
+    }
+    
+    return scope.Close(String::New(buf));
+}
+
+Handle<Value> EmiConnection::GetInboundPort(const Arguments& args) {
+    HandleScope scope;
+    
+    ENSURE_ZERO_ARGS(args);
+    UNWRAP(ec, args);
+    
+    return scope.Close(Number::New(ec->_conn.getInboundPort()));
+}
+
+Handle<Value> EmiConnection::IsOpen(const Arguments& args) {
+    HandleScope scope;
+    
+    ENSURE_ZERO_ARGS(args);
+    UNWRAP(ec, args);
+    
+    return scope.Close(Boolean::New(ec->_conn.isOpen()));
+}
+
+Handle<Value> EmiConnection::IsOpening(const Arguments& args) {
+    HandleScope scope;
+    
+    ENSURE_ZERO_ARGS(args);
+    UNWRAP(ec, args);
+    
+    return scope.Close(Boolean::New(ec->_conn.isOpening()));
 }

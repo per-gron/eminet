@@ -53,6 +53,15 @@ private:
     static v8::Handle<v8::Value> CloseOrForceClose(const v8::Arguments& args);
     static v8::Handle<v8::Value> Flush(const v8::Arguments& args);
     static v8::Handle<v8::Value> Send(const v8::Arguments& args);
+    
+    static v8::Handle<v8::Value> HasIssuedConnectionWarning(const v8::Arguments& args);
+    static v8::Handle<v8::Value> GetSocket(const v8::Arguments& args);
+    static v8::Handle<v8::Value> GetAddressType(const v8::Arguments& args);
+    static v8::Handle<v8::Value> GetPort(const v8::Arguments& args);
+    static v8::Handle<v8::Value> GetAddress(const v8::Arguments& args);
+    static v8::Handle<v8::Value> GetInboundPort(const v8::Arguments& args);
+    static v8::Handle<v8::Value> IsOpen(const v8::Arguments& args);
+    static v8::Handle<v8::Value> IsOpening(const v8::Arguments& args);
 };
 
 #endif

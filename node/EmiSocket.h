@@ -59,6 +59,7 @@ public:
     
     inline ES& getSock() { return _sock; }
     inline const ES& getSock() const { return _sock; }
+    inline v8::Handle<v8::Object> getJsHandle() const { return _jsHandle; }
 };
 
 #endif

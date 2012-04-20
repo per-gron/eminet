@@ -76,6 +76,9 @@ public:
     inline static size_t extractLength(v8::Handle<v8::Object> data) {
         return data.IsEmpty() ? 0 : node::Buffer::Length(data);
     }
+    
+    inline EmiSocket& getEmiSocket() { return _es; }
+    inline const EmiSocket& getEmiSocket() const { return _es; }
 };
 
 #endif

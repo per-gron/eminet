@@ -40,7 +40,19 @@ es2.connect('127.0.0.1', 5001, function(err, socket) {
     console.log("-- Got message", channelQualifier, buf.toString());
   });
   
-  console.log("-- Connected", socket);
+  console.log(
+    "-- Connected to server",
+    [
+      socket.getSocket(),
+      socket.getAddressType(),
+      socket.getPort(),
+      socket.getAddress(),
+      socket.getInboundPort(),
+      socket.isOpen(),
+      socket.isOpening(),
+      socket.hasIssuedConnectionWarning()
+    ]
+  );
   
   socket.send(new Buffer("hej"));
 });
