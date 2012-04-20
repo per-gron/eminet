@@ -259,10 +259,16 @@ public:
         return true;
     }
     
-    void onMessage(EmiTimeInterval now, SocketHandle *sock, uint16_t inboundPort, const Address& address, const TemporaryData& data) {
+    void onMessage(EmiTimeInterval now,
+                   SocketHandle *sock,
+                   uint16_t inboundPort,
+                   const Address& address,
+                   const TemporaryData& data,
+                   size_t offset,
+                   size_t len) {
         __block const char *err = NULL;
         
-        size_t len = SockDelegate::extractLength(data);
+        const uint8_t *rawData(SockDelegate::extractData(data)+offset);
         
         EmiConnectionKey ckey(address, inboundPort);
         typename EmiConnectionMap::iterator cur = _conns.find(ckey);
@@ -272,8 +278,8 @@ public:
         
         if (EMI_TIMESTAMP_LENGTH+1 == len) {
             if (conn) {
-                conn->gotTimestamp(now, data);
-                conn->gotHeartbeat(!!(SockDelegate::extractData(data)[EMI_TIMESTAMP_LENGTH]));
+                conn->gotTimestamp(now, rawData, len);
+                conn->gotHeartbeat(!!(rawData[EMI_TIMESTAMP_LENGTH]));
             }
         }
         else if (len < EMI_TIMESTAMP_LENGTH + EMI_HEADER_LENGTH) {
@@ -322,7 +328,7 @@ public:
                         _conns.insert(std::make_pair(ckey, conn));
                     }
                     
-                    conn->gotTimestamp(now, data);
+                    conn->gotTimestamp(now, rawData, len);
                     
                     if (conn->opened(now, header->sequenceNumber)) {
                         _delegate.gotConnection(*conn);
@@ -368,7 +374,7 @@ public:
                             return false;
                         }
                         
-                        conn->gotTimestamp(now, data);
+                        conn->gotTimestamp(now, rawData, len);
                         if (!conn->gotSynRst(header->sequenceNumber)) {
                             err = "Failed to process SYN-RST message";
                             return false;
@@ -388,7 +394,7 @@ public:
                     }
                     
                     if (conn) {
-                        conn->gotTimestamp(now, data);
+                        conn->gotTimestamp(now, rawData, len);
                         conn->gotRst();
                     }
                     
@@ -405,8 +411,8 @@ public:
                         return false;
                     }
                     
-                    conn->gotTimestamp(now, data);
-                    conn->gotMessage(header, data, dataOffset+EMI_TIMESTAMP_LENGTH, /*dontFlush:*/false);
+                    conn->gotTimestamp(now, rawData, len);
+                    conn->gotMessage(header, data, dataOffset+EMI_TIMESTAMP_LENGTH+offset, /*dontFlush:*/false);
                 }
                 else {
                     err = "Invalid message flags";
@@ -416,8 +422,8 @@ public:
                 return true;
             };
             
-            if (!EmiMessageHeader::parseMessages(SockDelegate::extractData(data)+EMI_TIMESTAMP_LENGTH,
-                                                 SockDelegate::extractLength(data)-EMI_TIMESTAMP_LENGTH,
+            if (!EmiMessageHeader::parseMessages(rawData+EMI_TIMESTAMP_LENGTH,
+                                                 len-EMI_TIMESTAMP_LENGTH,
                                                  block)) {
                 goto error;
             }

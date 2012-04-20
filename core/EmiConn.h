@@ -222,9 +222,8 @@ public:
             ensureTickTimeout();
         }
     }
-    void gotTimestamp(EmiTimeInterval now, const TemporaryData& data) {
-        _time.gotTimestamp(_emisock.config.heartbeatFrequency, now,
-                           SockDelegate::extractData(data), SockDelegate::extractLength(data));
+    void gotTimestamp(EmiTimeInterval now, const uint8_t *data, size_t len) {
+        _time.gotTimestamp(_emisock.config.heartbeatFrequency, now, data, len);
     }
     
     // Delegates to EmiSendQueue

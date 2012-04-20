@@ -135,7 +135,9 @@
    didReceiveData:(NSData *)data
       fromAddress:(NSData *)address
 withFilterContext:(id)filterContext {
-    ((S *)_sock)->onMessage([NSDate timeIntervalSinceReferenceDate], sock, [sock localPort], address, data);
+    ((S *)_sock)->onMessage([NSDate timeIntervalSinceReferenceDate],
+                            sock, [sock localPort], address,
+                            data, /*offset:*/0, [data length]);
 }
 
 - (void)udpSocket:(GCDAsyncUdpSocket *)sock didNotSendDataWithTag:(long)tag dueToError:(NSError *)error {
