@@ -121,7 +121,8 @@ uv_udp_t *EmiSockDelegate::openSocket(EmiSockDelegate::ES& sock, uint16_t port, 
     }
     
     if (AF_INET == sock.config.address.ss_family) {
-        struct sockaddr_in& addr(*((struct sockaddr_in *)&sock.config.address));
+        struct sockaddr_in addr(*((struct sockaddr_in *)&sock.config.address));
+        addr.sin_port = htons(port);
         
         char buf[100];
         uv_ip4_name(&addr, buf, sizeof(buf));
@@ -132,7 +133,9 @@ uv_udp_t *EmiSockDelegate::openSocket(EmiSockDelegate::ES& sock, uint16_t port, 
         }
     }
     else if (AF_INET6 == sock.config.address.ss_family) {
-        struct sockaddr_in6& addr6(*((struct sockaddr_in6 *)&sock.config.address));
+        struct sockaddr_in6 addr6(*((struct sockaddr_in6 *)&sock.config.address));
+        addr6.sin6_port = htons(port);
+        
         err = uv_udp_bind6(socket, addr6, /*flags:*/0);
         if (0 != err) {
             goto error;
