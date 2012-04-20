@@ -17,6 +17,7 @@ class EmiSocket : public node::ObjectWrap {
     
 private:
     ES _sock;
+    v8::Persistent<v8::Object> _jsHandle;
     
     static v8::Persistent<v8::String> mtuSymbol;
     static v8::Persistent<v8::String> heartbeatFrequencySymbol;
@@ -35,7 +36,7 @@ private:
     inline EmiSocket(const EmiSocket& other);
     inline EmiSocket& operator=(const EmiSocket& other);
     
-    EmiSocket(const EmiSockConfig<EmiSockDelegate::Address>& sc);
+    EmiSocket(v8::Handle<v8::Object> jsHandle, const EmiSockConfig<EmiSockDelegate::Address>& sc);
     virtual ~EmiSocket();
     
     static v8::Handle<v8::Value> SetCallbacks(const v8::Arguments& args);

@@ -235,8 +235,11 @@ void EmiSockDelegate::sendData(uv_udp_t *socket,
 void EmiSockDelegate::gotConnection(EC& conn) {
     HandleScope scope;
     
-    const unsigned argc = 2;
+    Handle<Value> jsHandle(conn.getEmiSock().getDelegate()._es._jsHandle);
+    
+    const unsigned argc = 3;
     Handle<Value> argv[argc] = {
+        jsHandle.IsEmpty() ? Handle<Value>(Undefined()) : jsHandle,
         conn.getEmiSock().getDelegate()._es.handle_,
         conn.getDelegate().getConnection().handle_
     };

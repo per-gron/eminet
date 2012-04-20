@@ -93,10 +93,13 @@ static bool parseAddressFamily(const char* typeStr, int *family) {
     }
 }
 
-EmiSocket::EmiSocket(const EmiSockConfig<EmiSockDelegate::Address>& sc) :
-_sock(sc, EmiSockDelegate(*this)) {}
+EmiSocket::EmiSocket(v8::Handle<v8::Object> jsHandle, const EmiSockConfig<EmiSockDelegate::Address>& sc) :
+_sock(sc, EmiSockDelegate(*this)),
+_jsHandle(v8::Persistent<v8::Object>::New(jsHandle)) {}
 
-EmiSocket::~EmiSocket() {}
+EmiSocket::~EmiSocket() {
+    _jsHandle.Dispose();
+}
 
 void EmiSocket::Init(Handle<Object> target) {
     // Load symbols
@@ -173,18 +176,23 @@ Handle<Value> EmiSocket::New(const Arguments& args) {
     EmiSockConfig<EmiSockDelegate::Address> sc;
     
     size_t numArgs = args.Length();
-    if (0 != numArgs && 1 != numArgs) {
+    if (1 != numArgs && 2 != numArgs) {
         THROW_TYPE_ERROR("Wrong number of arguments");
     }
     
+    if (args[0].IsEmpty() || !args[0]->IsObject()) {
+        THROW_TYPE_ERROR("Wrong arguments");
+    }
+    Local<Object> jsHandle(args[0]->ToObject());
+    
     Local<Object> conf;
     
-    if (numArgs && !args[0].IsEmpty() && !args[0]->IsUndefined()) {
+    if (2 == numArgs && !args[1].IsEmpty() && !args[1]->IsUndefined()) {
         if (!args[0]->IsObject()) {
             THROW_TYPE_ERROR("Wrong arguments");
         }
         
-        conf = args[0]->ToObject();
+        conf = args[1]->ToObject();
     }
         
 #define EXPAND_SYM(sym)                                \
@@ -245,7 +253,7 @@ Handle<Value> EmiSocket::New(const Arguments& args) {
 #undef HAS_PARAM
 #undef X
     
-    EmiSocket* obj = new EmiSocket(sc);
+    EmiSocket* obj = new EmiSocket(jsHandle, sc);
     // We need to Wrap the object now, or failing to desuspend
     // would result in a memory leak. (We rely on Wrap to deallocate
     // obj when it's no longer used.)

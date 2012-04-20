@@ -40,13 +40,10 @@ var lookup6 = function(address, callback) {
     return lookup(address || '::0', 6, callback);
 };
 
-var gotConnection = function(sockHandle, connHandle) {
-    // TODO
-    console.log("!!! Got connection", arguments);
-    
-    var conn = new EmiConnection(false, sockHandle, connHandle);
-    
-    return conn;
+var gotConnection = function(sock, sockHandle, connHandle) {
+  var conn = new EmiConnection(false, sockHandle, connHandle);
+  sock.emit('connection', conn);
+  return conn;
 };
 
 var connectionMessage = function() {
@@ -82,6 +79,7 @@ EmiNetAddon.setCallbacks(
     connectionError
 );
 
+
 var EmiConnection = function(initiator, sockHandle, address, port, cb) {
   if (initiator) {
     var self = this;
@@ -116,18 +114,22 @@ EmiConnection.prototype.close = function() {
   return this._handle.close.apply(this._handle, arguments);
 };
 
-EmiNetAddon.EmiSocket.prototype.connect = function(address, port, cb) {
-  return new EmiConnection(/*initiator:*/true, this, address, port, cb);
-};
 
-exports.open = function(args) {
-  var s = new EmiNetAddon.EmiSocket(args);
+var EmiSocket = function(args) {
+  this._handle = new EmiNetAddon.EmiSocket(this, args);
   
   for (var key in args) {
-    s[key] = args[key];
+    this[key] = args[key];
   }
-  
-  Object.freeze(s);
-  
-  return s;
+};
+
+Util.inherits(EmiSocket, Events.EventEmitter);
+
+EmiSocket.prototype.connect = function(address, port, cb) {
+  return new EmiConnection(/*initiator:*/true, this._handle, address, port, cb);
+};
+
+
+exports.open = function(args) {
+  return new EmiSocket(args);
 };
