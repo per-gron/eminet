@@ -87,6 +87,9 @@ public:
     inline static void releasePersistentData(NSData *data) {
         // Because of ARC, we can leave this as a no-op
     }
+    inline static NSData *castToTemporary(NSData *data) {
+        return data;
+    }
     
     inline static const uint8_t *extractData(NSData *data) {
         return (const uint8_t *)[data bytes];
