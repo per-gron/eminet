@@ -71,13 +71,19 @@ void EmiConnDelegate::invalidate() {
     
     // This allows V8's GC to reclaim the EmiConnection when it's been closed
     // The corresponding Ref is in EmiConnection::New
+    //
+    // TODO Perhaps I should do this on the next uv tick, since this might dealloc
+    // the whole connection, which will probably not end up well.
+    //
+    // TODO What happens when this method is actually called from _conn's destructor?
     _conn.Unref();
 }
 
 void EmiConnDelegate::emiConnMessage(EmiChannelQualifier channelQualifier,
-                                     const unsigned char *data,
+                                     const v8::Local<v8::Object>& data,
                                      size_t offset,
                                      size_t size) {
+    // TODO Pass some useful arguments to the callback
     HandleScope scope;
     
     const unsigned argc = 0;

@@ -33,6 +33,7 @@ Persistent<Function> EmiSocket::connectionMessage;
 Persistent<Function> EmiSocket::connectionLost;
 Persistent<Function> EmiSocket::connectionRegained;
 Persistent<Function> EmiSocket::connectionDisconnect;
+Persistent<Function> EmiSocket::connectionError;
 
 static void parseIp(const char* host,
                     uint16_t port,
@@ -136,7 +137,7 @@ Handle<Value> EmiSocket::SetCallbacks(const Arguments& args) {
     HandleScope scope;
     
     size_t numArgs = args.Length();
-    if (5 != numArgs) {
+    if (6 != numArgs) {
         THROW_TYPE_ERROR("Wrong number of arguments");
     }
     
@@ -144,7 +145,8 @@ Handle<Value> EmiSocket::SetCallbacks(const Arguments& args) {
         !args[1]->IsFunction() ||
         !args[2]->IsFunction() ||
         !args[3]->IsFunction() ||
-        !args[4]->IsFunction()) {
+        !args[4]->IsFunction() ||
+        !args[5]->IsFunction()) {
         THROW_TYPE_ERROR("Wrong arguments");
     }
   
@@ -158,6 +160,7 @@ Handle<Value> EmiSocket::SetCallbacks(const Arguments& args) {
     X(connectionLost, 2);
     X(connectionRegained, 3);
     X(connectionDisconnect, 4);
+    X(connectionError, 5);
     
 #undef X
     
@@ -205,14 +208,14 @@ Handle<Value> EmiSocket::New(const Arguments& args) {
         }                                                        \
     } while (0)
     
-    X(mtu,                               IsNumber,  size_t,          NumberValue);
+    X(mtu,                               IsNumber,  size_t,          Uint32Value);
     X(heartbeatFrequency,                IsNumber,  float,           NumberValue);
     X(tickFrequency,                     IsNumber,  float,           NumberValue);
     X(heartbeatsBeforeConnectionWarning, IsNumber,  float,           NumberValue);
     X(connectionTimeout,                 IsNumber,  EmiTimeInterval, NumberValue);
-    X(senderBufferSize,                  IsNumber,  size_t,          NumberValue);
+    X(senderBufferSize,                  IsNumber,  size_t,          Uint32Value);
     X(acceptConnections,                 IsBoolean, bool,            BooleanValue);
-    X(port,                              IsNumber,  uint16_t,        NumberValue);
+    X(port,                              IsNumber,  uint16_t,        Uint32Value);
     X(fabricatedPacketDropRate,          IsNumber,  EmiTimeInterval, NumberValue);
     
     int family;
@@ -308,7 +311,7 @@ Handle<Value> EmiSocket::DoConnect(const Arguments& args, int family) {
     }
     
     String::Utf8Value host(args[0]);
-    uint16_t          port((uint16_t) args[1]->NumberValue());
+    uint16_t          port(args[1]->Uint32Value());
     Local<Object>     callback(args[2]->ToObject());
     
     

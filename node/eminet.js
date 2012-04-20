@@ -23,6 +23,13 @@ var lookup = function(address, family, callback) {
     return dns.lookup(address, family, callback);
 };
 
+var errnoException = function(errorno, syscall) {
+    var e = new Error(syscall+' '+errorno);
+    e.errno = e.code = errorno;
+    e.syscall = syscall;
+    return e;
+};
+
 var lookup4 = function(address, callback) {
     return lookup(address || '0.0.0.0', 4, callback);
 };
@@ -56,12 +63,18 @@ var connectionDisconnect = function() {
     console.log("!!! Connection disconnect", arguments);
 };
 
+var connectionError = function() {
+    // TODO
+    console.log("!!! Connection error", arguments);
+};
+
 EmiNetAddon.setCallbacks(
     gotConnection,
     connectionMessage,
     connectionLost,
     connectionRegained,
-    connectionDisconnect
+    connectionDisconnect,
+    connectionError
 );
 
 EmiNetAddon.EmiSocket.prototype.connect = function(address, port, cb) {

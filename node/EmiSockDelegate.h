@@ -29,7 +29,8 @@ public:
     typedef EmiAddressCmp              AddressCmp;
     typedef uv_udp_t                   SocketHandle;
     typedef struct sockaddr_storage    Address;
-    typedef v8::Persistent<v8::Object> Data;
+    typedef v8::Local<v8::Object>      TemporaryData;
+    typedef v8::Persistent<v8::Object> PersistentData;
     typedef v8::Persistent<v8::Object> ConnectionOpenedCallbackCookie;
     
     EmiSockDelegate(EmiSocket& es);
@@ -57,8 +58,16 @@ public:
         return EmiError(domain, code);
     }
     
-    inline static void releaseData(v8::Persistent<v8::Object> buf) {
+    static v8::Persistent<v8::Object> makePersistentData(const v8::Local<v8::Object>& data,
+                                                         size_t offset,
+                                                         size_t length);
+    inline static void releasePersistentData(v8::Persistent<v8::Object> buf) {
+        // TODO What happens if you Dispose an empty buffer?
+        // This method has to work in that situation.
         buf.Dispose();
+    }
+    inline static v8::Local<v8::Object> castToTemporary(const v8::Persistent<v8::Object>& data) {
+        return v8::Local<v8::Object>::New(data);
     }
     
     inline static const uint8_t *extractData(v8::Handle<v8::Object> data) {

@@ -5,33 +5,95 @@
 #include "EmiNodeUtil.h"
 #include "EmiSocket.h"
 #include "EmiConnection.h"
+#include "slab_allocator.h"
 
 #include <stdexcept>
+#include <node.h>
+
+#define SLAB_SIZE (1024 * 1024)
 
 using namespace v8;
+
+static node::SlabAllocator slab_allocator(SLAB_SIZE);
+
+static Handle<String> errStr(uv_err_t err) {
+    HandleScope scope;
+    
+    Local<String> errStr;
+    
+    if (err.code == UV_UNKNOWN) {
+        char errno_buf[100];
+        snprintf(errno_buf, 100, "Unknown system errno %d", err.sys_errno_);
+        errStr = String::New(errno_buf);
+    } else {
+        errStr = String::NewSymbol(uv_err_name(err));
+    }
+    
+    return scope.Close(errStr);
+}
+
+inline static uint16_t sockaddrPort(const struct sockaddr_storage& addr) {
+    if (AF_INET6 == addr.ss_family) {
+        struct sockaddr_in6& addr6(*((struct sockaddr_in6 *)&addr));
+        return addr6.sin6_port;
+    }
+    else if (AF_INET == addr.ss_family) {
+        struct sockaddr_in& addr(*((struct sockaddr_in *)&addr));
+        return addr.sin_port;
+    }
+    else {
+        ASSERT(0 && "unexpected address family");
+        abort();
+    }
+}
 
 static void send_cb(uv_udp_send_t* req, int status) {
     free(req);
 }
 
 static uv_buf_t alloc_cb(uv_handle_t* handle, size_t suggested_size) {
-    // See https://github.com/joyent/node/blob/master/src/udp_wrap.cc for a more elaborate implementation
-    
-    static char slab[65536];
-    
-    ASSERT(suggested_size <= sizeof slab);
-    
-    return uv_buf_init(slab, sizeof slab);
+    node::ObjectWrap *wrap = static_cast<node::ObjectWrap *>(handle->data);
+    char *buf = slab_allocator.Allocate(wrap->handle_, suggested_size);
+    return uv_buf_init(buf, suggested_size);
 }
 
-static void recv_cb(uv_udp_t* handle,
+static void recv_cb(uv_udp_t *handle,
                     ssize_t nread,
                     uv_buf_t buf,
-                    struct sockaddr* addr,
+                    struct sockaddr *addr,
                     unsigned flags) {
-    if (flags & UV_UDP_PARTIAL) {
-        // TODO Discard this packet
+    HandleScope scope;
+    
+    printf("!? recv_cb %ld\n", nread);
+    
+    EmiSocket *wrap = reinterpret_cast<EmiSocket *>(handle->data);
+    Local<Object> slab = slab_allocator.Shrink(wrap->handle_,
+                                               buf.base,
+                                               nread < 0 ? 0 : nread);
+    if (nread == 0) return;
+    
+    if (nread < 0) {
+        const unsigned argc = 2;
+        Handle<Value> argv[argc] = {
+            wrap->handle_,
+            errStr(uv_last_error(uv_default_loop()))
+        };
+        EmiSocket::connectionError->Call(Context::GetCurrent()->Global(), argc, argv);
+        return;
     }
+    
+    if (flags & UV_UDP_PARTIAL) {
+        // Discard the packet
+        return;
+    }
+    
+    wrap->getSock().onMessage(EmiConnection::Now(),
+                              handle,
+                              sockaddrPort(*((struct sockaddr_storage *)addr)),
+                              *((struct sockaddr_storage *)addr),
+                              slab,
+                              buf.base - node::Buffer::Data(slab),
+                              nread);
 }
 
 static void close_cb(uv_handle_t* handle) {
@@ -42,6 +104,11 @@ EmiSockDelegate::EmiSockDelegate(EmiSocket& es) : _es(es) {}
 
 void EmiSockDelegate::closeSocket(EmiSockDelegate::ES& sock, uv_udp_t *socket) {
     // This allows V8's GC to reclaim the EmiSocket when no UDP sockets are open
+    //
+    // TODO Perhaps I should do this on the next uv tick, since this might dealloc
+    // the whole socket, which will probably not end up well.
+    //
+    // TODO What happens when this method is actually called from _es's destructor?
     sock.getDelegate()._es.Unref();
     
     uv_close((uv_handle_t *)socket, close_cb);
@@ -83,6 +150,8 @@ uv_udp_t *EmiSockDelegate::openSocket(EmiSockDelegate::ES& sock, uint16_t port, 
     if (0 != err) {
         goto error;
     }
+    
+    socket->data = &sock.getDelegate()._es;
     
     // This prevents V8's GC to reclaim the EmiSocket while UDP sockets are open
     sock.getDelegate()._es.Ref();
@@ -161,7 +230,7 @@ void EmiSockDelegate::sendData(uv_udp_t *socket,
         }
     }
     else {
-        ASSERT(0);
+        ASSERT(0 && "unexpected address family");
     }
 }
 
@@ -201,4 +270,17 @@ void EmiSockDelegate::connectionOpened(ConnectionOpenedCallbackCookie& cookie,
 
 void EmiSockDelegate::panic() {
     throw std::runtime_error("EmiNet internal error");
+}
+
+Persistent<Object> EmiSockDelegate::makePersistentData(const Local<Object>& data,
+                                                       size_t offset,
+                                                       size_t length) {
+    HandleScope scope;
+    
+    // Copy the buffer
+    node::Buffer *buf(node::Buffer::New(node::Buffer::Data(data)+offset,
+                                        length));
+    
+    // Make a new persistent handle (do not just reuse the persistent buf->handle_ handle)
+    return Persistent<Object>::New(buf->handle_);
 }
