@@ -66,17 +66,17 @@ private:
         return arc4random() >> 5;
     }
     
-    int32_t sequenceNumberDifference(EmiMessageHeader *header, bool updateExpectedSequenceNumber) {
-        EmiLogicalConnectionMemo::iterator cur = _otherHostSequenceMemo.find(header->channelQualifier);
+    int32_t sequenceNumberDifference(const EmiMessageHeader& header, bool updateExpectedSequenceNumber) {
+        EmiLogicalConnectionMemo::iterator cur = _otherHostSequenceMemo.find(header.channelQualifier);
         EmiLogicalConnectionMemo::iterator end = _otherHostSequenceMemo.end();
         
         EmiSequenceNumber expectedSequenceNumber = (end == cur ? _otherHostInitialSequenceNumber : (*cur).second);
         
         if (updateExpectedSequenceNumber) {
-            _otherHostSequenceMemo[header->channelQualifier] = emiCyclicMax16(expectedSequenceNumber, header->sequenceNumber+1);
+            _otherHostSequenceMemo[header.channelQualifier] = emiCyclicMax16(expectedSequenceNumber, header.sequenceNumber+1);
         }
         
-        return emiCyclicDifference16Signed(expectedSequenceNumber, header->sequenceNumber);
+        return emiCyclicDifference16Signed(expectedSequenceNumber, header.sequenceNumber);
     }
     
     EmiSequenceNumber sequenceMemoForChannelQualifier(EmiChannelQualifier cq) {
@@ -228,13 +228,13 @@ public:
     
     // Returns true if the packet was processed successfully, false otherwise.
 #define EMI_GOT_INVALID_PACKET(err) do { /* NSLog(err); */ return false; } while (1)
-    bool gotMessage(EmiMessageHeader *header, const TemporaryData &data, size_t offset, bool dontFlush) {
-        EmiChannelQualifier channelQualifier = header->channelQualifier;
+    bool gotMessage(const EmiMessageHeader& header, const TemporaryData &data, size_t offset, bool dontFlush) {
+        EmiChannelQualifier channelQualifier = header.channelQualifier;
         EmiChannelType channelType = EMI_CHANNEL_QUALIFIER_TYPE(channelQualifier);
         
         if (EMI_CHANNEL_TYPE_UNRELIABLE == channelType || EMI_CHANNEL_TYPE_UNRELIABLE_SEQUENCED == channelType) {
-            if (header->flags & EMI_ACK_FLAG) EMI_GOT_INVALID_PACKET("Got unreliable message with ACK flag");
-            if (header->flags & EMI_SACK_FLAG) EMI_GOT_INVALID_PACKET("Got unreliable message with SACK flag");
+            if (header.flags & EMI_ACK_FLAG) EMI_GOT_INVALID_PACKET("Got unreliable message with ACK flag");
+            if (header.flags & EMI_SACK_FLAG) EMI_GOT_INVALID_PACKET("Got unreliable message with SACK flag");
             
             if (EMI_CHANNEL_TYPE_UNRELIABLE_SEQUENCED == channelType &&
                 0 < sequenceNumberDifference(header, true)) {
@@ -242,38 +242,38 @@ public:
                 return false;
             }
             
-            _conn->emitMessage(channelQualifier, data, offset, header->length);
+            _conn->emitMessage(channelQualifier, data, offset, header.length);
         }
         else if (EMI_CHANNEL_TYPE_RELIABLE_SEQUENCED == channelType) {
-            if (header->flags & EMI_SACK_FLAG) EMI_GOT_INVALID_PACKET("SACK does not make sense on RELIABLE_SEQUENCED channels");
+            if (header.flags & EMI_SACK_FLAG) EMI_GOT_INVALID_PACKET("SACK does not make sense on RELIABLE_SEQUENCED channels");
             
-            if (-1 != header->sequenceNumber &&
+            if (-1 != header.sequenceNumber &&
                 0 < sequenceNumberDifference(header, true)) {
                 // The packet arrived out of order; drop it
                 return false;
             }
             
-            _conn->enqueueAck(channelQualifier, header->sequenceNumber);
+            _conn->enqueueAck(channelQualifier, header.sequenceNumber);
             
-            if (header->flags & EMI_ACK_FLAG) {
+            if (header.flags & EMI_ACK_FLAG) {
                 EmiLogicalConnectionMemo::iterator cur = _reliableSequencedBuffer.find(channelQualifier);
                 if (_reliableSequencedBuffer.end() != cur &&
-                    (*cur).second == header->ack) {
-                    _conn->deregisterReliableMessages(channelQualifier, header->ack);
+                    (*cur).second == header.ack) {
+                    _conn->deregisterReliableMessages(channelQualifier, header.ack);
                     _reliableSequencedBuffer.erase(channelQualifier);
                 }
             }
             
             // A packet with zero length indicates that it is just an ACK packet
-            if (0 != header->length) {
-                size_t realOffset = offset + (header->flags & EMI_ACK_FLAG ? 2 : 0);
-                _conn->emitMessage(channelQualifier, data, realOffset, header->length);
+            if (0 != header.length) {
+                size_t realOffset = offset + (header.flags & EMI_ACK_FLAG ? 2 : 0);
+                _conn->emitMessage(channelQualifier, data, realOffset, header.length);
             }
         }
         else if (EMI_CHANNEL_TYPE_RELIABLE_ORDERED == channelType) {
-            if (header->flags & EMI_SACK_FLAG) EMI_GOT_INVALID_PACKET("SACK is not implemented");
+            if (header.flags & EMI_SACK_FLAG) EMI_GOT_INVALID_PACKET("SACK is not implemented");
             
-            bool hasSequenceNumber = -1 != header->sequenceNumber;
+            bool hasSequenceNumber = -1 != header.sequenceNumber;
             int32_t seqDiff = 0;
             if (hasSequenceNumber) {
                 seqDiff = sequenceNumberDifference(header, false);
@@ -284,33 +284,33 @@ public:
                 //
                 // Also, send an ACK only if the received message's sequence number
                 // is what we were expecting or if if it was older than we expected.
-                _conn->enqueueAck(channelQualifier, header->sequenceNumber);
+                _conn->enqueueAck(channelQualifier, header.sequenceNumber);
             }
             
-            if (header->flags & EMI_ACK_FLAG) {
-                _conn->deregisterReliableMessages(channelQualifier, header->ack);
+            if (header.flags & EMI_ACK_FLAG) {
+                _conn->deregisterReliableMessages(channelQualifier, header.ack);
             }
             
             if (hasSequenceNumber && 0 != seqDiff) {
                 if (seqDiff < 0) {
                     // This message is newer than what we were expecting; save it in the input buffer
-                    _conn->bufferMessage(*header, data, offset);
+                    _conn->bufferMessage(header, data, offset);
                 }
                 
                 return false;
             }
             
             if (hasSequenceNumber) {
-                _otherHostSequenceMemo[channelQualifier] = header->sequenceNumber+1;
+                _otherHostSequenceMemo[channelQualifier] = header.sequenceNumber+1;
             }
             
             // A packet with zero length indicates that it is just an ACK packet
-            if (0 != header->length) {
-                _conn->emitMessage(channelQualifier, data, offset, header->length);
+            if (0 != header.length) {
+                _conn->emitMessage(channelQualifier, data, offset, header.length);
                 
                 // The connection might have been closed in the message event handler
                 if (_conn && !dontFlush && hasSequenceNumber) {
-                    _conn->flushBuffer(channelQualifier, header->sequenceNumber);
+                    _conn->flushBuffer(channelQualifier, header.sequenceNumber);
                 }
             }
         }

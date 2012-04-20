@@ -412,7 +412,7 @@ public:
                     }
                     
                     conn->gotTimestamp(now, rawData, len);
-                    conn->gotMessage(header, data, dataOffset+EMI_TIMESTAMP_LENGTH+offset, /*dontFlush:*/false);
+                    conn->gotMessage(*header, data, dataOffset+EMI_TIMESTAMP_LENGTH+offset, /*dontFlush:*/false);
                 }
                 else {
                     err = "Invalid message flags";
