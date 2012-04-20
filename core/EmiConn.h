@@ -29,7 +29,7 @@ class EmiConn {
     typedef EmiSock<SockDelegate, ConnDelegate> ES;
     typedef EmiLogicalConnection<SockDelegate, ConnDelegate> ELC;
     typedef EmiSendQueue<SockDelegate, ConnDelegate> ESQ;
-    typedef EmiReceiverBuffer<TemporaryData, EmiConn> ERB;
+    typedef EmiReceiverBuffer<SockDelegate, EmiConn> ERB;
     
     const uint16_t _inboundPort;
     const Address _address;

@@ -14,8 +14,11 @@
 #include <set>
 #include <vector>
 
-template<class Data, class Receiver>
+template<class SockDelegate, class Receiver>
 class EmiReceiverBuffer {
+    typedef typename SockDelegate::PersistentData PersistentData;
+    typedef typename SockDelegate::TemporaryData  TemporaryData;
+    
 public:
     class Entry {
     private:
@@ -24,11 +27,15 @@ public:
         inline Entry& operator=(const Entry& other);
         
     public:
-        Entry(const Data &data_) : data(data_) {}
+        Entry(const TemporaryData &data_) :
+        data(SockDelegate::makePersistentData(data_)) {}
         Entry() {}
+        ~Entry() {
+            SockDelegate::releasePersistentData(data);
+        }
         
         EmiMessageHeader header;
-        Data data;
+        PersistentData data;
         size_t offset;
     };
     
@@ -106,7 +113,7 @@ public:
         _bufferSize = 0;
     }
     
-    void bufferMessage(EmiMessageHeader *header, const Data& buf, int offset) {
+    void bufferMessage(EmiMessageHeader *header, const TemporaryData& buf, int offset) {
         Entry *entry = new Entry(buf);
         memcpy(&entry->header, header, sizeof(EmiMessageHeader));
         entry->offset = offset;
