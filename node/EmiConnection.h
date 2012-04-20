@@ -15,6 +15,7 @@ class EmiConnection : public node::ObjectWrap {
     
 private:
     EC _conn;
+    v8::Persistent<v8::Object> _jsHandle;
     
     static v8::Persistent<v8::String>   channelQualifierSymbol;
     static v8::Persistent<v8::String>   prioritySymbol;
@@ -25,6 +26,7 @@ private:
     inline EmiConnection& operator=(const EmiConnection& other);
     
     EmiConnection(EmiSocket& es, const struct sockaddr_storage& address, uint16_t inboundPort, bool initiator);
+    virtual ~EmiConnection();
     
 public:
     static EmiTimeInterval Now();
@@ -38,6 +40,11 @@ public:
     
     inline EC& getConn() { return _conn; }
     inline const EC& getConn() const { return _conn; }
+    
+    inline void setJsHandle(v8::Handle<v8::Object> jsHandle) {
+        _jsHandle.Dispose();
+        _jsHandle = v8::Persistent<v8::Object>::New(jsHandle);
+    }
     
 private:
     static v8::Handle<v8::Value> New(const v8::Arguments& args);

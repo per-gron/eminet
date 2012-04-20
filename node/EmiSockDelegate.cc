@@ -247,6 +247,8 @@ void EmiSockDelegate::connectionOpened(ConnectionOpenedCallbackCookie& cookie,
                                        bool error,
                                        EmiDisconnectReason reason,
                                        EC& conn) {
+    HandleScope scope;
+    
     const unsigned argc = 2;
     Handle<Value> argv[argc];
     
@@ -260,7 +262,11 @@ void EmiSockDelegate::connectionOpened(ConnectionOpenedCallbackCookie& cookie,
         argv[1] = conn.getDelegate().getConnection().handle_;
     }
     
-    cookie->CallAsFunction(Context::GetCurrent()->Global(), argc, argv);
+    Local<Value> ret = cookie->CallAsFunction(Context::GetCurrent()->Global(), argc, argv);
+    
+    if (!ret.IsEmpty() && ret->IsObject()) {
+        conn.getDelegate().getConnection().setJsHandle(ret->ToObject());
+    }
     
     cookie.Dispose();
 }

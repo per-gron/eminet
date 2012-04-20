@@ -23,6 +23,10 @@ EmiTimeInterval EmiConnection::Now() {
     return ((double)uv_hrtime())/NSECS_PER_SEC;
 }
 
+EmiConnection::~EmiConnection() {
+    _jsHandle.Dispose();
+}
+
 void EmiConnection::Init(Handle<Object> target) {
     // Load symbols
 #define X(sym) sym##Symbol = Persistent<String>::New(String::NewSymbol(#sym));

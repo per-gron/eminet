@@ -11,7 +11,12 @@ es2.connect('127.0.0.1', 5001, function(err, socket) {
     return console.log("-- Failed to connect", err);
   }
   
+  socket.on('disconnect', function() {
+    console.log("-- Disconnected");
+  })
+  
   console.log("-- Connected", socket);
+  socket.close();
 });
 
 

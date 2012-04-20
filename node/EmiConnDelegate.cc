@@ -162,8 +162,9 @@ void EmiConnDelegate::emiConnRegained() {
 void EmiConnDelegate::emiConnDisconnect(EmiDisconnectReason reason) {
     HandleScope scope;
     
-    const unsigned argc = 2;
+    const unsigned argc = 3;
     Handle<Value> argv[argc] = {
+        _conn._jsHandle.IsEmpty() ? Handle<Value>(Undefined()) : _conn._jsHandle,
         _conn.handle_,
         Integer::New(reason) // TODO Give something better than just the error code
     };

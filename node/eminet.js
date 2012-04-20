@@ -1,6 +1,8 @@
 // CXX=clang node-waf configure build && node test.js
 
-var EmiNetAddon = require('./build/Release/eminet');
+var Util = require('util'),
+    Events = require('events'),
+    EmiNetAddon = require('./build/Release/eminet');
 
 // Lazily loaded
 var Dns = null,
@@ -58,9 +60,8 @@ var connectionRegained = function() {
     console.log("!!! Connection regained", arguments);
 };
 
-var connectionDisconnect = function() {
-    // TODO
-    console.log("!!! Connection disconnect", arguments);
+var connectionDisconnect = function(conn, reason) {
+  conn.emit('disconnect', reason);
 };
 
 var connectionError = function() {
@@ -77,18 +78,37 @@ EmiNetAddon.setCallbacks(
     connectionError
 );
 
-EmiNetAddon.EmiSocket.prototype.connect = function(address, port, cb) {
+var EmiConnection = function(sockHandle, address, port, cb) {
+    var self = this;
+    
     var type = this.type || 'udp4';
     
+    var wrappedCb = function(err, conn) {
+      self._handle = conn;
+      cb(err, conn && self);
+      
+      return self;
+    };
+    
     if ('udp4' == type) {
-        return this.connect4(address, port, cb);
+        sockHandle.connect4(address, port, wrappedCb);
     }
     else if ('udp6' == type) {
-        return this.connect6(address, port, cb);
+        sockHandle.connect6(address, port, wrappedCb);
     }
     else {
         throw new Error('Bad socket type. Valid types: udp4, udp6');
     }
+};
+
+Util.inherits(EmiConnection, Events.EventEmitter);
+
+EmiConnection.prototype.close = function() {
+  return this._handle.close.apply(this._handle, arguments);
+};
+
+EmiNetAddon.EmiSocket.prototype.connect = function(address, port, cb) {
+  return new EmiConnection(this, address, port, cb);
 };
 
 exports.open = function(args) {

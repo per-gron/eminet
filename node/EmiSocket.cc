@@ -306,7 +306,9 @@ Handle<Value> EmiSocket::DoConnect(const Arguments& args, int family) {
         THROW_TYPE_ERROR("Wrong number of arguments");
     }
     
-    if (!args[0]->IsString() || !args[1]->IsNumber() || !args[2]->IsFunction()) {
+    if (!args[0]->IsString() ||
+        !args[1]->IsNumber() ||
+        !args[2]->IsFunction()) {
         THROW_TYPE_ERROR("Wrong arguments");
     }
     
@@ -325,7 +327,12 @@ Handle<Value> EmiSocket::DoConnect(const Arguments& args, int family) {
     
     UNWRAP(es, args);
     EmiError err;
+    
+    // Create a new Persistent handle. EmiSockDelegate::connectionOpened
+    // is responsible for disposing the handle, except for when
+    // EmiSock::connect returns false, in which case we'll do it here.
     Persistent<Object> cookie(Persistent<Object>::New(callback));
+    
     if (!es->_sock.connect(EmiConnection::Now(), address, cookie, err)) {
         // Since the connect operation failed, we need to dispose of the
         // cookie.  (If it succeeds, EmiSockDelegate::connectionOpened
