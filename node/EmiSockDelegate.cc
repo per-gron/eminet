@@ -52,8 +52,7 @@ static void send_cb(uv_udp_send_t* req, int status) {
 }
 
 static uv_buf_t alloc_cb(uv_handle_t* handle, size_t suggested_size) {
-    node::ObjectWrap *wrap = static_cast<node::ObjectWrap *>(handle->data);
-    char *buf = slab_allocator.Allocate(wrap->handle_, suggested_size);
+    char *buf = slab_allocator.Allocate(Context::GetCurrent()->Global(), suggested_size);
     return uv_buf_init(buf, suggested_size);
 }
 
@@ -64,13 +63,14 @@ static void recv_cb(uv_udp_t *handle,
                     unsigned flags) {
     HandleScope scope;
     
-    printf("!? recv_cb %ld\n", nread);
-    
     EmiSocket *wrap = reinterpret_cast<EmiSocket *>(handle->data);
-    Local<Object> slab = slab_allocator.Shrink(wrap->handle_,
+    
+    Local<Object> slab = slab_allocator.Shrink(Context::GetCurrent()->Global(),
                                                buf.base,
                                                nread < 0 ? 0 : nread);
     if (nread == 0) return;
+    
+    printf("!? recv_cb %p %ld\n", wrap, nread);
     
     if (nread < 0) {
         const unsigned argc = 2;
