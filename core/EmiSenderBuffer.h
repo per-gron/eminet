@@ -52,10 +52,12 @@ class EmiSenderBuffer {
         }
     };
     
+    typedef std::vector<EmiMessage<SockDelegate> *> EmiMessageVector;
     typedef std::set<EmiMessage<SockDelegate> *, EmiSenderBufferNextMsgTreeCmp> EmiSenderBufferNextMsgTree;
     typedef std::set<EmiMessage<SockDelegate> *, EmiSenderBufferSendBufferCmp>  EmiSenderBufferSendBuffer;
-    typedef typename std::set<EmiMessage<SockDelegate> *, EmiSenderBufferNextMsgTreeCmp>::iterator EmiSenderBufferNextMsgTreeIter;
-    typedef typename std::set<EmiMessage<SockDelegate> *, EmiSenderBufferSendBufferCmp>::iterator  EmiSenderBufferSendBufferIter;
+    typedef typename EmiMessageVector::iterator           EmiMessageVectorIter;
+    typedef typename EmiSenderBufferNextMsgTree::iterator EmiSenderBufferNextMsgTreeIter;
+    typedef typename EmiSenderBufferSendBuffer::iterator  EmiSenderBufferSendBufferIter;
     
     // Buffer max size
     size_t _size;
@@ -135,7 +137,7 @@ public:
         
         if (iter == _sendBuffer.end()) return;
         
-        std::vector<EmiMessage<SockDelegate> *> toBeRemoved;
+        EmiMessageVector toBeRemoved;
         do {
             EmiMessage<SockDelegate> *msg = *iter;
             
@@ -161,16 +163,15 @@ public:
         
         bool wasInReliableTree = false;
         
-        typename std::vector<EmiMessage<SockDelegate> *>::iterator viter = toBeRemoved.begin();
-        typename std::vector<EmiMessage<SockDelegate> *>::iterator vend = toBeRemoved.end();
+        EmiMessageVectorIter viter = toBeRemoved.begin();
+        EmiMessageVectorIter vend = toBeRemoved.end();
         while (viter != vend) {
             EmiMessage<SockDelegate> *msg = *viter;
             
             bool wasRemovedFromSendBuffer = (0 != _sendBuffer.erase(msg));
-            if (wasRemovedFromSendBuffer) {
-                // wasRemovedFromSendBuffer should always be true, but we check just in case
-                _sendBufferSize -= msg->approximateSize();
-            }
+            ASSERT(wasRemovedFromSendBuffer);
+            
+            _sendBufferSize -= msg->approximateSize();
             
             bool wasRemovedFromNextMsgTree = 0 != _nextMsgTree.erase(msg);
             wasInReliableTree = wasRemovedFromNextMsgTree || wasInReliableTree;
@@ -182,16 +183,18 @@ public:
         
         if (wasInReliableTree) {
             EmiMessage<SockDelegate> *newMsg = messageSearch(&msgStub);
-            if (NULL != newMsg) _nextMsgTree.insert(newMsg);
+            if (newMsg) _nextMsgTree.insert(newMsg);
         }
     }
     
     bool empty() const {
         return _nextMsgTree.empty();
     }
-    void eachCurrentMessage(EmiTimeInterval now, EmiTimeInterval rto, EmiSenderBufferIteratorBlock block) const {
+    void eachCurrentMessage(EmiTimeInterval now, EmiTimeInterval rto, EmiSenderBufferIteratorBlock block) {
         EmiSenderBufferNextMsgTreeIter iter = _nextMsgTree.begin();
         EmiSenderBufferNextMsgTreeIter end = _nextMsgTree.end();
+        
+        EmiMessageVector toBePushedToTheEnd;
         
         while (iter != end) {
             EmiMessage<SockDelegate> *msg = *iter;
@@ -201,10 +204,33 @@ public:
                 break;
             }
             
-            msg->registrationTime = now;
+            // Since we're iterating _nextMsgTree, we
+            // can't modify it here. Do it later.
+            toBePushedToTheEnd.push_back(msg);
+            
             block(msg);
             
             ++iter;
+        }
+        
+        EmiMessageVectorIter viter = toBePushedToTheEnd.begin();
+        EmiMessageVectorIter vend  = toBePushedToTheEnd.end();
+        while (viter != vend) {
+            EmiMessage<SockDelegate> *msg = *viter;
+            
+            // We want to update msg->registrationTime, but because
+            // _nextMsgTree's ordering depends on it, we can't change
+            // it while the object is in _nextMsgTree
+            
+            bool wasRemovedFromNextMsgTree = 0 != _nextMsgTree.erase(msg);
+            ASSERT(wasRemovedFromNextMsgTree);
+            
+            msg->registrationTime = now;
+            
+            bool wasInserted = _nextMsgTree.insert(msg).second;
+            ASSERT(wasInserted);
+            
+            ++viter;
         }
     }
 };

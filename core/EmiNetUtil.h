@@ -23,4 +23,19 @@ inline int32_t emiCyclicMax16(int32_t a, int32_t b) {
     return res > 0 ? a : b;
 }
 
+/* Have our own assert, so we are sure it does not get optimized away in
+ * a release build.
+ */
+#define ASSERT(expr)                                      \
+ do {                                                     \
+  if (!(expr)) {                                          \
+    fprintf(stderr,                                       \
+            "Assertion failed in %s on line %d: %s\n",    \
+            __FILE__,                                     \
+            __LINE__,                                     \
+            #expr);                                       \
+    abort();                                              \
+  }                                                       \
+ } while (0)
+
 #endif
