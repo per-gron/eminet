@@ -152,8 +152,9 @@ public:
     }
     void resetHeartbeatTimeout() {
         _receivedDataSinceLastHeartbeat = false;
+        
+        // Don't send heartbeats until we've got a response from the remote host
         if (!isOpening()) {
-            // Don't send heartbeats until we've got a response from the remote host
             _delegate.scheduleHeartbeatTimeout(1/_emisock.config.heartbeatFrequency);
         }
     }

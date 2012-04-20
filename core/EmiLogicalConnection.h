@@ -51,6 +51,15 @@ private:
     void invokeSynRstCallback(bool error, EmiDisconnectReason reason){
         if (_sendingSyn) {
             _sendingSyn = false;
+            
+            // For initiating connections (this connection is one, otherwise
+            // this method would not get called), the heartbeat timer doesn't
+            // get set immediately, to avoid sending heartbeats to hosts that
+            // have not yet replied and might not even exist.
+            //
+            // Because of this, we need to set the heartbeat timer here.
+            _conn->resetHeartbeatTimeout();
+            
             SockDelegate::connectionOpened(_connectionOpenedCallbackCookie, error, reason, *_conn);
         }
     }
