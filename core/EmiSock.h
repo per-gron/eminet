@@ -46,8 +46,7 @@ public:
 template<class SockDelegate, class ConnDelegate>
 class EmiSock {
     typedef typename SockDelegate::Error            Error;
-    typedef typename SockDelegate::SendData         SendData;
-    typedef typename SockDelegate::RecvData         RecvData;
+    typedef typename SockDelegate::TemporaryData    TemporaryData;
     typedef typename SockDelegate::Address          Address;
     typedef typename SockDelegate::AddressCmp       AddressCmp;
     typedef typename SockDelegate::SocketHandle     SocketHandle;
@@ -260,7 +259,7 @@ public:
         return true;
     }
     
-    void onMessage(EmiTimeInterval now, SocketHandle *sock, uint16_t inboundPort, const Address& address, const RecvData& data) {
+    void onMessage(EmiTimeInterval now, SocketHandle *sock, uint16_t inboundPort, const Address& address, const TemporaryData& data) {
         __block const char *err = NULL;
         
         size_t len = SockDelegate::extractLength(data);

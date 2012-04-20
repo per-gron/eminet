@@ -34,8 +34,25 @@ public:
     typedef EmiAddressCmp AddressCmp;
     typedef GCDAsyncUdpSocket SocketHandle;
     typedef NSData* Address;
-    typedef NSData* SendData;
-    typedef NSData* RecvData;
+    // PersistentData is data that is assumed to be
+    // stored until it is explicitly released with the
+    // releasePersistentData method. PersistentData must
+    // have indefinite extent; it must not be deallocated
+    // until releasePersistentData is called on it.
+    //
+    // PersistentData objects must be copyable and
+    // assignable, and these operations must not interfere
+    // with the lifetime of the buffer.
+    typedef NSData* PersistentData;
+    // TemporaryData is data that is assumed to be
+    // released after the duration of the call; it can
+    // be stored on the stack, for instance. EmiNet core
+    // will not explicitly release TempraryData objects.
+    //
+    // TemporaryData objects must be copyable and
+    // assignable, and these operations must not interfere
+    // with the lifetime of the buffer.
+    typedef NSData* TemporaryData;
     typedef void (^__strong ConnectionOpenedCallbackCookie)(NSError *err, EmiConnection *connection);
     
     EmiSockDelegate(EmiSocket *socket);
@@ -61,7 +78,7 @@ public:
                                userInfo:nil];
     }
     
-    inline static void releaseSendData(NSData *data) {
+    inline static void releasePersistentData(NSData *data) {
         // Because of ARC, we can leave this as a no-op
     }
     

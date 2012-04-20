@@ -18,6 +18,11 @@ template<class Data, class Receiver>
 class EmiReceiverBuffer {
 public:
     class Entry {
+    private:
+        // Private copy constructor and assignment operator
+        inline Entry(const Entry& other);
+        inline Entry& operator=(const Entry& other);
+        
     public:
         Entry(const Data &data_) : data(data_) {}
         Entry() {}

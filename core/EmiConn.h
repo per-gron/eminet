@@ -20,16 +20,16 @@
 
 template<class SockDelegate, class ConnDelegate>
 class EmiConn {
-    typedef typename SockDelegate::Error    Error;
-    typedef typename SockDelegate::SendData SendData;
-    typedef typename SockDelegate::RecvData RecvData;
-    typedef typename SockDelegate::Address  Address;
+    typedef typename SockDelegate::Error          Error;
+    typedef typename SockDelegate::PersistentData PersistentData;
+    typedef typename SockDelegate::TemporaryData  TemporaryData;
+    typedef typename SockDelegate::Address        Address;
     typedef typename SockDelegate::ConnectionOpenedCallbackCookie ConnectionOpenedCallbackCookie;
     
     typedef EmiSock<SockDelegate, ConnDelegate> ES;
     typedef EmiLogicalConnection<SockDelegate, ConnDelegate> ELC;
     typedef EmiSendQueue<SockDelegate, ConnDelegate> ESQ;
-    typedef EmiReceiverBuffer<RecvData, EmiConn> ERB;
+    typedef EmiReceiverBuffer<TemporaryData, EmiConn> ERB;
     
     const uint16_t _inboundPort;
     const Address _address;
@@ -222,7 +222,7 @@ public:
             ensureTickTimeout();
         }
     }
-    void gotTimestamp(EmiTimeInterval now, const RecvData& data) {
+    void gotTimestamp(EmiTimeInterval now, const TemporaryData& data) {
         _time.gotTimestamp(_emisock.config.heartbeatFrequency, now,
                            SockDelegate::extractData(data), SockDelegate::extractLength(data));
     }
@@ -244,7 +244,7 @@ public:
     }
     
     /// Delegates to EmiReceiverBuffer
-    void bufferMessage(EmiMessageHeader *header, const RecvData& buf, size_t offset) {
+    void bufferMessage(EmiMessageHeader *header, const TemporaryData& buf, size_t offset) {
         _receiverBuffer.bufferMessage(header, buf, offset);
     }
     void flushBuffer(EmiChannelQualifier channelQualifier, EmiSequenceNumber sequenceNumber) {
@@ -315,7 +315,7 @@ public:
         return _conn && _conn->gotSynRst(otherHostInitialSequenceNumber);
     }
     // Delegates to EmiLogicalConnection
-    bool gotMessage(EmiMessageHeader *header, const RecvData& data, size_t offset, bool dontFlush) {
+    bool gotMessage(EmiMessageHeader *header, const TemporaryData& data, size_t offset, bool dontFlush) {
         if (!_conn) {
             return false;
         }
@@ -330,7 +330,7 @@ public:
     void emitDisconnect(EmiDisconnectReason reason) {
         _delegate.emiConnDisconnect(reason);
     }
-    void emitMessage(EmiChannelQualifier channelQualifier, const RecvData& data, size_t offset, size_t size) {
+    void emitMessage(EmiChannelQualifier channelQualifier, const TemporaryData& data, size_t offset, size_t size) {
         _delegate.emiConnMessage(channelQualifier, data, offset, size);
     }
     
@@ -364,11 +364,12 @@ public:
     //
     // This method assumes ownership over the data parameter, and will release it
     // with SockDelegate::releaseData when it's done with it. The buffer must not
-    // be modified until after SockDelegate::releaseData has been called on it.
-    bool send(EmiTimeInterval now, const SendData& data, EmiChannelQualifier channelQualifier, EmiPriority priority, Error& err) {
+    // be modified or released until after SockDelegate::releasePersistentData has
+    // been called on it.
+    bool send(EmiTimeInterval now, const PersistentData& data, EmiChannelQualifier channelQualifier, EmiPriority priority, Error& err) {
         if (!_conn || _conn->isClosing()) {
             err = SockDelegate::makeError("com.emilir.eminet.closed", 0);
-            SockDelegate::releaseSendData(data);
+            SockDelegate::releasePersistentData(data);
             return false;
         }
         else {
