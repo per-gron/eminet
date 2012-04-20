@@ -78,11 +78,11 @@ public:
                                userInfo:nil];
     }
     
-    inline static NSData *makePersistentData(NSData *data) {
+    inline static NSData *makePersistentData(NSData *data, NSUInteger offset, NSUInteger length) {
         // The Objective-C EmiNet bindings don't make any distinction
         // between temporary and persistent buffers, because all buffers
         // are persistent.
-        return data;
+        return [data subdataWithRange:NSMakeRange(offset, length)];
     }
     inline static void releasePersistentData(NSData *data) {
         // Because of ARC, we can leave this as a no-op

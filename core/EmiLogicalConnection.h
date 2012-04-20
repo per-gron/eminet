@@ -294,7 +294,7 @@ public:
             if (hasSequenceNumber && 0 != seqDiff) {
                 if (seqDiff < 0) {
                     // This message is newer than what we were expecting; save it in the input buffer
-                    _conn->bufferMessage(header, data, offset);
+                    _conn->bufferMessage(header, data, offset, header.length);
                 }
                 
                 return false;
