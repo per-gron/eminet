@@ -263,9 +263,7 @@ Handle<Value> EmiSocket::New(const Arguments& args) {
     if (!obj->_sock.desuspend(err)) {
         delete obj;
         
-        // TODO Add the information in err to the exception that is thrown
-        ThrowException(Exception::Error(String::New("Failed to open socket")));
-        return scope.Close(Undefined());
+        return err.raise("Failed to open socket");
     }
     
     return args.This();
@@ -296,9 +294,7 @@ Handle<Value> EmiSocket::Desuspend(const Arguments& args) {
     UNWRAP(es, args);
     EmiError err;
     if (!es->_sock.desuspend(err)) {
-        // TODO Add the information in err to the exception that is thrown
-        ThrowException(Exception::Error(String::New("Failed to desuspend socket")));
-        return scope.Close(Undefined());
+        return err.raise("Failed to desuspend socket");
     }
     
     return scope.Close(Undefined());
@@ -348,9 +344,7 @@ Handle<Value> EmiSocket::DoConnect(const Arguments& args, int family) {
         cookie.Dispose();
         cookie.Clear();
         
-        // TODO Add the information in err to the exception that is thrown
-        ThrowException(Exception::Error(String::New("Failed to connect")));
-        return scope.Close(Undefined());
+        return err.raise("Failed to connect");
     }
     
     return scope.Close(Undefined());

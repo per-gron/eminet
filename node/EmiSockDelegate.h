@@ -62,8 +62,6 @@ public:
                                                          size_t offset,
                                                          size_t length);
     inline static void releasePersistentData(v8::Persistent<v8::Object> buf) {
-        // TODO What happens if you Dispose an empty buffer?
-        // This method has to work in that situation.
         buf.Dispose();
     }
     inline static v8::Local<v8::Object> castToTemporary(const v8::Persistent<v8::Object>& data) {

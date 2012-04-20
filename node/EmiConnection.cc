@@ -125,9 +125,7 @@ Handle<Value> EmiConnection::Close(const Arguments& args) {
     
     EmiError err;
     if (!ec->_conn.close(Now(), err)) {
-        // TODO Add the information in err to the exception that is thrown
-        ThrowException(Exception::Error(String::New("Failed to close connection")));
-        return scope.Close(Undefined());
+        return err.raise("Failed to close connection");
     }
     
     return scope.Close(Undefined());
@@ -223,9 +221,7 @@ Handle<Value> EmiConnection::Send(const Arguments& args) {
                         channelQualifier,
                         priority,
                         err)) {
-        // TODO Add the information in err to the exception that is thrown
-        ThrowException(Exception::Error(String::New("Failed to send message")));
-        return scope.Close(Undefined());
+        return err.raise("Failed to send message");
     }
     
     return scope.Close(Undefined());

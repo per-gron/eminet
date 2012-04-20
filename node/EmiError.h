@@ -2,16 +2,20 @@
 #define emilir_EmiError_h
 
 #include <string>
+#include <cstring>
+#include <node.h>
 
 class EmiError {
 public:
     std::string domain;
     int32_t code;
     
-    EmiError() : domain(""), code(0) {}
+    EmiError();
+    EmiError(const std::string& domain_, int32_t code_);
     
-    EmiError(const std::string& domain_, int32_t code_) :
-    code(code_), domain(domain_) {}
+    void format(const char *desc, char *buf, size_t bufSize);
+    
+    v8::Handle<v8::Value> raise(const char *desc);
 };
 
 #endif
