@@ -68,7 +68,7 @@ public:
     inline void gotReceiverBufferMessage(typename ERB::Entry *entry) {
         if (!_conn) return;
         
-        if (!_conn->gotMessage(entry->header, SockDelegate::castToTemporary(entry->data), entry->offset, true /* dontFlush */)) {
+        if (!_conn->gotMessage(entry->header, SockDelegate::castToTemporary(entry->data), 0, /*dontFlush:*/true)) {
             // gotMessage should only return false if the message arrived out of order or
             // some other similar error occured, but that should not happen because this
             // callback should only be called by the receiver buffer for messages that are

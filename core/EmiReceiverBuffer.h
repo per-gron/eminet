@@ -27,10 +27,9 @@ public:
         inline Entry& operator=(const Entry& other);
         
     public:
-        Entry(const EmiMessageHeader& header_, const TemporaryData &data_, size_t offset_, size_t length) :
+        Entry(const EmiMessageHeader& header_, const TemporaryData &data_, size_t offset, size_t length) :
         header(header_),
-        data(SockDelegate::makePersistentData(data_, offset_, length)),
-        offset(offset_) {}
+        data(SockDelegate::makePersistentData(data_, offset, length)) {}
         Entry() {}
         ~Entry() {
             SockDelegate::releasePersistentData(data);
@@ -38,7 +37,6 @@ public:
         
         EmiMessageHeader header;
         PersistentData data;
-        size_t offset;
     };
     
 protected:
