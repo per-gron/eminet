@@ -17,11 +17,11 @@
 
 struct EmiMessageHeader;
 
-typedef bool (^EmiParseMessageBlock)(EmiMessageHeader *header, size_t dataOffset);
-
 // A message header in a computation friendly format (the actual wire
 // format is more condensed)
 struct EmiMessageHeader {
+    typedef bool (^EmiParseMessageBlock)(const EmiMessageHeader& header, size_t dataOffset);
+    
     EmiFlags flags;
     EmiChannelQualifier channelQualifier;
     // This is int32_t and not EmiChannelQualifier because it has to be capable of
@@ -88,7 +88,7 @@ struct EmiMessageHeader {
             offset += header.headerLength+header.length;
             if (header.flags & EMI_SACK_FLAG) return false;
             
-            if (!block(&header, dataOffset)) {
+            if (!block(header, dataOffset)) {
                 return false;
             }
         }

@@ -287,12 +287,12 @@ public:
             goto error;
         }
         else {
-            EmiParseMessageBlock block =
-            ^ bool (EmiMessageHeader *header, size_t dataOffset) {
-                bool synFlag  = header->flags & EMI_SYN_FLAG;
-                bool rstFlag  = header->flags & EMI_RST_FLAG;
-                bool ackFlag  = header->flags & EMI_ACK_FLAG;
-                bool sackFlag = header->flags & EMI_SACK_FLAG;
+            EmiMessageHeader::EmiParseMessageBlock block =
+            ^ bool (const EmiMessageHeader& header, size_t dataOffset) {
+                bool synFlag  = header.flags & EMI_SYN_FLAG;
+                bool rstFlag  = header.flags & EMI_RST_FLAG;
+                bool ackFlag  = header.flags & EMI_ACK_FLAG;
+                bool sackFlag = header.flags & EMI_SACK_FLAG;
                 
                 if (synFlag && !rstFlag) {
                     // This is an initiate connection message
@@ -301,7 +301,7 @@ public:
                         err = "Got SYN but this socket doesn't accept incoming connections";
                         return false;
                     }
-                    if (0 != header->length) {
+                    if (0 != header.length) {
                         err = "Got SYN message with message length != 0";
                         return false;
                     }
@@ -314,7 +314,7 @@ public:
                         return false;
                     }
                     
-                    if (conn && conn->isOpen() && conn->getOtherHostInitialSequenceNumber() != header->sequenceNumber) {
+                    if (conn && conn->isOpen() && conn->getOtherHostInitialSequenceNumber() != header.sequenceNumber) {
                         // The connection is already open, and we get a SYN message with a
                         // different initial sequence number. This probably means that the
                         // other host has forgot about the connection we have open. Force
@@ -330,7 +330,7 @@ public:
                     
                     conn->gotTimestamp(now, rawData, len);
                     
-                    if (conn->opened(now, header->sequenceNumber)) {
+                    if (conn->opened(now, header.sequenceNumber)) {
                         _delegate.gotConnection(*conn);
                     }
                 }
@@ -375,7 +375,7 @@ public:
                         }
                         
                         conn->gotTimestamp(now, rawData, len);
-                        if (!conn->gotSynRst(header->sequenceNumber)) {
+                        if (!conn->gotSynRst(header.sequenceNumber)) {
                             err = "Failed to process SYN-RST message";
                             return false;
                         }
@@ -412,7 +412,7 @@ public:
                     }
                     
                     conn->gotTimestamp(now, rawData, len);
-                    conn->gotMessage(*header, data, dataOffset+EMI_TIMESTAMP_LENGTH+offset, /*dontFlush:*/false);
+                    conn->gotMessage(header, data, dataOffset+EMI_TIMESTAMP_LENGTH+offset, /*dontFlush:*/false);
                 }
                 else {
                     err = "Invalid message flags";
