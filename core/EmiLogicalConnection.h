@@ -23,8 +23,9 @@ typedef std::map<EmiChannelQualifier, EmiSequenceNumber> EmiLogicalConnectionMem
 
 template<class SockDelegate, class ConnDelegate>
 class EmiLogicalConnection {
-    typedef typename SockDelegate::Error Error;
-    typedef typename SockDelegate::Data  Data;
+    typedef typename SockDelegate::Error    Error;
+    typedef typename SockDelegate::SendData SendData;
+    typedef typename SockDelegate::RecvData RecvData;
     typedef typename SockDelegate::ConnectionOpenedCallbackCookie ConnectionOpenedCallbackCookie;
     typedef EmiConn<SockDelegate, ConnDelegate> EC;
     
@@ -84,7 +85,7 @@ private:
     }
     
     // The caller is responsible for releasing the returned object
-    EmiMessage<SockDelegate> *makeDataMessage(EmiChannelQualifier cq, const Data& data, EmiPriority priority, EmiTimeInterval now) {
+    EmiMessage<SockDelegate> *makeDataMessage(EmiChannelQualifier cq, const SendData& data, EmiPriority priority, EmiTimeInterval now) {
         EmiMessage<SockDelegate> *msg = new EmiMessage<SockDelegate>(data);
         msg->registrationTime = now;
         msg->channelQualifier = cq;
@@ -227,7 +228,7 @@ public:
     
     // Returns true if the packet was processed successfully, false otherwise.
 #define EMI_GOT_INVALID_PACKET(err) do { /* NSLog(err); */ return false; } while (1)
-    bool gotMessage(EmiMessageHeader *header, const Data &data, size_t offset, bool dontFlush) {
+    bool gotMessage(EmiMessageHeader *header, const RecvData &data, size_t offset, bool dontFlush) {
         EmiChannelQualifier channelQualifier = header->channelQualifier;
         EmiChannelType channelType = EMI_CHANNEL_QUALIFIER_TYPE(channelQualifier);
         
@@ -348,7 +349,7 @@ public:
         return !error;
     }
     // Returns false if the sender buffer was full and the message couldn't be sent
-    bool send(const Data& data, EmiTimeInterval now, EmiChannelQualifier channelQualifier, EmiPriority priority, Error& err) {
+    bool send(const SendData& data, EmiTimeInterval now, EmiChannelQualifier channelQualifier, EmiPriority priority, Error& err) {
         bool error = false;
         
         // This has to be called before makeDataMessage

@@ -17,7 +17,7 @@ private:
     inline EmiMessage(const EmiMessage& other);
     inline EmiMessage& operator=(const EmiMessage& other);
     
-    typedef typename SockDelegate::Data Data;
+    typedef typename SockDelegate::SendData SendData;
     
     size_t _refCount;
     
@@ -31,7 +31,7 @@ private:
     }
     
 public:
-    explicit EmiMessage(Data data_) : data(data_) {
+    explicit EmiMessage(SendData data_) : data(data_) {
         commonInit();
     }
     
@@ -40,7 +40,7 @@ public:
     }
     
     ~EmiMessage() {
-        SockDelegate::releaseData(data);
+        SockDelegate::releaseSendData(data);
     }
     
     inline void retain() {
@@ -65,7 +65,7 @@ public:
     EmiSequenceNumber sequenceNumber;
     EmiFlags flags;
     EmiPriority priority;
-    const Data data;
+    const SendData data;
 };
 
 #endif

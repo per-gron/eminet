@@ -34,7 +34,8 @@ public:
     typedef EmiAddressCmp AddressCmp;
     typedef GCDAsyncUdpSocket SocketHandle;
     typedef NSData* Address;
-    typedef NSData* Data;
+    typedef NSData* SendData;
+    typedef NSData* RecvData;
     typedef void (^__strong ConnectionOpenedCallbackCookie)(NSError *err, EmiConnection *connection);
     
     EmiSockDelegate(EmiSocket *socket);
@@ -60,7 +61,7 @@ public:
                                userInfo:nil];
     }
     
-    inline static void releaseData(NSData *data) {
+    inline static void releaseSendData(NSData *data) {
         // Because of ARC, we can leave this as a no-op
     }
     

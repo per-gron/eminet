@@ -26,7 +26,7 @@ typedef void (^SendSynRstAckPacketCallback)(uint8_t *buf, size_t size);
 
 template<class SockDelegate, class ConnDelegate>
 class EmiSendQueue {
-    typedef typename SockDelegate::Data             Data;
+    typedef typename SockDelegate::SendData SendData;
     
     typedef std::vector<EmiMessage<SockDelegate> *> EmiSendQueueVector;
     typedef typename std::vector<EmiMessage<SockDelegate> *>::iterator EmiSendQueueVectorIter;
@@ -79,7 +79,7 @@ private:
                            EmiSequenceNumber ack,
                            int32_t channelQualifier,
                            EmiSequenceNumber sequenceNumber,
-                           const Data& data,
+                           const SendData& data,
                            EmiFlags flags) {
         const size_t msgLength = SockDelegate::extractLength(data);
         size_t pos = offset;
@@ -164,7 +164,7 @@ public:
                                       0, /* ack */
                                       -1, /* channelQualifier */
                                       0, /* sequenceNumber */
-                                      Data(), /* data */
+                                      SendData(), /* data */
                                       EMI_SYN_FLAG | EMI_RST_FLAG | EMI_ACK_FLAG);
         
         callback(buf, tlen+plen);
@@ -224,7 +224,7 @@ public:
                                                   sn, /* ack */
                                                   cq, /* channelQualifier */
                                                   0, /* sequenceNumber */
-                                                  Data(), /* data */
+                                                  SendData(), /* data */
                                                   0 /* flags */);
                 }
                 
