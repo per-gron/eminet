@@ -89,7 +89,6 @@ static void recv_cb(uv_udp_t *handle,
     
     wrap->getSock().onMessage(EmiConnection::Now(),
                               handle,
-                              sockaddrPort(*((struct sockaddr_storage *)addr)),
                               *((struct sockaddr_storage *)addr),
                               slab,
                               buf.base - node::Buffer::Data(slab),
@@ -164,21 +163,22 @@ error:
 }
 
 uint16_t EmiSockDelegate::extractLocalPort(uv_udp_t *socket) {
-    Address address;
+    struct sockaddr_storage address;
     int len(sizeof(address));
     
     uv_udp_getsockname(socket, (struct sockaddr *)&address, &len);
     
-    if (sizeof(sockaddr_in) == len) {
+    if (AF_INET == address.ss_family) {
         sockaddr_in *addr = (sockaddr_in *)&address;
         return addr->sin_port;
     }
-    else if (sizeof(sockaddr_in6) == len) {
+    else if (AF_INET6 == address.ss_family) {
         sockaddr_in6 *addr = (sockaddr_in6 *)&address;
         return addr->sin6_port;
     }
     else {
-        ASSERT(0 && "Invalid sockaddr size");
+        ASSERT(0 && "unexpected address family");
+        abort();
     }
 }
 

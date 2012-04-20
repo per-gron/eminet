@@ -261,12 +261,13 @@ public:
     
     void onMessage(EmiTimeInterval now,
                    SocketHandle *sock,
-                   uint16_t inboundPort,
                    const Address& address,
                    const TemporaryData& data,
                    size_t offset,
                    size_t len) {
         __block const char *err = NULL;
+        
+        uint16_t inboundPort(SockDelegate::extractLocalPort(sock));
         
         const uint8_t *rawData(SockDelegate::extractData(data)+offset);
         

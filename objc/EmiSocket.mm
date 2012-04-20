@@ -136,7 +136,7 @@
       fromAddress:(NSData *)address
 withFilterContext:(id)filterContext {
     ((S *)_sock)->onMessage([NSDate timeIntervalSinceReferenceDate],
-                            sock, [sock localPort], address,
+                            sock, address,
                             data, /*offset:*/0, [data length]);
 }
 
