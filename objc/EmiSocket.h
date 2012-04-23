@@ -54,6 +54,7 @@ typedef void (^EmiConnectionOpenedBlock)(NSError *err, EmiConnection *connection
 @property (nonatomic, readonly, assign) NSUInteger receiverBufferSize;
 @property (nonatomic, readonly, assign) NSUInteger senderBufferSize;
 @property (nonatomic, readonly, assign) BOOL acceptConnections;
+@property (nonatomic, readonly, assign) NSUInteger rateLimit;
 @property (nonatomic, readonly, assign) uint16_t serverPort;
 @property (nonatomic, readonly, assign) NSUInteger MTU;
 @property (nonatomic, readonly, assign) float tickFrequency;

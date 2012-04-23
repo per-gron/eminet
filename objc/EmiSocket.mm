@@ -197,6 +197,10 @@ withFilterContext:(id)filterContext {
     return ((S *)_sock)->config.acceptConnections;
 }
 
+- (NSUInteger)rateLimit {
+    return ((S *)_sock)->config.rateLimit;
+}
+
 - (uint16_t)serverPort {
     return ((S *)_sock)->config.port;
 }

@@ -30,6 +30,7 @@ public:
     receiverBufferSize(EMI_DEFAULT_RECEIVER_BUFFER_SIZE),
     senderBufferSize(EMI_DEFAULT_SENDER_BUFFER_SIZE),
     acceptConnections(false),
+    rateLimit(0),
     port(0),
     address(),
     fabricatedPacketDropRate(0) {}
@@ -42,6 +43,11 @@ public:
     size_t receiverBufferSize;
     size_t senderBufferSize;
     bool acceptConnections;
+    // The approximate maximum number of bytes that will be allowed
+    // per connection. Packets beyond this limit will be dropped. The
+    // current implementation allows at most 2*rateLimit bytes any
+    // given second.
+    size_t rateLimit;
     uint16_t port;
     Address address;
     float fabricatedPacketDropRate;
