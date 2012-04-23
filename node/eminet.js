@@ -157,6 +157,27 @@ exports.open = function(args) {
   return new EmiSocket(args);
 };
 
+exports.channelQualifier = function(type, number) {
+  number = number || 0;
+  
+  if (!_.isNumber(type) || type < 0 || type > 3) {
+    throw new Error("Invalid channel type");
+  }
+  if (!_.isNumber(number) || number < 0 || number > 31) {
+    throw new Error("Invalid channel number");
+  }
+  
+  return number | (type << 6);
+};
+
+exports.channelQualifierType = function(cq) {
+  return (cq & 0xc0) >> 6;
+};
+
+exports.isValidChannelQualifier = function(cq) {
+  return 0 == (cq & 0x20);
+};
+
 for (var key in EmiNetAddon.enums) {
   exports[key] = EmiNetAddon.enums[key];
 }
