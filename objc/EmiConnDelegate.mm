@@ -13,8 +13,7 @@ _conn(conn),
 _tickTimer(nil),
 _heartbeatTimer(nil),
 _rtoTimer(nil),
-_connectionTimer(nil),
-_rateLimitTimer(nil) {}
+_connectionTimer(nil) {}
 
 void EmiConnDelegate::invalidate() {
     [_tickTimer invalidate];
@@ -29,9 +28,6 @@ void EmiConnDelegate::invalidate() {
     [_connectionTimer invalidate];
     _connectionTimer = nil;
     
-    [_rateLimitTimer invalidate];
-    _rateLimitTimer = nil;
-    
     // Just to be sure, since the ivar is __unsafe_unretained
     // Note that this code would be incorrect if connections supported reconnecting; It's correct only because after a forceClose, the delegate will never be called again.
     _conn.delegate = nil;
@@ -44,15 +40,6 @@ void EmiConnDelegate::emiConnMessage(EmiChannelQualifier channelQualifier, NSDat
     [_conn.delegate emiConnectionMessage:_conn
                         channelQualifier:channelQualifier 
                                     data:[data subdataWithRange:NSMakeRange(offset, size)]];
-}
-
-void EmiConnDelegate::startRateLimitTimer(EmiTimeInterval rate) {
-    [_rateLimitTimer invalidate];
-    _rateLimitTimer = [NSTimer scheduledTimerWithTimeInterval:rate
-                                                       target:_conn
-                                                     selector:@selector(_rateLimitCallback:)
-                                                     userInfo:nil
-                                                      repeats:YES];
 }
 
 void EmiConnDelegate::scheduleConnectionWarning(EmiTimeInterval warningTimeout) {

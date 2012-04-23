@@ -12,7 +12,6 @@
 #include "EmiMessageHeader.h"
 #include "EmiSendQueue.h"
 #include "EmiSockConfig.h"
-#include "EmiP2P.h"
 #include "EmiConnParams.h"
 
 #include <map>
@@ -104,7 +103,6 @@ private:
     SocketHandle         *_serverSocket;
     EmiConnectionMap      _conns;
     EmiClientSocketMap    _clientSockets;
-    EmiP2P<SockDelegate>  _p2p;
     SockDelegate          _delegate;
     
     int32_t findFreeClientPort(const Address& address) {
@@ -151,7 +149,7 @@ private:
         }
     }
     
-    inline bool shouldArtificiallyDropPacket() {
+    inline bool shouldArtificiallyDropPacket() const {
         if (0 == config.fabricatedPacketDropRate) return false;
         
         return ((float)arc4random() / ARC4RANDOM_MAX) < config.fabricatedPacketDropRate;
@@ -266,13 +264,11 @@ public:
         __block EC *conn = _conns.end() == cur ? NULL : (*cur).second;
         
         if (conn) {
-            if (!conn->gotPacket(len)) {
-                // This packet should be dropped (rate limit exceeded)
-                return;
-            }
+            conn->gotPacket(len);
         }
         
         if (EMI_TIMESTAMP_LENGTH+1 == len) {
+            // This is a heartbeat packet
             if (conn) {
                 conn->gotTimestamp(now, rawData, len);
                 conn->gotHeartbeat(!!(rawData[EMI_TIMESTAMP_LENGTH]));

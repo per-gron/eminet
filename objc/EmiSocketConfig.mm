@@ -75,14 +75,6 @@ typedef EmiSocketConfigSC SC;
     ((SC *)_sc)->acceptConnections = acceptConnections;
 }
 
-- (NSUInteger)rateLimit {
-    return ((SC *)_sc)->acceptConnections;
-}
-
-- (void)setRateLimit:(NSUInteger)rateLimit {
-    ((SC *)_sc)->rateLimit = rateLimit;
-}
-
 - (uint16_t)serverPort {
     return ((SC *)_sc)->port;
 }

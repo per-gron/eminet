@@ -48,7 +48,6 @@ class EmiConn {
     ConnDelegate _delegate;
     
     bool _issuedConnectionWarning;
-    size_t _bytesSentSinceRateLimitTimeout;
     
 private:
     // Private copy constructor and assignment operator
@@ -90,13 +89,8 @@ public:
     _sendQueue(*this),
     _time(),
     _receivedDataSinceLastHeartbeat(false),
-    _issuedConnectionWarning(false),
-    _bytesSentSinceRateLimitTimeout(0) {
+    _issuedConnectionWarning(false) {
         resetConnectionTimeout();
-        
-        if (0 != socket.config.rateLimit) {
-            _delegate.startRateLimitTimer(/*rate:*/1.);
-        }
     }
     
     virtual ~EmiConn() {
@@ -106,10 +100,6 @@ public:
     
     EmiTimeInterval timeBeforeConnectionWarning() const {
         return 1/_emisock.config.heartbeatFrequency * _emisock.config.heartbeatsBeforeConnectionWarning;
-    }
-    
-    void rateLimitTimeoutCallback() {
-        _bytesSentSinceRateLimitTimeout = 0;
     }
     
     void connectionTimeoutCallback() {
@@ -223,14 +213,8 @@ public:
         return _time.gotLargestReceivedTimeAt();
     }
     
-    // Returns false if this packet should be dropped.
-    bool gotPacket(size_t len) {
+    void gotPacket(size_t len) {
         resetConnectionTimeout();
-        
-        _bytesSentSinceRateLimitTimeout += len;
-        
-        size_t rl(_emisock.config.rateLimit);
-        return !rl || _bytesSentSinceRateLimitTimeout <= rl;
     }
     void gotHeartbeat(bool wasResponse) {
         resetConnectionTimeout();
@@ -286,6 +270,8 @@ public:
     // The first time this methods is called, it opens the EmiConnection and returns true.
     // Subsequent times it just resends the init message and returns false.
     bool opened(EmiTimeInterval now, EmiSequenceNumber otherHostInitialSequenceNumber) {
+        ASSERT(!_initiator);
+        
         if (_conn) {
             Error err;
             if (!_conn->resendInitMessage(now, err)) {
@@ -302,6 +288,8 @@ public:
         }
     }
     bool open(EmiTimeInterval now, const ConnectionOpenedCallbackCookie& cookie) {
+        ASSERT(_initiator);
+        
         if (_conn) {
             // We don't need to explicitly resend the init message here;
             // SYN connection init messages like this are reliable messages

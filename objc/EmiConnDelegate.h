@@ -16,7 +16,6 @@ class EmiConnDelegate {
     NSTimer *_heartbeatTimer;
     NSTimer *_rtoTimer;
     NSTimer *_connectionTimer;
-    NSTimer *_rateLimitTimer;
     
     EmiConnection *_conn;
 public:
@@ -26,8 +25,6 @@ public:
     void invalidate();
     
     void emiConnMessage(EmiChannelQualifier channelQualifier, NSData *data, NSUInteger offset, NSUInteger size);
-    
-    void startRateLimitTimer(EmiTimeInterval rate);
     
     void scheduleConnectionWarning(EmiTimeInterval warningTimeout);
     void scheduleConnectionTimeout(EmiTimeInterval interval);

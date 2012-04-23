@@ -47,10 +47,6 @@
     return [NSDate timeIntervalSinceReferenceDate];
 }
 
-- (void)_rateLimitCallback:(NSTimer *)timer {
-    ((EC *)_ec)->rateLimitTimeoutCallback();
-}
-
 - (void)_connectionTimeoutCallback:(NSTimer *)timer {
     ((EC *)_ec)->connectionTimeoutCallback();
 }

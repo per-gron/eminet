@@ -27,7 +27,6 @@ private:
     static v8::Persistent<v8::String> receiverBufferSizeSymbol;
     static v8::Persistent<v8::String> senderBufferSizeSymbol;
     static v8::Persistent<v8::String> acceptConnectionsSymbol;
-    static v8::Persistent<v8::String> rateLimitSymbol;
     static v8::Persistent<v8::String> typeSymbol;
     static v8::Persistent<v8::String> portSymbol;
     static v8::Persistent<v8::String> addressSymbol;

@@ -19,7 +19,6 @@ using namespace v8;
   EXPAND_SYM(receiverBufferSize);                          \
   EXPAND_SYM(senderBufferSize);                            \
   EXPAND_SYM(acceptConnections);                           \
-  EXPAND_SYM(rateLimit);                                   \
   EXPAND_SYM(type);                                        \
   EXPAND_SYM(port);                                        \
   EXPAND_SYM(address);                                     \
@@ -226,7 +225,6 @@ Handle<Value> EmiSocket::New(const Arguments& args) {
     X(connectionTimeout,                 IsNumber,  EmiTimeInterval, NumberValue);
     X(senderBufferSize,                  IsNumber,  size_t,          Uint32Value);
     X(acceptConnections,                 IsBoolean, bool,            BooleanValue);
-    X(rateLimit,                         IsNumber,  size_t,          Uint32Value);
     X(port,                              IsNumber,  uint16_t,        Uint32Value);
     X(fabricatedPacketDropRate,          IsNumber,  EmiTimeInterval, NumberValue);
     

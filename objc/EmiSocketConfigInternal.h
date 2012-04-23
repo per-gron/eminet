@@ -8,7 +8,7 @@
 
 #import "EmiSocketConfig.h"
 
-#include "EmiSock.h"
+#include "EmiSockConfig.h"
 
 typedef EmiSockConfig<NSData *> EmiSocketConfigSC;
 

@@ -20,7 +20,6 @@
 @property (nonatomic, assign) NSUInteger receiverBufferSize;
 @property (nonatomic, assign) NSUInteger senderBufferSize;
 @property (nonatomic, assign) BOOL acceptConnections;
-@property (nonatomic, assign) NSUInteger rateLimit;
 @property (nonatomic, assign) uint16_t serverPort;
 @property (nonatomic, assign) NSUInteger MTU;
 @property (nonatomic, assign) float tickFrequency;
