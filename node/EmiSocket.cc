@@ -226,6 +226,7 @@ Handle<Value> EmiSocket::New(const Arguments& args) {
     X(connectionTimeout,                 IsNumber,  EmiTimeInterval, NumberValue);
     X(senderBufferSize,                  IsNumber,  size_t,          Uint32Value);
     X(acceptConnections,                 IsBoolean, bool,            BooleanValue);
+    X(rateLimit,                         IsNumber,  size_t,          Uint32Value);
     X(port,                              IsNumber,  uint16_t,        Uint32Value);
     X(fabricatedPacketDropRate,          IsNumber,  EmiTimeInterval, NumberValue);
     
