@@ -255,7 +255,7 @@ public:
     // Failing only happens for reliable mesages.
     bool enqueueMessage(EmiTimeInterval now, EmiMessage<SockDelegate> *msg, bool reliable, Error& err) {
         if (reliable) {
-            if (!_senderBuffer.registerReliableMessage(msg, err)) {
+            if (!_senderBuffer.registerReliableMessage(msg, err, now)) {
                 return false;
             }
             updateRtoTimeout();

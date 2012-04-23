@@ -58,6 +58,10 @@ public:
         return EMI_HEADER_LENGTH + SockDelegate::extractLength(data) + 2 + 3;
     }
     
+    // THIS FIELD IS INTENDED TO BE USED ONLY BY EmiSenderBuffer!
+    // Modifying this field outside of that class will break invariants
+    // and can result in behaviour ranging from mild inefficiencies and
+    // stalled message streams to hard crashes.
     EmiTimeInterval registrationTime;
     // This is int32_t and not EmiChannelQualifier because it has to be capable of
     // holding -1, the special SYN/RST message channel as used by EmiSenderBuffer

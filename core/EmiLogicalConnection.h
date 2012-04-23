@@ -94,9 +94,8 @@ private:
     }
     
     // The caller is responsible for releasing the returned object
-    EmiMessage<SockDelegate> *makeDataMessage(EmiChannelQualifier cq, const PersistentData& data, EmiPriority priority, EmiTimeInterval now) {
+    EmiMessage<SockDelegate> *makeDataMessage(EmiChannelQualifier cq, const PersistentData& data, EmiPriority priority) {
         EmiMessage<SockDelegate> *msg = new EmiMessage<SockDelegate>(data);
-        msg->registrationTime = now;
         msg->channelQualifier = cq;
         msg->sequenceNumber = sequenceMemoForChannelQualifier(cq);
         msg->priority = priority;
@@ -107,10 +106,9 @@ private:
     }
     
     // The caller is responsible for releasing the returned object
-    static EmiMessage<SockDelegate> *makeSynAndOrRstMessage(EmiFlags flags, EmiTimeInterval now, EmiSequenceNumber sequenceNumber) {
+    static EmiMessage<SockDelegate> *makeSynAndOrRstMessage(EmiFlags flags, EmiSequenceNumber sequenceNumber) {
         EmiMessage<SockDelegate> *msg = new EmiMessage<SockDelegate>;
         msg->priority = EMI_PRIORITY_HIGH;
-        msg->registrationTime = now;
         msg->channelQualifier = -1; // Special SYN/RST message channel. SenderBuffer requires this to be an integer
         msg->sequenceNumber = sequenceNumber;
         msg->flags = flags;
@@ -118,18 +116,18 @@ private:
     }
     
     // The caller is responsible for releasing the returned object
-    EmiMessage<SockDelegate> *makeSynMessage(EmiTimeInterval now) const {
-        return EmiLogicalConnection::makeSynAndOrRstMessage(EMI_SYN_FLAG, now, _initialSequenceNumber);
+    EmiMessage<SockDelegate> *makeSynMessage() const {
+        return EmiLogicalConnection::makeSynAndOrRstMessage(EMI_SYN_FLAG, _initialSequenceNumber);
     }
     
     // The caller is responsible for releasing the returned object
-    EmiMessage<SockDelegate> *makeSynRstMessage(EmiTimeInterval now) const {
-        return EmiLogicalConnection::makeSynAndOrRstMessage(EMI_SYN_FLAG | EMI_RST_FLAG, now, _initialSequenceNumber);
+    EmiMessage<SockDelegate> *makeSynRstMessage() const {
+        return EmiLogicalConnection::makeSynAndOrRstMessage(EMI_SYN_FLAG | EMI_RST_FLAG, _initialSequenceNumber);
     }
     
     // The caller is responsible for releasing the returned object
-    EmiMessage<SockDelegate> *makeRstMessage(EmiTimeInterval now) const {
-        return EmiLogicalConnection::makeSynAndOrRstMessage(EMI_RST_FLAG, now, _initialSequenceNumber);
+    EmiMessage<SockDelegate> *makeRstMessage() const {
+        return EmiLogicalConnection::makeSynAndOrRstMessage(EMI_RST_FLAG, _initialSequenceNumber);
     }
     
     // Helper for the constructors
@@ -179,7 +177,7 @@ public:
         
         releaseSynMsg();
         
-        EmiMessage<SockDelegate> *msg = _sendingSyn ? makeSynMessage(now) : makeSynRstMessage(now);
+        EmiMessage<SockDelegate> *msg = _sendingSyn ? makeSynMessage() : makeSynRstMessage();
         
         if (_sendingSyn) {
             _synMsgSn = msg->sequenceNumber;
@@ -349,7 +347,7 @@ public:
         }
         
         // Send an RST (connection close) message
-        EmiMessage<SockDelegate> *msg = makeRstMessage(now);
+        EmiMessage<SockDelegate> *msg = makeRstMessage();
         if (!_conn->enqueueMessage(now, msg, /*reliable:*/true, err)) {
             error = true;
         }
@@ -364,7 +362,7 @@ public:
         // This has to be called before makeDataMessage
         EmiChannelQualifier prevSeqMemo = sequenceMemoForChannelQualifier(channelQualifier);
         
-        EmiMessage<SockDelegate> *msg = makeDataMessage(channelQualifier, data, priority, now);
+        EmiMessage<SockDelegate> *msg = makeDataMessage(channelQualifier, data, priority);
         
         EmiChannelType channelType = EMI_CHANNEL_QUALIFIER_TYPE(channelQualifier);
         

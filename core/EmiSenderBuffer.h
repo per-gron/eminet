@@ -101,13 +101,15 @@ public:
     }
     
     // Returns false if the buffer didn't have space for the message
-    bool registerReliableMessage(EmiMessage<SockDelegate> *message, typename SockDelegate::Error& err) {
+    bool registerReliableMessage(EmiMessage<SockDelegate> *message, typename SockDelegate::Error& err, EmiTimeInterval now) {
         size_t msgSize = message->approximateSize();
         
         if (_sendBufferSize+msgSize > _size) {
             err = SockDelegate::makeError("com.emilir.eminet.sendbufferoverflow", 0);
             return false;
         }
+        
+        message->registrationTime = now;
         
         // Check if there already is a message with this channel qualifier in the buffer
         if (NULL == messageSearch(message)) {
