@@ -12,7 +12,8 @@
 #import "EmiConnectionInternal.h"
 
 #import "GCDAsyncUdpSocket.h"
-#import <Security/Security.h>
+#include <Security/Security.h>
+#include <CommonCrypto/CommonHMAC.h>
 
 EmiSockDelegate::EmiSockDelegate(EmiSocket *socket) : _socket(socket) {}
 
@@ -64,6 +65,15 @@ void EmiSockDelegate::connectionOpened(ConnectionOpenedCallbackCookie& cookie, b
         }
         cookie = nil; // Release the block memory
     }
+}
+
+void EmiSockDelegate::hmacHash(const uint8_t *key, size_t keyLength,
+                               const uint8_t *data, size_t dataLength,
+                               uint8_t *buf, size_t bufLen) {
+    if (bufLen < 256/8) {
+        panic();
+    }
+    CCHmac(kCCHmacAlgSHA256, key, keyLength, data, dataLength, buf);
 }
 
 void EmiSockDelegate::randomBytes(uint8_t *buf, size_t bufSize) {

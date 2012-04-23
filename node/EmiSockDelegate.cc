@@ -10,6 +10,7 @@
 #include <stdexcept>
 #include <node.h>
 #include <openssl/rand.h>
+#include <openssl/hmac.h>
 
 #define SLAB_SIZE (1024 * 1024)
 
@@ -297,6 +298,15 @@ Persistent<Object> EmiSockDelegate::makePersistentData(const Local<Object>& data
     
     // Make a new persistent handle (do not just reuse the persistent buf->handle_ handle)
     return Persistent<Object>::New(buf->handle_);
+}
+
+void EmiSockDelegate::hmacHash(const uint8_t *key, size_t keyLength,
+                               const uint8_t *data, size_t dataLength,
+                               uint8_t *buf, size_t bufLen) {
+    unsigned int bufLenInt = bufLen;
+    if (!HMAC(EVP_sha256(), key, keyLength, data, dataLength, buf, &bufLenInt)) {
+        panic();
+    }
 }
 
 void EmiSockDelegate::randomBytes(uint8_t *buf, size_t bufSize) {

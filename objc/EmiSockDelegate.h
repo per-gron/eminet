@@ -98,6 +98,10 @@ public:
         return [data length];
     }
     
+    static const size_t HMAC_HASH_SIZE = 32;
+    static void hmacHash(const uint8_t *key, size_t keyLength,
+                         const uint8_t *data, size_t dataLength,
+                         uint8_t *buf, size_t bufLen);
     static void randomBytes(uint8_t *buf, size_t bufSize);
 };
 
