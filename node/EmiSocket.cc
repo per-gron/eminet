@@ -102,6 +102,8 @@ EmiSocket::~EmiSocket() {
 }
 
 void EmiSocket::Init(Handle<Object> target) {
+    HandleScope scope;
+    
     // Load symbols
 #define EXPAND_SYM(sym) \
   sym##Symbol = Persistent<String>::New(String::NewSymbol(#sym));

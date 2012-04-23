@@ -156,3 +156,7 @@ EmiSocket.prototype.desuspend = function() {
 exports.open = function(args) {
   return new EmiSocket(args);
 };
+
+for (var key in EmiNetAddon.enums) {
+  exports[key] = EmiNetAddon.enums[key];
+}
