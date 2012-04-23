@@ -17,7 +17,7 @@
 #include <set>
 #include <cstdlib>
 
-#define ARC4RANDOM_MAX      0x100000000
+static const uint64_t ARC4RANDOM_MAX = 0x100000000;
 
 template<class SockDelegate, class ConnDelegate>
 class EmiSock {
@@ -89,25 +89,25 @@ class EmiSock {
     typedef EmiConn<SockDelegate, ConnDelegate> EC;
     typedef EmiSendQueue<SockDelegate, ConnDelegate> ESQ;
     
-    typedef std::map<EmiConnectionKey, EC*> EmiConnectionMap;
+    typedef std::map<EmiConnectionKey, EC*>     EmiConnectionMap;
     typedef std::map<uint16_t, EmiClientSocket> EmiClientSocketMap;
-    
+    typedef typename EmiConnectionMap::iterator EmiConnectionMapIter;
     
 private:
     // Private copy constructor and assignment operator
     inline EmiSock(const EmiSock& other);
     inline EmiSock& operator=(const EmiSock& other);
     
-    SocketHandle                 *_serverSocket;
-    EmiConnectionMap              _conns;
-    EmiClientSocketMap            _clientSockets;
-    SockDelegate                  _delegate;
+    SocketHandle       *_serverSocket;
+    EmiConnectionMap    _conns;
+    EmiClientSocketMap  _clientSockets;
+    SockDelegate        _delegate;
     
     int32_t findFreeClientPort(const Address& address) {
         EmiClientSocketKey key(address);
         
         typename EmiClientSocketMap::iterator iter = _clientSockets.begin();
-        typename EmiClientSocketMap::iterator end = _clientSockets.end();
+        typename EmiClientSocketMap::iterator end  = _clientSockets.end();
         while (iter != end) {
             if (0 == (*iter).second.addresses.count(key)) {
                 return (*iter).first;
@@ -164,8 +164,8 @@ public:
         // EmiSock should not be deleted before all open connections are closed,
         // but just to be sure, we close all remaining connections.
         size_t numConns = _conns.size();
-        typename EmiConnectionMap::iterator iter = _conns.begin();
-        typename EmiConnectionMap::iterator end  = _conns.end();
+        EmiConnectionMapIter iter = _conns.begin();
+        EmiConnectionMapIter end  = _conns.end();
         while (iter != end) {
             // This will remove the connection from _conns
             (*iter).second->forceClose();
@@ -258,7 +258,7 @@ public:
         const uint8_t *rawData(SockDelegate::extractData(data)+offset);
         
         EmiConnectionKey ckey(address, inboundPort);
-        typename EmiConnectionMap::iterator cur = _conns.find(ckey);
+        EmiConnectionMapIter cur = _conns.find(ckey);
         __block EC *conn = _conns.end() == cur ? NULL : (*cur).second;
         
         if (conn) {
