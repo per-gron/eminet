@@ -78,13 +78,13 @@ public:
         }
     }
     
-    EmiConn(const ConnDelegate& delegate, uint16_t inboundPort, const Address& address, ES& socket, bool initiator) :
-    _inboundPort(inboundPort),
-    _address(address),
+    EmiConn(const ConnDelegate& delegate, ES& socket, const EmiConnParams<Address>& params) :
+    _inboundPort(params.inboundPort),
+    _address(params.address),
     _conn(NULL),
     _delegate(delegate),
     _emisock(socket),
-    _initiator(initiator),
+    _initiator(params.initiator),
     _senderBuffer(_emisock.config.senderBufferSize),
     _receiverBuffer(_emisock.config.receiverBufferSize, *this),
     _sendQueue(*this),

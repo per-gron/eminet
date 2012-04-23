@@ -17,6 +17,8 @@ template<class SockDelegate, class ConnDelegate>
 class EmiSock;
 template<class SockDelegate, class ConnDelegate>
 class EmiConn;
+template<class Address>
+class EmiConnParams;
 
 class EmiSockDelegate {
     typedef EmiSock<EmiSockDelegate, EmiConnDelegate> ES;
@@ -39,7 +41,7 @@ public:
     uv_udp_t *openSocket(ES& sock, uint16_t port, Error& err);
     static uint16_t extractLocalPort(uv_udp_t *socket);
     
-    EC *makeConnection(const Address& address, uint16_t inboundPort, bool initiator);
+    EC *makeConnection(const EmiConnParams<Address>& params);
     
     void sendData(uv_udp_t *socket,
                   const Address& address,

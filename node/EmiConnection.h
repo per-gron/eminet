@@ -12,6 +12,7 @@
 class EmiConnection : public node::ObjectWrap {
     friend class EmiConnDelegate;
     typedef EmiConn<EmiSockDelegate, EmiConnDelegate> EC;
+    typedef EmiConnParams<EmiSockDelegate::Address>   ECP;
     
 private:
     EC _conn;
@@ -25,7 +26,7 @@ private:
     inline EmiConnection(const EmiConnection& other);
     inline EmiConnection& operator=(const EmiConnection& other);
     
-    EmiConnection(EmiSocket& es, const struct sockaddr_storage& address, uint16_t inboundPort, bool initiator);
+    EmiConnection(EmiSocket& es, const ECP& params);
     virtual ~EmiConnection();
     
 public:
@@ -34,9 +35,7 @@ public:
     static void Init(v8::Handle<v8::Object> target);
     
     static v8::Handle<v8::Object> NewInstance(EmiSocket& es,
-                                              const struct sockaddr_storage& address,
-                                              uint16_t inboundPort,
-                                              bool initiator);
+                                              const ECP& params);
     
     inline EC& getConn() { return _conn; }
     inline const EC& getConn() const { return _conn; }

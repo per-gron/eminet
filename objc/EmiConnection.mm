@@ -26,12 +26,10 @@
 @synthesize delegate = _delegate;
 
 - (id)initWithSocket:(EmiSocket *)socket
-             address:(NSData *)address 
-         inboundPort:(uint16_t)inboundPort
-           initiator:(BOOL)initiator {
+             params:(const EmiConnParams<NSData *> *)params {
     if (self = [super init]) {
         _emiSocket = socket;
-        _ec = new EC(EmiConnDelegate(self), inboundPort, address, *socket.sock, initiator);
+        _ec = new EC(EmiConnDelegate(self), *socket.sock, *params);
     }
     
     return self;

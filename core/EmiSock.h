@@ -13,6 +13,7 @@
 #include "EmiSendQueue.h"
 #include "EmiSockConfig.h"
 #include "EmiP2P.h"
+#include "EmiConnParams.h"
 
 #include <map>
 #include <set>
@@ -87,7 +88,8 @@ class EmiSock {
         }
     };
     
-    typedef EmiConn<SockDelegate, ConnDelegate> EC;
+    typedef EmiConnParams<Address>                   ECP;
+    typedef EmiConn<SockDelegate, ConnDelegate>      EC;
     typedef EmiSendQueue<SockDelegate, ConnDelegate> ESQ;
     
     typedef std::map<EmiConnectionKey, EC*>     EmiConnectionMap;
@@ -318,7 +320,7 @@ public:
                     }
                     
                     if (!conn) {
-                        conn = _delegate.makeConnection(address, inboundPort, /*initiator:*/false);
+                        conn = _delegate.makeConnection(ECP(address, inboundPort, /*initiator:*/false));
                         _conns.insert(std::make_pair(ckey, conn));
                     }
                     
@@ -430,7 +432,7 @@ public:
     }
     
     // SockDelegate::connectionOpened will be called on the cookie iff this function returns true.
-    bool connect(EmiTimeInterval now, const Address& address, const ConnectionOpenedCallbackCookie& cookie, Error& err) {
+    bool connect(EmiTimeInterval now, const Address& address, const ConnectionOpenedCallbackCookie& callbackCookie, Error& err) {
         uint16_t inboundPort = openClientSocket(address, err);
         
         if (!inboundPort) {
@@ -446,9 +448,9 @@ public:
         }
         
         
-        EC *ec(_delegate.makeConnection(address, inboundPort, /*initiator:*/true));
+        EC *ec(_delegate.makeConnection(ECP(address, inboundPort, /*initiator:*/true)));
         _conns.insert(std::make_pair(key, ec));
-        ec->open(now, cookie);
+        ec->open(now, callbackCookie);
         
         return true;
     }

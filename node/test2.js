@@ -78,13 +78,13 @@ var open = function(msg) {
 
 open('a');
 open('b');
-//open('c');
-//open('d');
-//open('1');
-//open('2');
-//open('3');
-//open('4');
-//open('A');
-//open('B');
-//open('C');
-//open('D');
+open('c');
+open('d');
+open('1');
+open('2');
+open('3');
+open('4');
+open('A');
+open('B');
+open('C');
+open('D');

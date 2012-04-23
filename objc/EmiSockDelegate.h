@@ -22,6 +22,8 @@ template<class SockDelegate, class ConnDelegate>
 class EmiSock;
 template<class SockDelegate, class ConnDelegate>
 class EmiConn;
+template<class Address>
+class EmiConnParams;
 
 class EmiSockDelegate {
     typedef EmiSock<EmiSockDelegate, EmiConnDelegate> ES;
@@ -61,7 +63,7 @@ public:
     GCDAsyncUdpSocket *openSocket(ES& sock, uint16_t port, Error& err);
     static uint16_t extractLocalPort(GCDAsyncUdpSocket *socket);
     
-    EC *makeConnection(NSData *address, uint16_t inboundPort, bool initiator);
+    EC *makeConnection(const EmiConnParams<Address>& params);
     
     void sendData(GCDAsyncUdpSocket *socket, NSData *address, const uint8_t *data, size_t size);
     void gotConnection(EC& conn);

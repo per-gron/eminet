@@ -39,8 +39,9 @@ uint16_t EmiSockDelegate::extractLocalPort(GCDAsyncUdpSocket *socket) {
     return [socket localPort];
 }
 
-EC *EmiSockDelegate::makeConnection(NSData *address, uint16_t inboundPort, bool initiator) {
-    return [[EmiConnection alloc] initWithSocket:_socket address:address inboundPort:inboundPort initiator:initiator].conn;
+EC *EmiSockDelegate::makeConnection(const EmiConnParams<Address>& params) {
+    return [[EmiConnection alloc] initWithSocket:_socket
+                                          params:&params].conn;
 }
 
 void EmiSockDelegate::sendData(GCDAsyncUdpSocket *socket, NSData *address, const uint8_t *data, size_t size) {

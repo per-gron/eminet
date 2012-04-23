@@ -185,19 +185,14 @@ uint16_t EmiSockDelegate::extractLocalPort(uv_udp_t *socket) {
     }
 }
 
-EmiSockDelegate::EC *EmiSockDelegate::makeConnection(const Address& address,
-                                                     uint16_t inboundPort,
-                                                     bool initiator) {
+EmiSockDelegate::EC *EmiSockDelegate::makeConnection(const EmiConnParams<Address>& params) {
     HandleScope scope;
     
     // TODO I think the HandleScope will dispose of EmiConnection after
     // this function, which is not what we want... Exactly what will
     // happen?
     
-    Handle<Object> obj(EmiConnection::NewInstance(_es,
-                                                  address,
-                                                  inboundPort,
-                                                  initiator));
+    Handle<Object> obj(EmiConnection::NewInstance(_es, params));
     EmiConnection *ec = node::ObjectWrap::Unwrap<EmiConnection>(obj);
     return &ec->getConn();
 }

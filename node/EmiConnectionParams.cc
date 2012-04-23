@@ -9,13 +9,9 @@ using namespace v8;
 Persistent<ObjectTemplate> EmiConnectionParams::constructor;
 
 EmiConnectionParams::EmiConnectionParams(EmiSocket& es_,
-                                         const struct sockaddr_storage& address_,
-                                         uint16_t inboundPort_,
-                                         bool initiator_) :
+                                         const ECP& params_) :
 es(es_),
-address(address_),
-inboundPort(inboundPort_),
-initiator(initiator_) {}
+params(params_) {}
 
 void EmiConnectionParams::Init(Handle<Object> target) {
     HandleScope scope;
@@ -26,12 +22,10 @@ void EmiConnectionParams::Init(Handle<Object> target) {
 }
 
 Handle<Object> EmiConnectionParams::NewInstance(EmiSocket& es,
-                                                const struct sockaddr_storage& address,
-                                                uint16_t inboundPort,
-                                                bool initiator) {
+                                                const ECP& params) {
     HandleScope scope;
     
-    EmiConnectionParams *ecp = new EmiConnectionParams(es, address, inboundPort, initiator);
+    EmiConnectionParams *ecp = new EmiConnectionParams(es, params);
     Local<Object> obj(constructor->NewInstance());
     obj->SetPointerInInternalField(0, ecp);
     

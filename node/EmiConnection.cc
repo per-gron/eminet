@@ -13,11 +13,8 @@ Persistent<String>   EmiConnection::channelQualifierSymbol;
 Persistent<String>   EmiConnection::prioritySymbol;
 Persistent<Function> EmiConnection::constructor;
 
-EmiConnection::EmiConnection(EmiSocket& es,
-                             const struct sockaddr_storage& address,
-                             uint16_t inboundPort,
-                             bool initiator) :
-_conn(EmiConnDelegate(*this), inboundPort, address, es.getSock(), initiator) {};
+EmiConnection::EmiConnection(EmiSocket& es, const ECP& params) :
+_conn(EmiConnDelegate(*this), es.getSock(), params) {};
 
 EmiTimeInterval EmiConnection::Now() {
     return ((double)uv_hrtime())/NSECS_PER_SEC;
@@ -62,14 +59,12 @@ void EmiConnection::Init(Handle<Object> target) {
 }
 
 Handle<Object> EmiConnection::NewInstance(EmiSocket& es,
-                                          const struct sockaddr_storage& address,
-                                          uint16_t inboundPort,
-                                          bool initiator) {
+                                          const ECP& params) {
     HandleScope scope;
     
     const unsigned argc = 1;
     Handle<Value> argv[argc] = {
-        EmiConnectionParams::NewInstance(es, address, inboundPort, initiator)
+        EmiConnectionParams::NewInstance(es, params)
     };
     Local<Object> instance = constructor->NewInstance(argc, argv);
     
@@ -102,9 +97,7 @@ Handle<Value> EmiConnection::New(const Arguments& args) {
     (EmiConnectionParams *)args[0]->ToObject()->GetPointerFromInternalField(0);
     
     EmiConnection *ec = new EmiConnection(ecp->es,
-                                          ecp->address,
-                                          ecp->inboundPort,
-                                          ecp->initiator);
+                                          ecp->params);
     
     delete ecp;
     
