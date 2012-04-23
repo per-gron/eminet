@@ -213,7 +213,7 @@ public:
         return _time.gotLargestReceivedTimeAt();
     }
     
-    void gotPacket(size_t len) {
+    void gotPacket() {
         resetConnectionTimeout();
     }
     void gotHeartbeat(bool wasResponse) {

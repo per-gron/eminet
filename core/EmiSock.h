@@ -264,7 +264,7 @@ public:
         __block EC *conn = _conns.end() == cur ? NULL : (*cur).second;
         
         if (conn) {
-            conn->gotPacket(len);
+            conn->gotPacket();
         }
         
         if (EMI_TIMESTAMP_LENGTH+1 == len) {
