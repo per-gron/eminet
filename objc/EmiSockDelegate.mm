@@ -12,6 +12,7 @@
 #import "EmiConnectionInternal.h"
 
 #import "GCDAsyncUdpSocket.h"
+#import <Security/Security.h>
 
 EmiSockDelegate::EmiSockDelegate(EmiSocket *socket) : _socket(socket) {}
 
@@ -62,5 +63,11 @@ void EmiSockDelegate::connectionOpened(ConnectionOpenedCallbackCookie& cookie, b
             cookie(nil, ec.getDelegate().getConn());
         }
         cookie = nil; // Release the block memory
+    }
+}
+
+void EmiSockDelegate::randomBytes(uint8_t *buf, size_t bufSize) {
+    if (0 != SecRandomCopyBytes(kSecRandomDefault, bufSize, buf)) {
+        panic();
     }
 }

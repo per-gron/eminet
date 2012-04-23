@@ -12,6 +12,7 @@
 #include "EmiMessageHeader.h"
 #include "EmiSendQueue.h"
 #include "EmiSockConfig.h"
+#include "EmiP2P.h"
 
 #include <map>
 #include <set>
@@ -98,10 +99,11 @@ private:
     inline EmiSock(const EmiSock& other);
     inline EmiSock& operator=(const EmiSock& other);
     
-    SocketHandle       *_serverSocket;
-    EmiConnectionMap    _conns;
-    EmiClientSocketMap  _clientSockets;
-    SockDelegate        _delegate;
+    SocketHandle         *_serverSocket;
+    EmiConnectionMap      _conns;
+    EmiClientSocketMap    _clientSockets;
+    EmiP2P<SockDelegate>  _p2p;
+    SockDelegate          _delegate;
     
     int32_t findFreeClientPort(const Address& address) {
         EmiClientSocketKey key(address);

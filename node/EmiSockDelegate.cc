@@ -9,6 +9,7 @@
 
 #include <stdexcept>
 #include <node.h>
+#include <openssl/rand.h>
 
 #define SLAB_SIZE (1024 * 1024)
 
@@ -296,4 +297,11 @@ Persistent<Object> EmiSockDelegate::makePersistentData(const Local<Object>& data
     
     // Make a new persistent handle (do not just reuse the persistent buf->handle_ handle)
     return Persistent<Object>::New(buf->handle_);
+}
+
+void EmiSockDelegate::randomBytes(uint8_t *buf, size_t bufSize) {
+    // TODO I'm not sure this is actually secure. Double check this.
+    if (!RAND_bytes(buf, bufSize)) {
+        panic();
+    }
 }

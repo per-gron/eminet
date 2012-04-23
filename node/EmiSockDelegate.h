@@ -77,6 +77,8 @@ public:
     
     inline EmiSocket& getEmiSocket() { return _es; }
     inline const EmiSocket& getEmiSocket() const { return _es; }
+    
+    static void randomBytes(uint8_t *buf, size_t bufSize);
 };
 
 #endif

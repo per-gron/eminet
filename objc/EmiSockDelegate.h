@@ -97,6 +97,8 @@ public:
     inline static size_t extractLength(NSData *data) {
         return [data length];
     }
+    
+    static void randomBytes(uint8_t *buf, size_t bufSize);
 };
 
 #endif
