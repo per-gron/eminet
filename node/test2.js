@@ -1,7 +1,11 @@
 var EmiNet = require('./eminet');
 
 var es = EmiNet.open({ fabricatedPacketDropRate: 0.2 }),
-    es2 = EmiNet.open({ acceptConnections: true, port: 2345, fabricatedPacketDropRate: 0.2 });
+    es2 = EmiNet.open({
+      acceptConnections: true, port: 2345,
+      fabricatedPacketDropRate: 0.2,
+      rateLimit: 1000
+    });
 
 es2.on('connection', function(socket) {
   console.log("Got connection");
@@ -84,5 +88,3 @@ open('b');
 //open('B');
 //open('C');
 //open('D');
-
-console.log(EmiNet);

@@ -295,7 +295,12 @@ public:
         typename EmiConnectionMap::iterator cur = _conns.find(ckey);
         __block EC *conn = _conns.end() == cur ? NULL : (*cur).second;
         
-        if (conn) conn->gotPacket();
+        if (conn) {
+            if (!conn->gotPacket(len)) {
+                // This packet should be dropped (rate limit exceeded)
+                return;
+            }
+        }
         
         if (EMI_TIMESTAMP_LENGTH+1 == len) {
             if (conn) {

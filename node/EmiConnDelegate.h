@@ -19,10 +19,12 @@ class EmiConnDelegate {
     uv_timer_t *_heartbeatTimer;
     uv_timer_t *_rtoTimer;
     uv_timer_t *_connectionTimer;
+    uv_timer_t *_rateLimitTimer;
     
     EmiTimeInterval _warningTimeoutWhenWarningTimerWasScheduled;
     EmiTimeInterval _rtoWhenRtoTimerWasScheduled;
     
+    static void rateLimitTimeout(uv_timer_t *handle, int status);
     static void warningTimeout(uv_timer_t *handle, int status);
     static void connectionTimeout(uv_timer_t *handle, int status);
     static void tickTimeout(uv_timer_t *handle, int status);
@@ -38,6 +40,8 @@ public:
                         const v8::Local<v8::Object>& data,
                         size_t offset,
                         size_t size);
+    
+    void startRateLimitTimer(EmiTimeInterval rate);
     
     void scheduleConnectionWarning(EmiTimeInterval warningTimeout);
     void scheduleConnectionTimeout(EmiTimeInterval interval);

@@ -12,6 +12,11 @@ static void close_cb(uv_handle_t* handle) {
     free(handle);
 }
 
+void EmiConnDelegate::rateLimitTimeout(uv_timer_t *handle, int status) {
+    EmiConnection *conn = (EmiConnection *)handle->data;
+    conn->_conn.rateLimitTimeoutCallback();
+}
+
 void EmiConnDelegate::warningTimeout(uv_timer_t *handle, int status) {
     EmiConnection *conn = (EmiConnection *)handle->data;
     conn->_conn.connectionWarningCallback(conn->_conn.getDelegate()._warningTimeoutWhenWarningTimerWasScheduled);
@@ -54,6 +59,10 @@ EmiConnDelegate::EmiConnDelegate(EmiConnection& conn) : _conn(conn) {
     _connectionTimer = (uv_timer_t *)malloc(sizeof(uv_timer_t));
     _connectionTimer->data = &conn;
     uv_timer_init(uv_default_loop(), _connectionTimer);
+    
+    _rateLimitTimer = (uv_timer_t *)malloc(sizeof(uv_timer_t));
+    _rateLimitTimer->data = &conn;
+    uv_timer_init(uv_default_loop(), _rateLimitTimer);
 }
 
 void EmiConnDelegate::invalidate() {
@@ -68,6 +77,9 @@ void EmiConnDelegate::invalidate() {
     
     uv_timer_stop(_connectionTimer);
     uv_close((uv_handle_t *)_connectionTimer, close_cb);
+    
+    uv_timer_stop(_rateLimitTimer);
+    uv_close((uv_handle_t *)_rateLimitTimer, close_cb);
     
     // This allows V8's GC to reclaim the EmiConnection when it's been closed
     // The corresponding Ref is in EmiConnection::New
@@ -95,6 +107,14 @@ void EmiConnDelegate::emiConnMessage(EmiChannelQualifier channelQualifier,
         Number::New(size)
     };
     EmiSocket::connectionMessage->Call(Context::GetCurrent()->Global(), argc, argv);
+}
+
+void EmiConnDelegate::startRateLimitTimer(EmiTimeInterval rate) {
+    uv_timer_stop(_rateLimitTimer);
+    uv_timer_start(_rateLimitTimer,
+                   EmiConnDelegate::rateLimitTimeout,
+                   rate*MSECS_PER_SEC,
+                   /*repeats:*/rate*MSECS_PER_SEC);
 }
 
 void EmiConnDelegate::scheduleConnectionWarning(EmiTimeInterval warningTimeout) {
