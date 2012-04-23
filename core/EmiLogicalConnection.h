@@ -27,6 +27,7 @@ class EmiLogicalConnection {
     typedef typename SockDelegate::PersistentData PersistentData;
     typedef typename SockDelegate::TemporaryData  TemporaryData;
     typedef typename SockDelegate::ConnectionOpenedCallbackCookie ConnectionOpenedCallbackCookie;
+    typedef EmiMessage<SockDelegate>            EM;
     typedef EmiConn<SockDelegate, ConnDelegate> EC;
     
     bool _closing;
@@ -93,43 +94,6 @@ private:
         return (_sequenceMemo.end() == cur ? _initialSequenceNumber : (*cur).second);
     }
     
-    // The caller is responsible for releasing the returned object
-    EmiMessage<SockDelegate> *makeDataMessage(EmiChannelQualifier cq, const PersistentData& data, EmiPriority priority) {
-        EmiMessage<SockDelegate> *msg = new EmiMessage<SockDelegate>(data);
-        msg->channelQualifier = cq;
-        msg->sequenceNumber = sequenceMemoForChannelQualifier(cq);
-        msg->priority = priority;
-        
-        _sequenceMemo[cq] = msg->sequenceNumber+1;
-        
-        return msg;
-    }
-    
-    // The caller is responsible for releasing the returned object
-    static EmiMessage<SockDelegate> *makeSynAndOrRstMessage(EmiFlags flags, EmiSequenceNumber sequenceNumber) {
-        EmiMessage<SockDelegate> *msg = new EmiMessage<SockDelegate>;
-        msg->priority = EMI_PRIORITY_HIGH;
-        msg->channelQualifier = -1; // Special SYN/RST message channel. SenderBuffer requires this to be an integer
-        msg->sequenceNumber = sequenceNumber;
-        msg->flags = flags;
-        return msg;
-    }
-    
-    // The caller is responsible for releasing the returned object
-    EmiMessage<SockDelegate> *makeSynMessage() const {
-        return EmiLogicalConnection::makeSynAndOrRstMessage(EMI_SYN_FLAG, _initialSequenceNumber);
-    }
-    
-    // The caller is responsible for releasing the returned object
-    EmiMessage<SockDelegate> *makeSynRstMessage() const {
-        return EmiLogicalConnection::makeSynAndOrRstMessage(EMI_SYN_FLAG | EMI_RST_FLAG, _initialSequenceNumber);
-    }
-    
-    // The caller is responsible for releasing the returned object
-    EmiMessage<SockDelegate> *makeRstMessage() const {
-        return EmiLogicalConnection::makeSynAndOrRstMessage(EMI_RST_FLAG, _initialSequenceNumber);
-    }
-    
     // Helper for the constructors
     void commonInit() {
         _initialSequenceNumber = EmiLogicalConnection::generateSequenceNumber();
@@ -177,7 +141,9 @@ public:
         
         releaseSynMsg();
         
-        EmiMessage<SockDelegate> *msg = _sendingSyn ? makeSynMessage() : makeSynRstMessage();
+        EM *msg = _sendingSyn ?
+            EM::makeSynMessage(_initialSequenceNumber) :
+            EM::makeSynRstMessage(_initialSequenceNumber);
         
         if (_sendingSyn) {
             _synMsgSn = msg->sequenceNumber;
@@ -347,7 +313,7 @@ public:
         }
         
         // Send an RST (connection close) message
-        EmiMessage<SockDelegate> *msg = makeRstMessage();
+        EM *msg = EM::makeRstMessage(_initialSequenceNumber);
         if (!_conn->enqueueMessage(now, msg, /*reliable:*/true, err)) {
             error = true;
         }
@@ -359,10 +325,14 @@ public:
     bool send(const PersistentData& data, EmiTimeInterval now, EmiChannelQualifier channelQualifier, EmiPriority priority, Error& err) {
         bool error = false;
         
-        // This has to be called before makeDataMessage
+        // This has to be called before we increment _sequenceMemo[cq]
         EmiChannelQualifier prevSeqMemo = sequenceMemoForChannelQualifier(channelQualifier);
         
-        EmiMessage<SockDelegate> *msg = makeDataMessage(channelQualifier, data, priority);
+        EM *msg = EM::makeDataMessage(channelQualifier,
+                                      sequenceMemoForChannelQualifier(channelQualifier),
+                                      data,
+                                      priority);
+        _sequenceMemo[channelQualifier] = msg->sequenceNumber+1;
         
         EmiChannelType channelType = EMI_CHANNEL_QUALIFIER_TYPE(channelQualifier);
         
@@ -390,7 +360,7 @@ public:
         }
         
         if (!_conn->enqueueMessage(now, msg, reliable, err)) {
-            // _sequenceMemo[channelQualifier] has been bumped by _makeDataMessage. Since the message wasn't sent: Undo that
+            // _sequenceMemo[channelQualifier] has been bumped. Since the message wasn't sent: Undo that
             _sequenceMemo[channelQualifier] = prevSeqMemo;
             error = true;
             goto cleanup;

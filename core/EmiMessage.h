@@ -30,7 +30,46 @@ private:
         priority = EMI_PRIORITY_DEFAULT;
     }
     
+    // The caller is responsible for releasing the returned object
+    static EmiMessage *makeSynAndOrRstMessage(EmiFlags flags, EmiSequenceNumber sequenceNumber) {
+        EmiMessage *msg = new EmiMessage;
+        msg->priority = EMI_PRIORITY_HIGH;
+        msg->channelQualifier = -1; // Special SYN/RST message channel. SenderBuffer requires this to be an integer
+        msg->sequenceNumber = sequenceNumber;
+        msg->flags = flags;
+        return msg;
+    }
+    
 public:
+    
+    // The caller is responsible for releasing the returned object
+    static EmiMessage *makeSynMessage(EmiSequenceNumber sequenceNumber) {
+        return makeSynAndOrRstMessage(EMI_SYN_FLAG, sequenceNumber);
+    }
+    
+    // The caller is responsible for releasing the returned object
+    static EmiMessage *makeSynRstMessage(EmiSequenceNumber sequenceNumber) {
+        return makeSynAndOrRstMessage(EMI_SYN_FLAG | EMI_RST_FLAG, sequenceNumber);
+    }
+    
+    // The caller is responsible for releasing the returned object
+    static EmiMessage *makeRstMessage(EmiSequenceNumber sequenceNumber) {
+        return makeSynAndOrRstMessage(EMI_RST_FLAG, sequenceNumber);
+    }
+    
+    // The caller is responsible for releasing the returned object
+    static EmiMessage *makeDataMessage(EmiChannelQualifier cq,
+                                       EmiSequenceNumber sequenceNumber,
+                                       const PersistentData& data,
+                                       EmiPriority priority) {
+        EmiMessage<SockDelegate> *msg = new EmiMessage<SockDelegate>(data);
+        msg->channelQualifier = cq;
+        msg->sequenceNumber = sequenceNumber;
+        msg->priority = priority;
+        
+        return msg;
+    }
+    
     explicit EmiMessage(PersistentData data_) : data(data_) {
         commonInit();
     }
