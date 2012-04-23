@@ -28,17 +28,17 @@ template<class SockDelegate, class ConnDelegate>
 class EmiSendQueue {
     typedef typename SockDelegate::PersistentData PersistentData;
     
-    typedef std::vector<EmiMessage<SockDelegate> *> EmiSendQueueVector;
-    typedef typename std::vector<EmiMessage<SockDelegate> *>::iterator EmiSendQueueVectorIter;
-    typedef std::map<EmiChannelQualifier, EmiSequenceNumber> EmiSendQueueAcksMap;
-    typedef std::set<EmiChannelQualifier> EmiSendQueueAcksSet;
+    typedef std::vector<EmiMessage<SockDelegate> *> SendQueueVector;
+    typedef typename std::vector<EmiMessage<SockDelegate> *>::iterator SendQueueVectorIter;
+    typedef std::map<EmiChannelQualifier, EmiSequenceNumber> SendQueueAcksMap;
+    typedef std::set<EmiChannelQualifier> SendQueueAcksSet;
     typedef EmiConn<SockDelegate, ConnDelegate> EC;
     
     EC& _conn;
     
-    EmiSendQueueVector _queue;
+    SendQueueVector _queue;
     size_t _queueSize;
-    EmiSendQueueAcksMap _acks;
+    SendQueueAcksMap _acks;
     size_t _bufLength;
     uint8_t *_buf;
     bool _enqueueHeartbeat;
@@ -49,8 +49,8 @@ private:
     inline EmiSendQueue& operator=(const EmiSendQueue& other);
     
     void clearQueue() {
-        EmiSendQueueVectorIter iter = _queue.begin();
-        EmiSendQueueVectorIter end = _queue.end();
+        SendQueueVectorIter iter = _queue.begin();
+        SendQueueVectorIter end = _queue.end();
         while (iter != end) {
             (*iter)->release();
             ++iter;
@@ -58,6 +58,7 @@ private:
         _queue.clear();
         _queueSize = 0;
     }
+    
     void fillTimestamps(void *data, EmiTimeInterval now) {
         uint16_t *buf = (uint16_t *)data;
         
@@ -137,6 +138,7 @@ public:
     void enqueueHeartbeat() {
         _enqueueHeartbeat = true;
     }
+    
     void sendHeartbeat(bool isResponse, EmiTimeInterval now) {
         if (_conn.isOpen()) {
             const size_t bufLen = EMI_TIMESTAMP_LENGTH+1;
@@ -147,6 +149,7 @@ public:
             _conn.sendDatagram(buf, bufLen);
         }
     }
+    
     static void sendSynRstAckPacket(SendSynRstAckPacketCallback callback) {
         const int BUF_SIZE = 80; // 80 ought to be plenty
         uint8_t buf[BUF_SIZE];
@@ -169,25 +172,26 @@ public:
         
         callback(buf, tlen+plen);
     }
+    
     // Returns true if something was sent
     bool flush(EmiTimeInterval now) {
         bool sentPacket = false;
         
         if (!_queue.empty() || !_acks.empty()) {
-            EmiSendQueueAcksSet acksInThisPacket;
+            SendQueueAcksSet acksInThisPacket;
             size_t pos = 0;
             
             fillTimestamps(_buf, now); pos += EMI_TIMESTAMP_LENGTH;
             
-            EmiSendQueueAcksMap::iterator ackIter = _acks.begin();
-            EmiSendQueueAcksMap::iterator ackEnd = _acks.end();
+            SendQueueAcksMap::iterator ackIter = _acks.begin();
+            SendQueueAcksMap::iterator ackEnd = _acks.end();
             
-            EmiSendQueueVectorIter iter = _queue.begin();
-            EmiSendQueueVectorIter end = _queue.end();
+            SendQueueVectorIter iter = _queue.begin();
+            SendQueueVectorIter end = _queue.end();
             while (iter != end) {
                 EmiMessage<SockDelegate> *msg = *iter;
                 
-                EmiSendQueueAcksMap::iterator cur;
+                SendQueueAcksMap::iterator cur;
                 if (0 != acksInThisPacket.count(msg->channelQualifier)) {
                     // Only send an ack for a particular channel once per packet
                     cur = ackEnd;
@@ -253,8 +257,8 @@ public:
     
     // Returns true if at least 1 ack is now enqueued
     bool enqueueAck(EmiChannelQualifier channelQualifier, EmiSequenceNumber sequenceNumber) {
-        EmiSendQueueAcksMap::iterator ackCur = _acks.find(channelQualifier);
-        EmiSendQueueAcksMap::iterator ackEnd = _acks.end();
+        SendQueueAcksMap::iterator ackCur = _acks.find(channelQualifier);
+        SendQueueAcksMap::iterator ackEnd = _acks.end();
         
         if (ackCur == ackEnd) {
             _acks[channelQualifier] = sequenceNumber;
