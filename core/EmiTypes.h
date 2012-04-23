@@ -65,6 +65,7 @@ typedef uint8_t  EmiSplitId;
 typedef double   EmiTimeInterval;
 
 typedef enum {
+    EMI_PRX_FLAG  = 0x10,
     EMI_RST_FLAG  = 0x08,
     EMI_SYN_FLAG  = 0x04,
     EMI_ACK_FLAG  = 0x02,

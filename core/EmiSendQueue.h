@@ -114,6 +114,25 @@ private:
         return pos-offset;
     }
     
+    void sendMessageInSeparatePacket(const EmiMessage<SockDelegate> *msg) {
+        size_t tlen = EMI_TIMESTAMP_LENGTH;
+        memset(_buf, 0, tlen);
+        
+        // Propagate the actual packet data
+        size_t plen;
+        plen = EmiSendQueue::writeMsg(_buf, /* buf */
+                                      _bufLength, /* bufSize */
+                                      tlen, /* offset */
+                                      false, /* hasAck */
+                                      0, /* ack */
+                                      msg->channelQualifier,
+                                      msg->sequenceNumber,
+                                      msg->data,
+                                      msg->flags);
+        
+        _conn.sendDatagram(_buf, tlen+plen);
+    }
+    
 public:
     
     EmiSendQueue(EC& conn) :
@@ -236,10 +255,10 @@ public:
             }
             
             if (EMI_TIMESTAMP_LENGTH != pos) {
-                if (pos <= _bufLength) { // Just to be sure, this should always be true
-                    _conn.sendDatagram(_buf, pos);
-                    sentPacket = true;
-                }
+                ASSERT(pos <= _bufLength);
+                
+                _conn.sendDatagram(_buf, pos);
+                sentPacket = true;
             }
         }
         
@@ -271,21 +290,28 @@ public:
     }
     
     void enqueueMessage(EmiMessage<SockDelegate> *msg, EmiTimeInterval now) {
-        if (EMI_PRIORITY_HIGH != msg->priority) {
-            // Only EMI_PRIORITY_HIGH messages are implemented
-            SockDelegate::panic();
-            return;
+        if (msg->flags & (EMI_PRX_FLAG | EMI_RST_FLAG | EMI_SYN_FLAG)) {
+            // This is a control message, one that cannot be bundled with
+            // other messages. We might just as well send it right away.
+            sendMessageInSeparatePacket(msg);
         }
-        
-        size_t msgSize = msg->approximateSize();
-        
-        if (_queueSize + msgSize >= _bufLength) { // _bufLength is the MTU of the EmiSocket
-            flush(now);
+        else {
+            if (EMI_PRIORITY_HIGH != msg->priority) {
+                // Only EMI_PRIORITY_HIGH messages are implemented
+                SockDelegate::panic();
+                return;
+            }
+            
+            size_t msgSize = msg->approximateSize();
+            
+            if (_queueSize + msgSize >= _bufLength) { // _bufLength is the MTU of the EmiSocket
+                flush(now);
+            }
+            
+            msg->retain();
+            _queue.push_back(msg);
+            _queueSize += msgSize;
         }
-        
-        msg->retain();
-        _queue.push_back(msg);
-        _queueSize += msgSize;
     }
 };
 
