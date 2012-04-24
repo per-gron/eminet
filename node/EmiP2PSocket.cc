@@ -85,58 +85,15 @@ Handle<Value> EmiP2PSocket::New(const Arguments& args) {
     if (!conf.IsEmpty()) sym = conf->Get(sym##Symbol)
     EXPAND_SYMS
 #undef EXPAND_SYM
-
-#define CHECK_PARAM(sym, pred)                                           \
-    do {                                                                 \
-        if (sym.IsEmpty() || !sym->pred()) {                             \
-            THROW_TYPE_ERROR("Invalid socket configuration parameters"); \
-        }                                                                \
-    } while (0)
-#define HAS_PARAM(sym) (!sym.IsEmpty() && !sym->IsUndefined())
-#define X(sym, pred, type, cast)                                 \
-    do {                                                         \
-        if (HAS_PARAM(sym)) {                                    \
-            CHECK_PARAM(sym, pred);                              \
-            sc.sym = (type) sym->cast();                         \
-        }                                                        \
-    } while (0)
     
-    X(mtu,                               IsNumber,  size_t,          Uint32Value);
-    X(heartbeatFrequency,                IsNumber,  float,           NumberValue);
-    X(tickFrequency,                     IsNumber,  float,           NumberValue);
-    X(heartbeatsBeforeConnectionWarning, IsNumber,  float,           NumberValue);
-    X(connectionTimeout,                 IsNumber,  EmiTimeInterval, NumberValue);
-    X(senderBufferSize,                  IsNumber,  size_t,          Uint32Value);
-    X(acceptConnections,                 IsBoolean, bool,            BooleanValue);
-    X(port,                              IsNumber,  uint16_t,        Uint32Value);
-    X(fabricatedPacketDropRate,          IsNumber,  EmiTimeInterval, NumberValue);
+    READ_CONFIG(sc, connectionTimeout,                 IsNumber,  EmiTimeInterval, NumberValue);
+    READ_CONFIG(sc, rateLimit,                         IsNumber,  size_t,          Uint32Value);
+    READ_CONFIG(sc, port,                              IsNumber,  uint16_t,        Uint32Value);
+    READ_CONFIG(sc, fabricatedPacketDropRate,          IsNumber,  EmiTimeInterval, NumberValue);
     
     int family;
-    if (HAS_PARAM(type)) {
-        CHECK_PARAM(type, IsString);
-        
-        String::Utf8Value typeStr(type);
-        if (!parseAddressFamily(*typeStr, &family)) {
-            ThrowException(Exception::Error(String::New("Unknown address family")));
-            return scope.Close(Undefined());
-        }
-    }
-    else {
-        family = AF_INET;
-    }
-    
-    if (HAS_PARAM(address)) {
-        CHECK_PARAM(address, IsString);
-        String::Utf8Value host(address);
-        parseIp(*host, sc.port, family, &sc.address);
-    }
-    else {
-        anyIp(sc.port, family, &sc.address);
-    }
-    
-#undef CHECK_PARAM
-#undef HAS_PARAM
-#undef X
+    READ_FAMILY_CONFIG(family, type, scope);
+    READ_ADDRESS_CONFIG(sc, family, address);
     
     EmiP2PSocket* obj = new EmiP2PSocket(jsHandle, sc);
     // We need to Wrap the object now, or failing to desuspend
