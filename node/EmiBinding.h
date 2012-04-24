@@ -23,6 +23,11 @@ public:
     typedef v8::Local<v8::Object>      TemporaryData;
     typedef v8::Persistent<v8::Object> PersistentData;
     
+    // Will fill address with an address that cannot be the receiver of a packet
+    static void fillNilAddress(int family, Address& address);
+    static bool isNilAddress(const Address& address);
+    static int extractFamily(const Address& address);
+    
     static void panic();
     
     inline static EmiError makeError(const char *domain, int32_t code) {

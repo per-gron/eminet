@@ -101,6 +101,21 @@ void EmiNodeUtil::anyIp(uint16_t port,
     }
 }
 
+uint16_t EmiNodeUtil::extractPort(const sockaddr_storage& address) {
+    if (AF_INET6 == address.ss_family) {
+        const struct sockaddr_in6& addr6(*((const struct sockaddr_in6 *)&address));
+        return addr6.sin6_port;
+    }
+    else if (AF_INET == address.ss_family) {
+		const struct sockaddr_in& addr(*((const struct sockaddr_in *)&address));
+        return addr.sin_port;
+    }
+    else {
+        ASSERT(0 && "unexpected address family");
+        abort();
+    }
+}
+
 bool EmiNodeUtil::parseAddressFamily(const char* typeStr, int *family) {
     if (0 == strcmp(typeStr, "udp4")) {
         *family = AF_INET;

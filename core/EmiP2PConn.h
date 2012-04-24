@@ -10,6 +10,7 @@
 #define roshambo_EmiP2PConn_h
 
 #include "EmiTypes.h"
+#include "EmiNetUtil.h"
 
 template<class P2PSockDelegate, int CookieSize>
 class EmiP2PConn {
@@ -24,14 +25,14 @@ private:
     inline EmiP2PConn(const EmiP2PConn& other);
     inline EmiP2PConn& operator=(const EmiP2PConn& other);
     
-    AddressCmp _acmp;
-    Address    _peers[2];
-    Address    _innerEndpoints[2];
-    uint8_t    _cookie[CookieSize];
-    size_t     _bytesSentSinceRateLimitTimeout;
+    const AddressCmp _acmp;
+    Address          _peers[2];
+    Address          _innerEndpoints[2];
+    uint8_t          _cookie[CookieSize];
+    size_t           _bytesSentSinceRateLimitTimeout;
     
-    // connection timeout
-    // rate limit timeout
+    // TODO connection timeout
+    // TODO rate limit timeout
     
     // Returns NULL on error
     const Address* otherAddress(const Address& address) {
@@ -51,21 +52,34 @@ private:
         }
     }
     
-    void sendData(uv_udp_t *socket,
+    void sendData(uv_udp_t *sock,
                   const Address& address,
-                  const uint8_t *data,
-                  size_t size) {
+                  const TemporaryData& data,
+                  size_t offset,
+                  size_t len) {
         // TODO Implement rate limiting
-        _bytesSentSinceRateLimitTimeout += size;
+        _bytesSentSinceRateLimitTimeout += len;
         
         P2PSockDelegate::sendData(sock,
-                                  *otherAddr,
+                                  address,
                                   Binding::extractData(data)+offset,
                                   len);
     }
     
 public:
-    EmiP2PConn() {}
+    EmiP2PConn(const Address& firstPeer, const uint8_t *cookie, size_t cookieSize) :
+    _acmp(AddressCmp()),
+    _bytesSentSinceRateLimitTimeout(0) {
+        int family = EmiBinding::extractFamily(firstPeer);
+        
+        _peers[0] = firstPeer;
+        EmiBinding::fillNilAddress(family, _peers[1]);
+        EmiBinding::fillNilAddress(family, _innerEndpoints[0]);
+        EmiBinding::fillNilAddress(family, _innerEndpoints[1]);
+        
+        ASSERT(CookieSize == cookieSize);
+        memcpy(_cookie, cookie, CookieSize);
+    }
     virtual ~EmiP2PConn() {}
     
     void gotPacket() {}
@@ -81,10 +95,7 @@ public:
             return;
         }
         
-        sendData(sock,
-                 *otherAddr,
-                 Binding::extractData(data)+offset,
-                 len);
+        sendData(sock, *otherAddr, data, offset, len);
     }
 };
 

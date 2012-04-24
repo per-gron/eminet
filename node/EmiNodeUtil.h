@@ -88,7 +88,7 @@ public:
                         uint16_t port,
                         int family,
                         sockaddr_storage *out);
-    
+    static uint16_t extractPort(const sockaddr_storage& addr);
     static void anyIp(uint16_t port,
                       int family,
                       sockaddr_storage *out);

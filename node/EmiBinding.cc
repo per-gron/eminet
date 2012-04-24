@@ -1,6 +1,8 @@
 #define BUILDING_NODE_EXTENSION
 
-#include "EmiSockDelegate.h"
+#include "EmiBinding.h"
+
+#include "EmiNodeUtil.h"
 
 #include <stdexcept>
 #include <node.h>
@@ -8,6 +10,18 @@
 #include <openssl/hmac.h>
 
 using namespace v8;
+
+void EmiBinding::fillNilAddress(int family, Address& address) {
+    EmiNodeUtil::anyIp(/*port:*/0, family, &address);
+}
+
+bool EmiBinding::isNilAddress(const Address& address) {
+    return 0 != EmiNodeUtil::extractPort(address);
+}
+
+int EmiBinding::extractFamily(const Address& address) {
+    return address.ss_family;
+}
 
 void EmiBinding::panic() {
     throw std::runtime_error("EmiNet internal error");
