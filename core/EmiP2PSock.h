@@ -101,13 +101,9 @@ private:
         return false;
     }
     
-    void tryToForwardPacket(EmiTimeInterval now,
-                            SocketHandle *sock,
-                            const Address& address,
-                            const TemporaryData& data,
-                            size_t offset,
-                            size_t len) {
-        // TODO
+    Conn *findConn(const Address& address) {
+        ConnMapIter cur = _conns.find(address);
+        return _conns.end() == cur ? NULL : (*cur).second;
     }
     
     void gotConnectionOpen() {
@@ -195,24 +191,23 @@ public:
         
         const char *err = NULL;
         
-        const uint8_t *rawData(Binding::extractData(data)+offset);
-        
-        ConnMapIter cur = _conns.find(address);
-        Conn *conn = _conns.end() == cur ? NULL : (*cur).second;
-        
+        Conn *conn = findConn(address);
         if (conn) {
             conn->gotPacket();
         }
         
         if (EMI_TIMESTAMP_LENGTH+1 == len) {
             // This is a heartbeat packet. Just forward the packet (if we can)
-            tryToForwardPacket(now, sock, address, data, offset, len);
+            if (conn) {
+                conn->forwardPacket(now, sock, address, data, offset, len);
+            }
         }
         else if (len < EMI_TIMESTAMP_LENGTH + EMI_HEADER_LENGTH) {
             err = "Packet too short";
             goto error;
         }
         else {
+            const uint8_t *rawData(Binding::extractData(data)+offset);
             EmiMessageHeader header;
             if (!EmiMessageHeader::parseMessageHeader(rawData+EMI_TIMESTAMP_LENGTH,
                                                       len-EMI_TIMESTAMP_LENGTH,
@@ -260,8 +255,10 @@ public:
             }
             else {
                 // This is not a control message, so we don't care about its
-                // contents. Just forward it (if we can)
-                tryToForwardPacket(now, sock, address, data, offset, len);
+                // contents. Just forward it.
+                if (conn) {
+                    conn->forwardPacket(now, sock, address, data, offset, len);
+                }
             }
         }
         
