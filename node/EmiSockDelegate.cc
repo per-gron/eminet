@@ -46,10 +46,6 @@ inline static uint16_t sockaddrPort(const struct sockaddr_storage& addr) {
     }
 }
 
-static void send_cb(uv_udp_send_t* req, int status) {
-    free(req);
-}
-
 static uv_buf_t alloc_cb(uv_handle_t* handle, size_t suggested_size) {
     char *buf = slab_allocator.Allocate(Context::GetCurrent()->Global(), suggested_size);
     return uv_buf_init(buf, suggested_size);
@@ -200,35 +196,7 @@ void EmiSockDelegate::sendData(uv_udp_t *socket,
                                const Address& address,
                                const uint8_t *data,
                                size_t size) {
-    uv_udp_send_t *req = (uv_udp_send_t *)malloc(sizeof(uv_udp_send_t)+
-                                                 sizeof(uv_buf_t));
-    uv_buf_t      *buf = (uv_buf_t *)&req[1];
-    
-    *buf = uv_buf_init((char *)data, size);
-    
-    if (AF_INET == address.ss_family) {
-        if (0 != uv_udp_send(req,
-                             socket,
-                             buf,
-                             /*bufcnt:*/1,
-                             *((struct sockaddr_in *)&address),
-                             send_cb)) {
-            free(req);
-        }
-    }
-    else if (AF_INET6 == address.ss_family) {
-        if (0 != uv_udp_send6(req,
-                              socket,
-                              buf,
-                              /*bufcnt:*/1,
-                              *((struct sockaddr_in6 *)&address),
-                              send_cb)) {
-            free(req);
-        }
-    }
-    else {
-        ASSERT(0 && "unexpected address family");
-    }
+    EmiNodeUtil::sendData(socket, address, data, size);
 }
 
 void EmiSockDelegate::gotConnection(EC& conn) {

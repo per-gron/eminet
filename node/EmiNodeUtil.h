@@ -3,6 +3,7 @@
 #define emilir_EmiNodeUtil_h
 
 #include <stdint.h>
+#include <uv.h>
 
 struct sockaddr_storage;
 
@@ -85,6 +86,12 @@ public:
                       sockaddr_storage *out);
     
     static bool parseAddressFamily(const char* typeStr, int *family);
+    
+    static void sendData(uv_udp_t *socket,
+                         const sockaddr_storage& address,
+                         const uint8_t *data,
+                         size_t size);
+
 };
 
 #endif
