@@ -9,7 +9,12 @@
 #ifndef roshambo_EmiP2PConn_h
 #define roshambo_EmiP2PConn_h
 
+#include "EmiTypes.h"
+
+template<class SockDelegate, int CookieSize>
 class EmiP2PConn {
+    typedef typename SockDelegate::Address Address;
+    
 private:
     // Private copy constructor and assignment operator
     inline EmiP2PConn(const EmiP2PConn& other);
@@ -17,7 +22,7 @@ private:
     
     Address peers[2];
     Address innerEndpoints[2];
-    uint8_t cookie[COOKIE_SIZE];
+    uint8_t cookie[CookieSize];
     size_t bytesSentSinceRateLimitTimeout;
     
     // connection timeout

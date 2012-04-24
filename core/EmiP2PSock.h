@@ -11,18 +11,35 @@
 
 #include "EmiP2PSockConfig.h"
 #include "EmiP2PConn.h"
+#include "EmiMessageHeader.h"
 
 #include <algorithm>
+#include <cmath>
+#include <map>
 
-static const size_t          EMI_P2P_SERVER_SECRET_SIZE = 32;
-static const size_t          EMI_P2P_SHARED_SECRET_SIZE = 32;
 static const EmiTimeInterval EMI_P2P_COOKIE_RESOLUTION  = 5*60; // In seconds
+
+static const uint64_t ARC4RANDOM_MAX = 0x100000000;
+
 
 template<class SockDelegate>
 class EmiP2PSock {
     
-    static const size_t RAND_NUM_SIZE = 8;
-    static const size_t COOKIE_SIZE = RAND_NUM_SIZE + SockDelegate::HMAC_HASH_SIZE;
+    static const size_t          EMI_P2P_SERVER_SECRET_SIZE = 32;
+    static const size_t          EMI_P2P_SHARED_SECRET_SIZE = 32;
+    static const size_t          EMI_P2P_RAND_NUM_SIZE = 8;
+    static const size_t          EMI_P2P_COOKIE_SIZE = EMI_P2P_RAND_NUM_SIZE + SockDelegate::HMAC_HASH_SIZE;
+    
+    typedef typename SockDelegate::SocketHandle     SocketHandle;
+    typedef typename SockDelegate::TemporaryData    TemporaryData;
+    typedef typename SockDelegate::Error            Error;
+    typedef typename SockDelegate::Address          Address;
+    typedef typename SockDelegate::AddressCmp       AddressCmp;
+    
+    typedef EmiP2PSockConfig<Address>                     SockConfig;
+    typedef EmiP2PConn<SockDelegate, EMI_P2P_COOKIE_SIZE> Conn;
+    typedef std::map<Address, Conn*, AddressCmp>          ConnMap;
+    typedef typename ConnMap::iterator                    ConnMapIter;
     
 private:
     // Private copy constructor and assignment operator
@@ -34,8 +51,6 @@ private:
     
     // The keys of this map are the Conn*'s peer addresses;
     // each conn has two entries in _conns.
-    typedef map<Address, Conn*, AddressCmp> ConnMap;
-    typedef ConnMap::iterator               ConnMapIter;
     ConnMap _conns;
     
     inline bool shouldArtificiallyDropPacket() const {
@@ -44,7 +59,7 @@ private:
         return ((float)arc4random() / ARC4RANDOM_MAX) < config.fabricatedPacketDropRate;
     }
     
-    void hashP2PCookie(EmiTimeInterval stamp, uint8_t *randNum,
+    void hashCookie(EmiTimeInterval stamp, uint8_t *randNum,
                        uint8_t *buf, size_t bufLen, bool minusOne = false) const {
         if (bufLen < SockDelegate::HMAC_HASH_SIZE) {
             SockDelegate::panic();
@@ -52,32 +67,32 @@ private:
         
         uint64_t integerStamp = floor(stamp/EMI_P2P_COOKIE_RESOLUTION - (minusOne ? 1 : 0));
         
-        uint8_t toBeHashed[RAND_NUM_SIZE+sizeof(integerStamp)];
+        uint8_t toBeHashed[EMI_P2P_RAND_NUM_SIZE+sizeof(integerStamp)];
         
-        memcpy(toBeHashed, randNum, RAND_NUM_SIZE);
-        *((uint64_t *)toBeHashed+RAND_NUM_SIZE) = integerStamp;
+        memcpy(toBeHashed, randNum, EMI_P2P_RAND_NUM_SIZE);
+        *((uint64_t *)toBeHashed+EMI_P2P_RAND_NUM_SIZE) = integerStamp;
         
         SockDelegate::hmacHash(_serverSecret, sizeof(_serverSecret),
                                toBeHashed, sizeof(toBeHashed),
                                buf, bufLen);
     }
     
-    bool checkP2PCookie(EmiTimeInterval stamp,
+    bool checkCookie(EmiTimeInterval stamp,
                         uint8_t *buf, size_t bufLen) const {
-        if (COOKIE_SIZE != bufLen) {
+        if (EMI_P2P_COOKIE_SIZE != bufLen) {
             return false;
         }
         
         char testBuf[SockDelegate::HMAC_HASH_SIZE];
         
-        hashP2PCookie(stamp, buf, testBuf, sizeof(testBuf));
-        generateP2PCookie(stamp, buf+RAND_NUM_SIZE, bufLen-RAND_NUM_SIZE);
+        hashCookie(stamp, buf, testBuf, sizeof(testBuf));
+        generateCookie(stamp, buf+EMI_P2P_RAND_NUM_SIZE, bufLen-EMI_P2P_RAND_NUM_SIZE);
         if (0 == memcmp(testBuf, buf, sizeof(testBuf))) {
             return true;
         }
         
-        hashP2PCookie(stamp, buf, testBuf, sizeof(testBuf), /*minusOne:*/true);
-        generateP2PCookie(stamp, buf+RAND_NUM_SIZE, bufLen-RAND_NUM_SIZE);
+        hashCookie(stamp, buf, testBuf, sizeof(testBuf), /*minusOne:*/true);
+        generateCookie(stamp, buf+EMI_P2P_RAND_NUM_SIZE, bufLen-EMI_P2P_RAND_NUM_SIZE);
         if (0 == memcmp(testBuf, buf, sizeof(testBuf))) {
             return true;
         }
@@ -87,13 +102,13 @@ private:
     
 public:
     
-    const EmiP2PSockConfig config;
+    const SockConfig config;
     
-    EmiP2P(const EmiSockConfig<Address>& config_, const SockDelegate& delegate) :
-    config(_config), _socket(NULL) {
+    EmiP2PSock(const SockConfig& config_, const SockDelegate& delegate) :
+    config(config_), _socket(NULL) {
         SockDelegate::randomBytes(_serverSecret, sizeof(_serverSecret));
     }
-    virtual ~EmiP2P() {
+    virtual ~EmiP2PSock() {
         // This will close the socket
         suspend();
     }
@@ -104,15 +119,15 @@ public:
     
     void suspend() {
         if (_socket) {
-            SockDelegate::closeSocket(*this, _serverSocket);
-            _serverSocket = NULL;
+            SockDelegate::closeSocket(*this, _socket);
+            _socket = NULL;
         }
     }
     
     bool desuspend(Error& err) {
         if (!_socket) {
-            _serverSocket = _delegate.openSocket(*this, config.port, err);
-            if (!_serverSocket) return false;
+            _socket = _delegate.openSocket(*this, config.port, err);
+            if (!_socket) return false;
         }
         
         return true;
@@ -121,16 +136,16 @@ public:
     // Returns the size of the cookie
     size_t generateCookie(EmiTimeInterval stamp,
                           uint8_t *buf, size_t bufLen) const {
-        if (bufLen < COOKIE_SIZE) {
+        if (bufLen < EMI_P2P_COOKIE_SIZE) {
             SockDelegate::panic();
         }
         
-        SockDelegate::randomBytes(buf, RAND_NUM_SIZE);
+        SockDelegate::randomBytes(buf, EMI_P2P_RAND_NUM_SIZE);
         
-        hashP2PCookie(stamp, /*randNum:*/buf,
-                      buf+RAND_NUM_SIZE, bufLen-RAND_NUM_SIZE);
+        hashCookie(stamp, /*randNum:*/buf,
+                      buf+EMI_P2P_RAND_NUM_SIZE, bufLen-EMI_P2P_RAND_NUM_SIZE);
         
-        return COOKIE_SIZE;
+        return EMI_P2P_COOKIE_SIZE;
     }
     
     // Returns the size of the shared secret
