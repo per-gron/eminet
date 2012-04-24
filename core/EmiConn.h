@@ -40,7 +40,7 @@ class EmiConn {
     bool _initiator;
     
     ELC *_conn;
-    EmiSenderBuffer<SockDelegate> _senderBuffer;
+    EmiSenderBuffer<Binding> _senderBuffer;
     ERB _receiverBuffer;
     ESQ _sendQueue;
     EmiConnTime _time;

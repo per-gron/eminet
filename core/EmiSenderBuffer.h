@@ -15,9 +15,8 @@
 #include <set>
 #include <vector>
 
-template<class SockDelegate>
+template<class Binding>
 class EmiSenderBuffer {
-    typedef typename SockDelegate::Binding Binding;
     typedef typename Binding::Error        Error;
     typedef EmiMessage<Binding>            EM;
     typedef void (^EmiSenderBufferIteratorBlock)(EM *message);
