@@ -22,11 +22,12 @@ static const uint64_t ARC4RANDOM_MAX = 0x100000000;
 
 template<class SockDelegate, class ConnDelegate>
 class EmiSock {
-    typedef typename SockDelegate::Error            Error;
-    typedef typename SockDelegate::TemporaryData    TemporaryData;
-    typedef typename SockDelegate::Address          Address;
-    typedef typename SockDelegate::AddressCmp       AddressCmp;
-    typedef typename SockDelegate::SocketHandle     SocketHandle;
+    typedef typename SockDelegate::Binding     Binding;
+    typedef typename Binding::Error            Error;
+    typedef typename Binding::TemporaryData    TemporaryData;
+    typedef typename Binding::Address          Address;
+    typedef typename Binding::AddressCmp       AddressCmp;
+    typedef typename Binding::SocketHandle     SocketHandle;
     typedef typename SockDelegate::ConnectionOpenedCallbackCookie  ConnectionOpenedCallbackCookie;
     
     class EmiConnectionKey {
@@ -176,7 +177,7 @@ public:
             // It shouldn't be required.
             size_t newNumConns = _conns.size();
             if (newNumConns >= numConns) {
-                SockDelegate::panic();
+                Binding::panic();
             }
             numConns = newNumConns;
             
@@ -257,7 +258,7 @@ public:
         
         uint16_t inboundPort(SockDelegate::extractLocalPort(sock));
         
-        const uint8_t *rawData(SockDelegate::extractData(data)+offset);
+        const uint8_t *rawData(Binding::extractData(data)+offset);
         
         EmiConnectionKey ckey(address, inboundPort);
         EmiConnectionMapIter cur = _conns.find(ckey);
@@ -439,7 +440,7 @@ public:
         if (0 != _conns.count(key)) {
             // This should not happen, because openClientSocket should
             // have returned an unused port number.
-            err = SockDelegate::makeError("com.emilir.eminet.internalerror", 0);
+            err = Binding::makeError("com.emilir.eminet.internalerror", 0);
             return false;
         }
         

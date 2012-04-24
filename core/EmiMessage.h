@@ -17,7 +17,8 @@ private:
     inline EmiMessage(const EmiMessage& other);
     inline EmiMessage& operator=(const EmiMessage& other);
     
-    typedef typename SockDelegate::PersistentData PersistentData;
+    typedef typename SockDelegate::Binding   Binding;
+    typedef typename Binding::PersistentData PersistentData;
     
     size_t _refCount;
     
@@ -79,7 +80,7 @@ public:
     }
     
     ~EmiMessage() {
-        SockDelegate::releasePersistentData(data);
+        Binding::releasePersistentData(data);
     }
     
     inline void retain() {
@@ -94,7 +95,7 @@ public:
     size_t approximateSize() const {
         // + 2 for the possibility of adding ACK data to the message
         // + 3 for the sequence number and split id
-        return EMI_HEADER_LENGTH + SockDelegate::extractLength(data) + 2 + 3;
+        return EMI_HEADER_LENGTH + Binding::extractLength(data) + 2 + 3;
     }
     
     // THIS FIELD IS INTENDED TO BE USED ONLY BY EmiSenderBuffer!

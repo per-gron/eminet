@@ -26,7 +26,8 @@ typedef void (^SendSynRstAckPacketCallback)(uint8_t *buf, size_t size);
 
 template<class SockDelegate, class ConnDelegate>
 class EmiSendQueue {
-    typedef typename SockDelegate::PersistentData PersistentData;
+    typedef typename SockDelegate::Binding   Binding;
+    typedef typename Binding::PersistentData PersistentData;
     
     typedef std::vector<EmiMessage<SockDelegate> *> SendQueueVector;
     typedef typename std::vector<EmiMessage<SockDelegate> *>::iterator SendQueueVectorIter;
@@ -82,7 +83,7 @@ private:
                            EmiSequenceNumber sequenceNumber,
                            const PersistentData& data,
                            EmiFlags flags) {
-        const size_t msgLength = SockDelegate::extractLength(data);
+        const size_t msgLength = Binding::extractLength(data);
         size_t pos = offset;
         
         flags |= (hasAck ? EMI_ACK_FLAG : 0); // SYN/RST/ACK flags
@@ -108,7 +109,7 @@ private:
                 // The data doesn't fit in the buffer
                 return 0;
             }
-            memcpy(buf+pos, SockDelegate::extractData(data), msgLength); pos += msgLength;
+            memcpy(buf+pos, Binding::extractData(data), msgLength); pos += msgLength;
         }
         
         return pos-offset;
@@ -298,7 +299,7 @@ public:
         else {
             if (EMI_PRIORITY_HIGH != msg->priority) {
                 // Only EMI_PRIORITY_HIGH messages are implemented
-                SockDelegate::panic();
+                Binding::panic();
                 return;
             }
             

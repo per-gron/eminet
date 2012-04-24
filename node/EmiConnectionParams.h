@@ -2,16 +2,18 @@
 #ifndef emilir_EmiConnectionParams_h
 #define emilir_EmiConnectionParams_h
 
-#include "EmiSockDelegate.h"
+#include "EmiBinding.h"
 #include "EmiConnDelegate.h"
 #include "EmiAddressCmp.h"
 
 #include "../core/EmiConn.h"
 #include <node.h>
 
+class EmiSocket;
+
 // This is a class designed to help EmiConnection::NewInstance
 class EmiConnectionParams : public node::ObjectWrap {
-    typedef EmiConnParams<EmiSockDelegate::Address>   ECP;
+    typedef EmiConnParams<EmiBinding::Address>   ECP;
 private:
     EmiConnectionParams(EmiSocket& es_,
                         const ECP& params_);

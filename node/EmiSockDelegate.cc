@@ -7,10 +7,7 @@
 #include "EmiConnection.h"
 #include "slab_allocator.h"
 
-#include <stdexcept>
 #include <node.h>
-#include <openssl/rand.h>
-#include <openssl/hmac.h>
 
 #define SLAB_SIZE (1024 * 1024)
 
@@ -278,37 +275,4 @@ void EmiSockDelegate::connectionOpened(ConnectionOpenedCallbackCookie& cookie,
     }
     
     cookie.Dispose();
-}
-
-void EmiSockDelegate::panic() {
-    throw std::runtime_error("EmiNet internal error");
-}
-
-Persistent<Object> EmiSockDelegate::makePersistentData(const Local<Object>& data,
-                                                       size_t offset,
-                                                       size_t length) {
-    HandleScope scope;
-    
-    // Copy the buffer
-    node::Buffer *buf(node::Buffer::New(node::Buffer::Data(data)+offset,
-                                        length));
-    
-    // Make a new persistent handle (do not just reuse the persistent buf->handle_ handle)
-    return Persistent<Object>::New(buf->handle_);
-}
-
-void EmiSockDelegate::hmacHash(const uint8_t *key, size_t keyLength,
-                               const uint8_t *data, size_t dataLength,
-                               uint8_t *buf, size_t bufLen) {
-    unsigned int bufLenInt = bufLen;
-    if (!HMAC(EVP_sha256(), key, keyLength, data, dataLength, buf, &bufLenInt)) {
-        panic();
-    }
-}
-
-void EmiSockDelegate::randomBytes(uint8_t *buf, size_t bufSize) {
-    // TODO I'm not sure this is actually secure. Double check this.
-    if (!RAND_bytes(buf, bufSize)) {
-        panic();
-    }
 }

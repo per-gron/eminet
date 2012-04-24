@@ -16,8 +16,9 @@
 
 template<class SockDelegate, class Receiver>
 class EmiReceiverBuffer {
-    typedef typename SockDelegate::PersistentData PersistentData;
-    typedef typename SockDelegate::TemporaryData  TemporaryData;
+    typedef typename SockDelegate::Binding   Binding;
+    typedef typename Binding::PersistentData PersistentData;
+    typedef typename Binding::TemporaryData  TemporaryData;
     
 public:
     class Entry {
@@ -29,10 +30,10 @@ public:
     public:
         Entry(const EmiMessageHeader& header_, const TemporaryData &data_, size_t offset, size_t length) :
         header(header_),
-        data(SockDelegate::makePersistentData(data_, offset, length)) {}
+        data(Binding::makePersistentData(data_, offset, length)) {}
         Entry() {}
         ~Entry() {
-            SockDelegate::releasePersistentData(data);
+            Binding::releasePersistentData(data);
         }
         
         EmiMessageHeader header;

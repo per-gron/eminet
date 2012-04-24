@@ -23,9 +23,10 @@ typedef std::map<EmiChannelQualifier, EmiSequenceNumber> EmiLogicalConnectionMem
 
 template<class SockDelegate, class ConnDelegate>
 class EmiLogicalConnection {
-    typedef typename SockDelegate::Error          Error;
-    typedef typename SockDelegate::PersistentData PersistentData;
-    typedef typename SockDelegate::TemporaryData  TemporaryData;
+    typedef typename SockDelegate::Binding   Binding;
+    typedef typename Binding::Error          Error;
+    typedef typename Binding::PersistentData PersistentData;
+    typedef typename Binding::TemporaryData  TemporaryData;
     typedef typename SockDelegate::ConnectionOpenedCallbackCookie ConnectionOpenedCallbackCookie;
     typedef EmiMessage<SockDelegate>            EM;
     typedef EmiConn<SockDelegate, ConnDelegate> EC;
@@ -112,7 +113,7 @@ public:
         if (!resendInitMessage(now, err)) {
             // This should not happen, because resendInitMessage only fails when
             // this host is the connection's initiator, which is not the case here.
-            SockDelegate::panic();
+            Binding::panic();
         }
     }
     EmiLogicalConnection(EC *connection, EmiTimeInterval now, const ConnectionOpenedCallbackCookie& connectionOpenedCallbackCookie) :
@@ -125,7 +126,7 @@ public:
             // This really ought not to happen; resendInitMessage only fails when
             // the sender buffer is full, but this init message should be the first
             // message on the whole connection.
-            SockDelegate::panic();
+            Binding::panic();
         }
     }
     virtual ~EmiLogicalConnection() {
@@ -298,7 +299,7 @@ public:
     bool close(EmiTimeInterval now, Error& err) {
         if (_closing || !_conn) {
             // We're already closing or closed; no need to initiate a new close process
-            err = SockDelegate::makeError("com.emilir.eminet.closed", 0);
+            err = Binding::makeError("com.emilir.eminet.closed", 0);
             return false;
         }
         
@@ -340,13 +341,13 @@ public:
                          EMI_CHANNEL_TYPE_RELIABLE_ORDERED == channelType);
         
         if (isClosed()) {
-            err = SockDelegate::makeError("com.emilir.eminet.closed", 0);
+            err = Binding::makeError("com.emilir.eminet.closed", 0);
             error = true;
             goto cleanup;
         }
         
-        if (0 == SockDelegate::extractLength(data)) {
-            err = SockDelegate::makeError("com.emilir.eminet.emptymessage", 0);
+        if (0 == Binding::extractLength(data)) {
+            err = Binding::makeError("com.emilir.eminet.emptymessage", 0);
             error = true;
             goto cleanup;
         }

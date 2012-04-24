@@ -20,10 +20,12 @@
 
 template<class SockDelegate, class ConnDelegate>
 class EmiConn {
-    typedef typename SockDelegate::Error          Error;
-    typedef typename SockDelegate::PersistentData PersistentData;
-    typedef typename SockDelegate::TemporaryData  TemporaryData;
-    typedef typename SockDelegate::Address        Address;
+    typedef typename SockDelegate::Binding   Binding;
+    typedef typename Binding::Error          Error;
+    typedef typename Binding::PersistentData PersistentData;
+    typedef typename Binding::TemporaryData  TemporaryData;
+    typedef typename Binding::Address        Address;
+    
     typedef typename SockDelegate::ConnectionOpenedCallbackCookie ConnectionOpenedCallbackCookie;
     
     typedef EmiSock<SockDelegate, ConnDelegate> ES;
@@ -68,12 +70,12 @@ public:
     inline void gotReceiverBufferMessage(typename ERB::Entry *entry) {
         if (!_conn) return;
         
-        if (!_conn->gotMessage(entry->header, SockDelegate::castToTemporary(entry->data), 0, /*dontFlush:*/true)) {
+        if (!_conn->gotMessage(entry->header, Binding::castToTemporary(entry->data), 0, /*dontFlush:*/true)) {
             // gotMessage should only return false if the message arrived out of order or
             // some other similar error occured, but that should not happen because this
             // callback should only be called by the receiver buffer for messages that are
             // exactly in order.
-            SockDelegate::panic();
+            Binding::panic();
         }
     }
     
@@ -166,7 +168,7 @@ public:
             Error err;
             if (!enqueueMessage(now, msg, /*reliable:*/false, err)) {
                 // This can't happen because the reliable parameter was false
-                SockDelegate::panic();
+                Binding::panic();
             }
         });
         
@@ -278,7 +280,7 @@ public:
                 // This should not happen, because resendInitMessage can only
                 // fail when it attempts to send a SYN message, but we're
                 // sending a SYN-RST message here.
-                SockDelegate::panic();
+                Binding::panic();
             }
             return false;
         }
@@ -344,7 +346,7 @@ public:
         }
         else {
             // We're already closed
-            err = SockDelegate::makeError("com.emilir.eminet.closed", 0);
+            err = Binding::makeError("com.emilir.eminet.closed", 0);
             return false;
         }
     }
@@ -372,8 +374,8 @@ public:
     // been called on it.
     bool send(EmiTimeInterval now, const PersistentData& data, EmiChannelQualifier channelQualifier, EmiPriority priority, Error& err) {
         if (!_conn || _conn->isClosing()) {
-            err = SockDelegate::makeError("com.emilir.eminet.closed", 0);
-            SockDelegate::releasePersistentData(data);
+            err = Binding::makeError("com.emilir.eminet.closed", 0);
+            Binding::releasePersistentData(data);
             return false;
         }
         else {

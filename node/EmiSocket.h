@@ -2,6 +2,7 @@
 #ifndef emilir_EmiSocket_h
 #define emilir_EmiSocket_h
 
+#include "EmiBinding.h"
 #include "EmiSockDelegate.h"
 #include "EmiConnDelegate.h"
 #include "EmiAddressCmp.h"
@@ -36,7 +37,7 @@ private:
     inline EmiSocket(const EmiSocket& other);
     inline EmiSocket& operator=(const EmiSocket& other);
     
-    EmiSocket(v8::Handle<v8::Object> jsHandle, const EmiSockConfig<EmiSockDelegate::Address>& sc);
+    EmiSocket(v8::Handle<v8::Object> jsHandle, const EmiSockConfig<EmiBinding::Address>& sc);
     virtual ~EmiSocket();
     
     static v8::Handle<v8::Value> SetCallbacks(const v8::Arguments& args);

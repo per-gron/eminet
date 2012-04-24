@@ -52,6 +52,9 @@ class EmiSenderBuffer {
         }
     };
     
+    typedef typename SockDelegate::Binding Binding;
+    typedef typename Binding::Error        Error;
+    
     typedef std::vector<EmiMessage<SockDelegate> *> EmiMessageVector;
     typedef std::set<EmiMessage<SockDelegate> *, EmiSenderBufferNextMsgTreeCmp> EmiSenderBufferNextMsgTree;
     typedef std::set<EmiMessage<SockDelegate> *, EmiSenderBufferSendBufferCmp>  EmiSenderBufferSendBuffer;
@@ -101,11 +104,11 @@ public:
     }
     
     // Returns false if the buffer didn't have space for the message
-    bool registerReliableMessage(EmiMessage<SockDelegate> *message, typename SockDelegate::Error& err, EmiTimeInterval now) {
+    bool registerReliableMessage(EmiMessage<SockDelegate> *message, Error& err, EmiTimeInterval now) {
         size_t msgSize = message->approximateSize();
         
         if (_sendBufferSize+msgSize > _size) {
-            err = SockDelegate::makeError("com.emilir.eminet.sendbufferoverflow", 0);
+            err = Binding::makeError("com.emilir.eminet.sendbufferoverflow", 0);
             return false;
         }
         

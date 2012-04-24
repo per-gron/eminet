@@ -2,6 +2,7 @@
 #ifndef emilir_EmiConnection_h
 #define emilir_EmiConnection_h
 
+#include "EmiBinding.h"
 #include "EmiSockDelegate.h"
 #include "EmiConnDelegate.h"
 #include "EmiAddressCmp.h"
@@ -12,7 +13,7 @@
 class EmiConnection : public node::ObjectWrap {
     friend class EmiConnDelegate;
     typedef EmiConn<EmiSockDelegate, EmiConnDelegate> EC;
-    typedef EmiConnParams<EmiSockDelegate::Address>   ECP;
+    typedef EmiConnParams<EmiBinding::Address>        ECP;
     
 private:
     EC _conn;

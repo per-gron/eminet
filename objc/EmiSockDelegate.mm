@@ -8,12 +8,11 @@
 
 #include "EmiSockDelegate.h"
 
+#include "EmiBinding.h"
 #import "EmiSocketInternal.h"
 #import "EmiConnectionInternal.h"
 
 #import "GCDAsyncUdpSocket.h"
-#include <Security/Security.h>
-#include <CommonCrypto/CommonHMAC.h>
 
 EmiSockDelegate::EmiSockDelegate(EmiSocket *socket) : _socket(socket) {}
 
@@ -21,7 +20,7 @@ void EmiSockDelegate::closeSocket(EmiSockDelegate::ES& sock, GCDAsyncUdpSocket *
     [socket close];
 }
 
-GCDAsyncUdpSocket *EmiSockDelegate::openSocket(uint16_t port, Error& err) {
+GCDAsyncUdpSocket *EmiSockDelegate::openSocket(uint16_t port, __strong NSError*& err) {
     GCDAsyncUdpSocket *socket = [[GCDAsyncUdpSocket alloc] initWithDelegate:_socket delegateQueue:dispatch_get_current_queue()];
     
     if (![socket bindToPort:port error:&err]) {
@@ -39,7 +38,7 @@ uint16_t EmiSockDelegate::extractLocalPort(GCDAsyncUdpSocket *socket) {
     return [socket localPort];
 }
 
-EC *EmiSockDelegate::makeConnection(const EmiConnParams<Address>& params) {
+EC *EmiSockDelegate::makeConnection(const EmiConnParams<NSData*>& params) {
     return [[EmiConnection alloc] initWithSocket:_socket
                                           params:&params].conn;
 }
@@ -59,26 +58,11 @@ void EmiSockDelegate::gotConnection(EC& conn) {
 void EmiSockDelegate::connectionOpened(ConnectionOpenedCallbackCookie& cookie, bool error, EmiDisconnectReason reason, EC& ec) {
     if (cookie) {
         if (error) {
-            cookie(makeError("com.emilir.eminet.disconnect", reason), nil);
+            cookie(EmiBinding::makeError("com.emilir.eminet.disconnect", reason), nil);
         }
         else {
             cookie(nil, ec.getDelegate().getConn());
         }
         cookie = nil; // Release the block memory
-    }
-}
-
-void EmiSockDelegate::hmacHash(const uint8_t *key, size_t keyLength,
-                               const uint8_t *data, size_t dataLength,
-                               uint8_t *buf, size_t bufLen) {
-    if (bufLen < 256/8) {
-        panic();
-    }
-    CCHmac(kCCHmacAlgSHA256, key, keyLength, data, dataLength, buf);
-}
-
-void EmiSockDelegate::randomBytes(uint8_t *buf, size_t bufSize) {
-    if (0 != SecRandomCopyBytes(kSecRandomDefault, bufSize, buf)) {
-        panic();
     }
 }
