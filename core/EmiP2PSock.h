@@ -10,6 +10,7 @@
 #define roshambo_EmiP2PSock_h
 
 #include "EmiP2PSockConfig.h"
+#include "EmiP2PConn.h"
 
 #include <algorithm>
 
@@ -22,16 +23,6 @@ class EmiP2PSock {
     
     static const size_t RAND_NUM_SIZE = 8;
     static const size_t COOKIE_SIZE = RAND_NUM_SIZE + SockDelegate::HMAC_HASH_SIZE;
-    
-    class Conn {
-        Address peers[2];
-        Address innerEndpoints[2];
-        uint8_t cookie[COOKIE_SIZE];
-        size_t bytesSentSinceRateLimitTimeout;
-        
-        // connection timeout
-        // rate limit timeout
-    };
     
 private:
     // Private copy constructor and assignment operator

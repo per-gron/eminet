@@ -11,14 +11,8 @@
 using namespace v8;
 
 #define EXPAND_SYMS                                        \
-  EXPAND_SYM(mtu);                                         \
-  EXPAND_SYM(heartbeatFrequency);                          \
-  EXPAND_SYM(tickFrequency);                               \
-  EXPAND_SYM(heartbeatsBeforeConnectionWarning);           \
   EXPAND_SYM(connectionTimeout);                           \
-  EXPAND_SYM(receiverBufferSize);                          \
-  EXPAND_SYM(senderBufferSize);                            \
-  EXPAND_SYM(acceptConnections);                           \
+  EXPAND_SYM(rateLimit);                                   \
   EXPAND_SYM(type);                                        \
   EXPAND_SYM(port);                                        \
   EXPAND_SYM(address);                                     \
@@ -27,13 +21,6 @@ using namespace v8;
 #define EXPAND_SYM(sym) Persistent<String> EmiSocket::sym##Symbol;
 EXPAND_SYMS
 #undef EXPAND_SYM
-
-Persistent<Function> EmiSocket::gotConnection;
-Persistent<Function> EmiSocket::connectionMessage;
-Persistent<Function> EmiSocket::connectionLost;
-Persistent<Function> EmiSocket::connectionRegained;
-Persistent<Function> EmiSocket::connectionDisconnect;
-Persistent<Function> EmiSocket::connectionError;
 
 EmiSocket::EmiSocket(v8::Handle<v8::Object> jsHandle, const EmiSockConfig<EmiSockDelegate::Address>& sc) :
 _sock(sc, EmiSockDelegate(*this)),
@@ -175,7 +162,7 @@ Handle<Value> EmiSocket::New(const Arguments& args) {
         CHECK_PARAM(type, IsString);
         
         String::Utf8Value typeStr(type);
-        if (!EmiNodeUtil::parseAddressFamily(*typeStr, &family)) {
+        if (!parseAddressFamily(*typeStr, &family)) {
             ThrowException(Exception::Error(String::New("Unknown address family")));
             return scope.Close(Undefined());
         }
@@ -187,10 +174,10 @@ Handle<Value> EmiSocket::New(const Arguments& args) {
     if (HAS_PARAM(address)) {
         CHECK_PARAM(address, IsString);
         String::Utf8Value host(address);
-        EmiNodeUtil::parseIp(*host, sc.port, family, &sc.address);
+        parseIp(*host, sc.port, family, &sc.address);
     }
     else {
-        EmiNodeUtil::anyIp(sc.port, family, &sc.address);
+        anyIp(sc.port, family, &sc.address);
     }
     
 #undef CHECK_PARAM
@@ -268,7 +255,7 @@ Handle<Value> EmiSocket::DoConnect(const Arguments& args, int family) {
     /// Lookup IP
     
     sockaddr_storage address;
-    EmiNodeUtil::parseIp(*host, port, family, &address);
+    parseIp(*host, port, family, &address);
     
     
     /// Do the actual connect

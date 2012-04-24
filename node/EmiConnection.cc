@@ -17,7 +17,7 @@ EmiConnection::EmiConnection(EmiSocket& es, const ECP& params) :
 _conn(EmiConnDelegate(*this), es.getSock(), params) {};
 
 EmiTimeInterval EmiConnection::Now() {
-    return ((double)uv_hrtime())/NSECS_PER_SEC;
+    return ((double)uv_hrtime())/EmiNodeUtil::NSECS_PER_SEC;
 }
 
 EmiConnection::~EmiConnection() {
