@@ -35,21 +35,28 @@ private:
     // TODO rate limit timeout
     
     // Returns NULL on error
-    const Address* otherAddress(const Address& address) {
+    const Address* otherAddress(const Address& address) const {
         bool eq0 = (0 == _acmp(_peers[0], address));
         bool eq1 = (1 == _acmp(_peers[1], address));
         
-        // TODO Return NULL if the address is a nil address
+        const Address *addr;
         
         if (eq0) {
-            return &_peers[1];
+            addr = &_peers[1];
         }
         else if (eq1) {
-            return &_peers[0];
+            addr = &_peers[0];
         }
         else {
             return NULL;
         }
+        
+        // Return NULL if the address is a nil address
+        if (EmiBinding::isNilAddress(*addr)) {
+            return NULL;
+        }
+        
+        return addr;
     }
     
     void sendData(uv_udp_t *sock,
