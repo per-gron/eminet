@@ -113,9 +113,11 @@ void EmiSockDelegate::closeSocket(EmiSockDelegate::ES& sock, uv_udp_t *socket) {
     uv_close((uv_handle_t *)socket, close_cb);
 }
 
-uv_udp_t *EmiSockDelegate::openSocket(EmiSockDelegate::ES& sock, uint16_t port, Error& error) {
+uv_udp_t *EmiSockDelegate::openSocket(uint16_t port, Error& error) {
     int err;
     uv_udp_t *socket = (uv_udp_t *)malloc(sizeof(uv_udp_t));
+    
+    ES& sock(_es._sock);
     
     err = uv_udp_init(uv_default_loop(), socket);
     if (0 != err) {

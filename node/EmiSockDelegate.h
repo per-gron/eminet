@@ -38,7 +38,7 @@ public:
     EmiSockDelegate(EmiSocket& es);
     
     static void closeSocket(ES& sock, uv_udp_t *socket);
-    uv_udp_t *openSocket(ES& sock, uint16_t port, Error& err);
+    uv_udp_t *openSocket(uint16_t port, Error& err);
     static uint16_t extractLocalPort(uv_udp_t *socket);
     
     EC *makeConnection(const EmiConnParams<Address>& params);

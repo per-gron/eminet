@@ -75,7 +75,7 @@ class EmiSock {
         
         bool open(Error& err) {
             if (!socket) {
-                socket = emiSock._delegate.openSocket(emiSock, port, err);
+                socket = emiSock._delegate.openSocket(port, err);
             }
             
             return !!socket;
@@ -129,7 +129,7 @@ private:
         
         int32_t inboundPort = findFreeClientPort(address);
         if (-1 == inboundPort) {
-            SocketHandle *socket = _delegate.openSocket(*this, 0, err);
+            SocketHandle *socket = _delegate.openSocket(0, err);
             if (!socket) {
                 return 0;
             }
@@ -226,7 +226,7 @@ public:
     bool desuspend(Error& err) {
         if (!isOpen()) {
             if (config.acceptConnections || !_conns.empty()) {
-                _serverSocket = _delegate.openSocket(*this, config.port, err);
+                _serverSocket = _delegate.openSocket(config.port, err);
                 if (!_serverSocket) return false;
             }
             

@@ -60,7 +60,7 @@ public:
     EmiSockDelegate(EmiSocket *socket);
     
     static void closeSocket(ES& sock, GCDAsyncUdpSocket *socket);
-    GCDAsyncUdpSocket *openSocket(ES& sock, uint16_t port, Error& err);
+    GCDAsyncUdpSocket *openSocket(uint16_t port, Error& err);
     static uint16_t extractLocalPort(GCDAsyncUdpSocket *socket);
     
     EC *makeConnection(const EmiConnParams<Address>& params);
