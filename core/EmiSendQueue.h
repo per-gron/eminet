@@ -22,15 +22,14 @@
 template<class SockDelegate, class ConnDelegate>
 class EmiConn;
 
-typedef void (^SendSynRstAckPacketCallback)(uint8_t *buf, size_t size);
-
 template<class SockDelegate, class ConnDelegate>
 class EmiSendQueue {
     typedef typename SockDelegate::Binding   Binding;
     typedef typename Binding::PersistentData PersistentData;
+    typedef EmiMessage<Binding>              EM;
     
-    typedef std::vector<EmiMessage<SockDelegate> *> SendQueueVector;
-    typedef typename std::vector<EmiMessage<SockDelegate> *>::iterator SendQueueVectorIter;
+    typedef std::vector<EM *> SendQueueVector;
+    typedef typename std::vector<EM *>::iterator SendQueueVectorIter;
     typedef std::map<EmiChannelQualifier, EmiSequenceNumber> SendQueueAcksMap;
     typedef std::set<EmiChannelQualifier> SendQueueAcksSet;
     typedef EmiConn<SockDelegate, ConnDelegate> EC;
@@ -74,62 +73,21 @@ private:
         }
     }
     
-    static size_t writeMsg(uint8_t *buf,
-                           size_t bufSize,
-                           size_t offset,
-                           bool hasAck,
-                           EmiSequenceNumber ack,
-                           int32_t channelQualifier,
-                           EmiSequenceNumber sequenceNumber,
-                           const PersistentData& data,
-                           EmiFlags flags) {
-        const size_t msgLength = Binding::extractLength(data);
-        size_t pos = offset;
-        
-        flags |= (hasAck ? EMI_ACK_FLAG : 0); // SYN/RST/ACK flags
-        
-        if (0 == flags && 0 == msgLength) {
-            return 0;
-        }
-        
-        *((uint8_t*)  (buf+pos)) = flags; pos += 1;
-        *((uint8_t*)  (buf+pos)) = std::max(0, channelQualifier); pos += 1; // Channel qualifier. cq == -1 means SYN/RST message
-        *((uint16_t*) (buf+pos)) = htons(msgLength); pos += 2;
-        if (0 != msgLength || flags & EMI_SYN_FLAG) {
-            *((uint16_t*) (buf+pos)) = htons(sequenceNumber); pos += 2;
-        }
-        if (0 != msgLength) {
-            *((uint8_t*) (buf+pos)) = 0; pos += 1; // Split id
-        }
-        if (hasAck) {
-            *((uint16_t*) (buf+pos)) = htons(ack); pos += 2;
-        }
-        if (msgLength) {
-            if (pos+msgLength > bufSize) {
-                // The data doesn't fit in the buffer
-                return 0;
-            }
-            memcpy(buf+pos, Binding::extractData(data), msgLength); pos += msgLength;
-        }
-        
-        return pos-offset;
-    }
-    
-    void sendMessageInSeparatePacket(const EmiMessage<SockDelegate> *msg) {
+    void sendMessageInSeparatePacket(const EM *msg) {
         size_t tlen = EMI_TIMESTAMP_LENGTH;
         memset(_buf, 0, tlen);
         
         // Propagate the actual packet data
         size_t plen;
-        plen = EmiSendQueue::writeMsg(_buf, /* buf */
-                                      _bufLength, /* bufSize */
-                                      tlen, /* offset */
-                                      false, /* hasAck */
-                                      0, /* ack */
-                                      msg->channelQualifier,
-                                      msg->sequenceNumber,
-                                      msg->data,
-                                      msg->flags);
+        plen = EM::writeMsg(_buf, /* buf */
+                            _bufLength, /* bufSize */
+                            tlen, /* offset */
+                            false, /* hasAck */
+                            0, /* ack */
+                            msg->channelQualifier,
+                            msg->sequenceNumber,
+                            msg->data,
+                            msg->flags);
         
         _conn.sendDatagram(_buf, tlen+plen);
     }
@@ -170,29 +128,6 @@ public:
         }
     }
     
-    static void sendSynRstAckPacket(SendSynRstAckPacketCallback callback) {
-        const int BUF_SIZE = 80; // 80 ought to be plenty
-        uint8_t buf[BUF_SIZE];
-        
-        // Zero out the timestamp
-        size_t tlen = EMI_TIMESTAMP_LENGTH;
-        memset(buf, 0, tlen);
-        
-        // Propagate the actual packet data
-        size_t plen;
-        plen = EmiSendQueue::writeMsg(buf, /* buf */
-                                      BUF_SIZE, /* bufSize */
-                                      tlen, /* offset */
-                                      false, /* hasAck */
-                                      0, /* ack */
-                                      -1, /* channelQualifier */
-                                      0, /* sequenceNumber */
-                                      PersistentData(), /* data */
-                                      EMI_SYN_FLAG | EMI_RST_FLAG | EMI_ACK_FLAG);
-        
-        callback(buf, tlen+plen);
-    }
-    
     // Returns true if something was sent
     bool flush(EmiTimeInterval now) {
         bool sentPacket = false;
@@ -209,7 +144,7 @@ public:
             SendQueueVectorIter iter = _queue.begin();
             SendQueueVectorIter end = _queue.end();
             while (iter != end) {
-                EmiMessage<SockDelegate> *msg = *iter;
+                EM *msg = *iter;
                 
                 SendQueueAcksMap::iterator cur;
                 if (0 != acksInThisPacket.count(msg->channelQualifier)) {
@@ -222,15 +157,15 @@ public:
                 acksInThisPacket.insert(msg->channelQualifier);
                 
                 bool hasAck = cur != ackEnd;
-                pos += EmiSendQueue::writeMsg(_buf, /* buf */
-                                              _bufLength, /* bufSize */
-                                              pos, /* offset */
-                                              hasAck, /* hasAck */
-                                              hasAck && (*cur).second, /* ack */
-                                              msg->channelQualifier,
-                                              msg->sequenceNumber,
-                                              msg->data,
-                                              msg->flags);
+                pos += EM::writeMsg(_buf, /* buf */
+                                    _bufLength, /* bufSize */
+                                    pos, /* offset */
+                                    hasAck, /* hasAck */
+                                    hasAck && (*cur).second, /* ack */
+                                    msg->channelQualifier,
+                                    msg->sequenceNumber,
+                                    msg->data,
+                                    msg->flags);
                 
                 ++iter;
             }
@@ -241,15 +176,15 @@ public:
                 if (0 == acksInThisPacket.count(cq)) {
                     EmiSequenceNumber sn = (*ackIter).second;
                     
-                    pos += EmiSendQueue::writeMsg(_buf, /* buf */
-                                                  _bufLength, /* bufSize */
-                                                  pos, /* offset */
-                                                  true, /* hasAck */
-                                                  sn, /* ack */
-                                                  cq, /* channelQualifier */
-                                                  0, /* sequenceNumber */
-                                                  PersistentData(), /* data */
-                                                  0 /* flags */);
+                    pos += EM::writeMsg(_buf, /* buf */
+                                        _bufLength, /* bufSize */
+                                        pos, /* offset */
+                                        true, /* hasAck */
+                                        sn, /* ack */
+                                        cq, /* channelQualifier */
+                                        0, /* sequenceNumber */
+                                        PersistentData(), /* data */
+                                        0 /* flags */);
                 }
                 
                 ++ackIter;
@@ -290,7 +225,7 @@ public:
         return !_acks.empty();
     }
     
-    void enqueueMessage(EmiMessage<SockDelegate> *msg, EmiTimeInterval now) {
+    void enqueueMessage(EM *msg, EmiTimeInterval now) {
         if (msg->flags & (EMI_PRX_FLAG | EMI_RST_FLAG | EMI_SYN_FLAG)) {
             // This is a control message, one that cannot be bundled with
             // other messages. We might just as well send it right away.

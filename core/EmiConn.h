@@ -162,7 +162,7 @@ public:
     }
     
     void rtoTimeoutCallback(EmiTimeInterval now, EmiTimeInterval rto) {
-        _senderBuffer.eachCurrentMessage(now, rto, ^(EmiMessage<SockDelegate> *msg) {
+        _senderBuffer.eachCurrentMessage(now, rto, ^(EmiMessage<Binding> *msg) {
             // Reliable is set to NO, because if the message is reliable, it is already
             // in the sender buffer and shouldn't be reinserted anyway
             Error err;
@@ -255,7 +255,7 @@ public:
     
     // Returns false if the sender buffer didn't have space for the message.
     // Failing only happens for reliable mesages.
-    bool enqueueMessage(EmiTimeInterval now, EmiMessage<SockDelegate> *msg, bool reliable, Error& err) {
+    bool enqueueMessage(EmiTimeInterval now, EmiMessage<Binding> *msg, bool reliable, Error& err) {
         if (reliable) {
             if (!_senderBuffer.registerReliableMessage(msg, err, now)) {
                 return false;

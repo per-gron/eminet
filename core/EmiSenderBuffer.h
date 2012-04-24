@@ -17,10 +17,13 @@
 
 template<class SockDelegate>
 class EmiSenderBuffer {
-    typedef void (^EmiSenderBufferIteratorBlock)(EmiMessage<SockDelegate> *message);
+    typedef typename SockDelegate::Binding Binding;
+    typedef typename Binding::Error        Error;
+    typedef EmiMessage<Binding>            EM;
+    typedef void (^EmiSenderBufferIteratorBlock)(EM *message);
     
     struct EmiSenderBufferNextMsgTreeCmp {
-        bool operator()(EmiMessage<SockDelegate> *a, EmiMessage<SockDelegate> *b) const {
+        bool operator()(EM *a, EM *b) const {
             EmiTimeInterval art = a->registrationTime;
             EmiTimeInterval brt = b->registrationTime;
             
@@ -40,7 +43,7 @@ class EmiSenderBuffer {
     };
     
     struct EmiSenderBufferSendBufferCmp {
-        bool operator()(EmiMessage<SockDelegate> *a, EmiMessage<SockDelegate> *b) const {
+        bool operator()(EM *a, EM *b) const {
             int32_t acq = a->channelQualifier;
             int32_t bcq = b->channelQualifier;
             
@@ -52,12 +55,9 @@ class EmiSenderBuffer {
         }
     };
     
-    typedef typename SockDelegate::Binding Binding;
-    typedef typename Binding::Error        Error;
-    
-    typedef std::vector<EmiMessage<SockDelegate> *> EmiMessageVector;
-    typedef std::set<EmiMessage<SockDelegate> *, EmiSenderBufferNextMsgTreeCmp> EmiSenderBufferNextMsgTree;
-    typedef std::set<EmiMessage<SockDelegate> *, EmiSenderBufferSendBufferCmp>  EmiSenderBufferSendBuffer;
+    typedef std::vector<EM *> EmiMessageVector;
+    typedef std::set<EM *, EmiSenderBufferNextMsgTreeCmp> EmiSenderBufferNextMsgTree;
+    typedef std::set<EM *, EmiSenderBufferSendBufferCmp>  EmiSenderBufferSendBuffer;
     typedef typename EmiMessageVector::iterator           EmiMessageVectorIter;
     typedef typename EmiSenderBufferNextMsgTree::iterator EmiSenderBufferNextMsgTreeIter;
     typedef typename EmiSenderBufferSendBuffer::iterator  EmiSenderBufferSendBufferIter;
@@ -77,7 +77,7 @@ private:
     inline EmiSenderBuffer(const EmiSenderBuffer& other);
     inline EmiSenderBuffer& operator=(const EmiSenderBuffer& other);
     
-    EmiMessage<SockDelegate> *messageSearch(EmiMessage<SockDelegate> *messageStub) {
+    EM *messageSearch(EM *messageStub) {
         EmiSenderBufferSendBufferIter iter = _sendBuffer.lower_bound(messageStub);
         EmiSenderBufferSendBufferIter end = _sendBuffer.end();
         
@@ -104,7 +104,7 @@ public:
     }
     
     // Returns false if the buffer didn't have space for the message
-    bool registerReliableMessage(EmiMessage<SockDelegate> *message, Error& err, EmiTimeInterval now) {
+    bool registerReliableMessage(EM *message, Error& err, EmiTimeInterval now) {
         size_t msgSize = message->approximateSize();
         
         if (_sendBufferSize+msgSize > _size) {
@@ -133,7 +133,7 @@ public:
     // Deregisters all messages on the particular channelQualifier
     // whose sequenceNumber <= sequenceNumber
     void deregisterReliableMessages(int32_t channelQualifier, EmiSequenceNumber sequenceNumber) {
-        EmiMessage<SockDelegate> msgStub;
+        EM msgStub;
         msgStub.channelQualifier = channelQualifier;
         msgStub.sequenceNumber = sequenceNumber;
         
@@ -144,7 +144,7 @@ public:
         
         EmiMessageVector toBeRemoved;
         do {
-            EmiMessage<SockDelegate> *msg = *iter;
+            EM *msg = *iter;
             
             if (channelQualifier != msg->channelQualifier) {
                 break;
@@ -171,7 +171,7 @@ public:
         EmiMessageVectorIter viter = toBeRemoved.begin();
         EmiMessageVectorIter vend = toBeRemoved.end();
         while (viter != vend) {
-            EmiMessage<SockDelegate> *msg = *viter;
+            EM *msg = *viter;
             
             bool wasRemovedFromSendBuffer = (0 != _sendBuffer.erase(msg));
             ASSERT(wasRemovedFromSendBuffer);
@@ -187,7 +187,7 @@ public:
         }
         
         if (wasInReliableTree) {
-            EmiMessage<SockDelegate> *newMsg = messageSearch(&msgStub);
+            EM *newMsg = messageSearch(&msgStub);
             if (newMsg) _nextMsgTree.insert(newMsg);
         }
     }
@@ -202,7 +202,7 @@ public:
         EmiMessageVector toBePushedToTheEnd;
         
         while (iter != end) {
-            EmiMessage<SockDelegate> *msg = *iter;
+            EM *msg = *iter;
             
             if (rto > now-msg->registrationTime) {
                 // This message was sent less than RTO ago
@@ -221,7 +221,7 @@ public:
         EmiMessageVectorIter viter = toBePushedToTheEnd.begin();
         EmiMessageVectorIter vend  = toBePushedToTheEnd.end();
         while (viter != vend) {
-            EmiMessage<SockDelegate> *msg = *viter;
+            EM *msg = *viter;
             
             // We want to update msg->registrationTime, but because
             // _nextMsgTree's ordering depends on it, we can't change

@@ -28,7 +28,7 @@ class EmiLogicalConnection {
     typedef typename Binding::PersistentData PersistentData;
     typedef typename Binding::TemporaryData  TemporaryData;
     typedef typename SockDelegate::ConnectionOpenedCallbackCookie ConnectionOpenedCallbackCookie;
-    typedef EmiMessage<SockDelegate>            EM;
+    typedef EmiMessage<Binding>                 EM;
     typedef EmiConn<SockDelegate, ConnDelegate> EC;
     
     bool _closing;

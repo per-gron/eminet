@@ -13,6 +13,7 @@
 #include "EmiP2PSockConfig.h"
 #include "EmiP2PConn.h"
 #include "EmiMessageHeader.h"
+#include "EmiMessage.h"
 
 #include <algorithm>
 #include <cmath>
@@ -60,8 +61,8 @@ private:
         return ((float)arc4random() / ARC4RANDOM_MAX) < config.fabricatedPacketDropRate;
     }
     
-    void hashCookie(EmiTimeInterval stamp, uint8_t *randNum,
-                       uint8_t *buf, size_t bufLen, bool minusOne = false) const {
+    void hashCookie(EmiTimeInterval stamp, const uint8_t *randNum,
+                    uint8_t *buf, size_t bufLen, bool minusOne = false) const {
         if (bufLen < Binding::HMAC_HASH_SIZE) {
             Binding::panic();
         }
@@ -78,23 +79,22 @@ private:
                           buf, bufLen);
     }
     
+    // Returns true if the cookie is valid
     bool checkCookie(EmiTimeInterval stamp,
-                        uint8_t *buf, size_t bufLen) const {
+                     const uint8_t *buf, size_t bufLen) const {
         if (EMI_P2P_COOKIE_SIZE != bufLen) {
             return false;
         }
         
-        char testBuf[Binding::HMAC_HASH_SIZE];
+        uint8_t testBuf[Binding::HMAC_HASH_SIZE];
         
         hashCookie(stamp, buf, testBuf, sizeof(testBuf));
-        generateCookie(stamp, buf+EMI_P2P_RAND_NUM_SIZE, bufLen-EMI_P2P_RAND_NUM_SIZE);
-        if (0 == memcmp(testBuf, buf, sizeof(testBuf))) {
+        if (0 == memcmp(testBuf, buf+EMI_P2P_RAND_NUM_SIZE, sizeof(testBuf))) {
             return true;
         }
         
         hashCookie(stamp, buf, testBuf, sizeof(testBuf), /*minusOne:*/true);
-        generateCookie(stamp, buf+EMI_P2P_RAND_NUM_SIZE, bufLen-EMI_P2P_RAND_NUM_SIZE);
-        if (0 == memcmp(testBuf, buf, sizeof(testBuf))) {
+        if (0 == memcmp(testBuf, buf+EMI_P2P_RAND_NUM_SIZE, sizeof(testBuf))) {
             return true;
         }
         
@@ -106,8 +106,32 @@ private:
         return _conns.end() == cur ? NULL : (*cur).second;
     }
     
-    void gotConnectionOpen() {
-        // TODO
+    void gotConnectionOpen(EmiTimeInterval now,
+                           SocketHandle *sock,
+                           const Address& address,
+                           const uint8_t *cookie,
+                           const size_t cookieLength) {
+        if (!checkCookie(now, cookie, cookieLength)) {
+            // Invalid cookie. Ignore packet.
+            return;
+        }
+        
+        Conn *conn = findConn(address);
+        
+        if (!conn) {
+            // We did not already have a connection
+            
+            // TODO Set up an EmiP2PConn object and save it in _conns
+        }
+        
+        // Regardless of whether we had an EmiP2PConn object set up
+        // for this address, we want to reply to the host with an
+        // acknowledgement that we have received the SYN message.
+        
+        // Regardless of whether we still have a connection up, respond with a SYN-RST-ACK message
+        EmiMessage<Binding>::writeControlPacket(EMI_PRX_FLAG, ^(uint8_t *buf, size_t size) {
+            P2PSockDelegate::sendData(sock, address, buf, size);
+        });
     }
     
     void gotConnectionOpenAck() {
@@ -131,6 +155,13 @@ public:
     virtual ~EmiP2PSock() {
         // This will close the socket
         suspend();
+        
+        ConnMapIter iter = _conns.begin();
+        ConnMapIter end  = _conns.end();
+        while (iter != end) {
+            delete (*iter).second;
+            ++iter;
+        }
     }
     
     bool isOpen() const {
@@ -160,7 +191,7 @@ public:
             Binding::panic();
         }
         
-        P2PSockDelegate::randomBytes(buf, EMI_P2P_RAND_NUM_SIZE);
+        Binding::randomBytes(buf, EMI_P2P_RAND_NUM_SIZE);
         
         hashCookie(stamp, /*randNum:*/buf,
                       buf+EMI_P2P_RAND_NUM_SIZE, bufLen-EMI_P2P_RAND_NUM_SIZE);
@@ -222,6 +253,8 @@ public:
             
             if (isControlMessage) {
                 if (!isTheOnlyMessageInThisPacket) {
+                    // This check also ensures that we don't buffer overflow
+                    // when we access the message's data part.
                     err = "Invalid message length";
                     goto error;
                 }
@@ -236,7 +269,11 @@ public:
                 
                 if (EMI_SYN_FLAG == relevantFlags) {
                     // This is a connection open message.
-                    gotConnectionOpen();
+                    gotConnectionOpen(now,
+                                      sock,
+                                      address,
+                                      rawData+EMI_TIMESTAMP_LENGTH+header.headerLength,
+                                      header.length);
                 }
                 else if ((EMI_PRX_FLAG | EMI_ACK_FLAG) == relevantFlags) {
                     // This is a connection open ACK message.

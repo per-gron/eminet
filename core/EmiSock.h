@@ -88,9 +88,9 @@ class EmiSock {
         }
     };
     
-    typedef EmiConnParams<Address>                   ECP;
-    typedef EmiConn<SockDelegate, ConnDelegate>      EC;
-    typedef EmiSendQueue<SockDelegate, ConnDelegate> ESQ;
+    typedef EmiConnParams<Address>              ECP;
+    typedef EmiConn<SockDelegate, ConnDelegate> EC;
+    typedef EmiMessage<Binding>                 EM;
     
     typedef std::map<EmiConnectionKey, EC*>     EmiConnectionMap;
     typedef std::map<uint16_t, EmiClientSocket> EmiClientSocketMap;
@@ -389,7 +389,7 @@ public:
                     }
                     
                     // Regardless of whether we still have a connection up, respond with a SYN-RST-ACK message
-                    ESQ::sendSynRstAckPacket(^(uint8_t *buf, size_t size) {
+                    EM::writeControlPacket(EMI_SYN_FLAG | EMI_RST_FLAG | EMI_ACK_FLAG, ^(uint8_t *buf, size_t size) {
                         _delegate.sendData(sock, address, buf, size);
                     });
                 }

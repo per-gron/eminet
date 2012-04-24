@@ -9,16 +9,20 @@
 #ifndef emilir_EmiMessage_h
 #define emilir_EmiMessage_h
 
+#include "EmiTypes.h"
+
+#include <algorithm>
+
 // A message, as it is represented in the sender side of the pipeline
-template<class SockDelegate>
+template<class Binding>
 class EmiMessage {
 private:
+    typedef void (^SendSynRstAckPacketCallback)(uint8_t *buf, size_t size);
+    typedef typename Binding::PersistentData PersistentData;
+    
     // Private copy constructor and assignment operator
     inline EmiMessage(const EmiMessage& other);
     inline EmiMessage& operator=(const EmiMessage& other);
-    
-    typedef typename SockDelegate::Binding   Binding;
-    typedef typename Binding::PersistentData PersistentData;
     
     size_t _refCount;
     
@@ -63,7 +67,7 @@ public:
                                        EmiSequenceNumber sequenceNumber,
                                        const PersistentData& data,
                                        EmiPriority priority) {
-        EmiMessage<SockDelegate> *msg = new EmiMessage<SockDelegate>(data);
+        EmiMessage *msg = new EmiMessage(data);
         msg->channelQualifier = cq;
         msg->sequenceNumber = sequenceNumber;
         msg->priority = priority;
@@ -110,6 +114,70 @@ public:
     EmiFlags flags;
     EmiPriority priority;
     const PersistentData data;
+    
+    static size_t writeMsg(uint8_t *buf,
+                           size_t bufSize,
+                           size_t offset,
+                           bool hasAck,
+                           EmiSequenceNumber ack,
+                           int32_t channelQualifier,
+                           EmiSequenceNumber sequenceNumber,
+                           const PersistentData& data,
+                           EmiFlags flags) {
+        const size_t msgLength = Binding::extractLength(data);
+        size_t pos = offset;
+        
+        flags |= (hasAck ? EMI_ACK_FLAG : 0); // SYN/RST/ACK flags
+        
+        if (0 == flags && 0 == msgLength) {
+            return 0;
+        }
+        
+        *((uint8_t*)  (buf+pos)) = flags; pos += 1;
+        *((uint8_t*)  (buf+pos)) = std::max(0, channelQualifier); pos += 1; // Channel qualifier. cq == -1 means SYN/RST message
+        *((uint16_t*) (buf+pos)) = htons(msgLength); pos += 2;
+        if (0 != msgLength || flags & EMI_SYN_FLAG) {
+            *((uint16_t*) (buf+pos)) = htons(sequenceNumber); pos += 2;
+        }
+        if (0 != msgLength) {
+            *((uint8_t*) (buf+pos)) = 0; pos += 1; // Split id
+        }
+        if (hasAck) {
+            *((uint16_t*) (buf+pos)) = htons(ack); pos += 2;
+        }
+        if (msgLength) {
+            if (pos+msgLength > bufSize) {
+                // The data doesn't fit in the buffer
+                return 0;
+            }
+            memcpy(buf+pos, Binding::extractData(data), msgLength); pos += msgLength;
+        }
+        
+        return pos-offset;
+    }
+    
+    static void writeControlPacket(EmiFlags flags, SendSynRstAckPacketCallback callback) {
+        const int BUF_SIZE = 80; // 80 ought to be plenty
+        uint8_t buf[BUF_SIZE];
+        
+        // Zero out the timestamp
+        size_t tlen = EMI_TIMESTAMP_LENGTH;
+        memset(buf, 0, tlen);
+        
+        // Propagate the actual packet data
+        size_t plen;
+        plen = writeMsg(buf, /* buf */
+                        BUF_SIZE, /* bufSize */
+                        tlen, /* offset */
+                        false, /* hasAck */
+                        0, /* ack */
+                        -1, /* channelQualifier */
+                        0, /* sequenceNumber */
+                        PersistentData(), /* data */
+                        flags);
+        
+        callback(buf, tlen+plen);
+    }
 };
 
 #endif

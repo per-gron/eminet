@@ -38,6 +38,9 @@ struct EmiMessageHeader {
     int32_t ack;
     
     // Returns true if the parse was successful
+    //
+    // Note that this method does not check that the entire
+    // message fits in the buffer, only that the header fits.
     static bool parseMessageHeader(const uint8_t *buf, size_t bufSize, EmiMessageHeader& header) {
         if (bufSize < EMI_HEADER_LENGTH) return false;
         
