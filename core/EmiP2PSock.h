@@ -19,35 +19,35 @@
 
 static const EmiTimeInterval EMI_P2P_COOKIE_RESOLUTION  = 5*60; // In seconds
 
-static const uint64_t ARC4RANDOM_MAX = 0x100000000;
-
-
-template<class SockDelegate>
+template<class P2PSockDelegate>
 class EmiP2PSock {
+    static const uint64_t ARC4RANDOM_MAX = 0x100000000;
+    
+    typedef typename P2PSockDelegate::Binding  Binding;
+    typedef typename Binding::SocketHandle     SocketHandle;
+    typedef typename Binding::TemporaryData    TemporaryData;
+    typedef typename Binding::Error            Error;
+    typedef typename Binding::Address          Address;
+    typedef typename Binding::AddressCmp       AddressCmp;
     
     static const size_t          EMI_P2P_SERVER_SECRET_SIZE = 32;
     static const size_t          EMI_P2P_SHARED_SECRET_SIZE = 32;
     static const size_t          EMI_P2P_RAND_NUM_SIZE = 8;
-    static const size_t          EMI_P2P_COOKIE_SIZE = EMI_P2P_RAND_NUM_SIZE + SockDelegate::HMAC_HASH_SIZE;
+    static const size_t          EMI_P2P_COOKIE_SIZE = EMI_P2P_RAND_NUM_SIZE + Binding::HMAC_HASH_SIZE;
     
-    typedef typename SockDelegate::SocketHandle     SocketHandle;
-    typedef typename SockDelegate::TemporaryData    TemporaryData;
-    typedef typename SockDelegate::Error            Error;
-    typedef typename SockDelegate::Address          Address;
-    typedef typename SockDelegate::AddressCmp       AddressCmp;
-    
-    typedef EmiP2PSockConfig<Address>                     SockConfig;
-    typedef EmiP2PConn<SockDelegate, EMI_P2P_COOKIE_SIZE> Conn;
-    typedef std::map<Address, Conn*, AddressCmp>          ConnMap;
-    typedef typename ConnMap::iterator                    ConnMapIter;
+    typedef EmiP2PSockConfig<Address>                        SockConfig;
+    typedef EmiP2PConn<P2PSockDelegate, EMI_P2P_COOKIE_SIZE> Conn;
+    typedef std::map<Address, Conn*, AddressCmp>             ConnMap;
+    typedef typename ConnMap::iterator                       ConnMapIter;
     
 private:
     // Private copy constructor and assignment operator
     inline EmiP2PSock(const EmiP2PSock& other);
     inline EmiP2PSock& operator=(const EmiP2PSock& other);
     
-    uint8_t       _serverSecret[EMI_P2P_SERVER_SECRET_SIZE];
-    SocketHandle *_socket;
+    uint8_t         _serverSecret[EMI_P2P_SERVER_SECRET_SIZE];
+    SocketHandle   *_socket;
+    P2PSockDelegate _delegate;
     
     // The keys of this map are the Conn*'s peer addresses;
     // each conn has two entries in _conns.
@@ -61,8 +61,8 @@ private:
     
     void hashCookie(EmiTimeInterval stamp, uint8_t *randNum,
                        uint8_t *buf, size_t bufLen, bool minusOne = false) const {
-        if (bufLen < SockDelegate::HMAC_HASH_SIZE) {
-            SockDelegate::panic();
+        if (bufLen < Binding::HMAC_HASH_SIZE) {
+            Binding::panic();
         }
         
         uint64_t integerStamp = floor(stamp/EMI_P2P_COOKIE_RESOLUTION - (minusOne ? 1 : 0));
@@ -72,9 +72,9 @@ private:
         memcpy(toBeHashed, randNum, EMI_P2P_RAND_NUM_SIZE);
         *((uint64_t *)toBeHashed+EMI_P2P_RAND_NUM_SIZE) = integerStamp;
         
-        SockDelegate::hmacHash(_serverSecret, sizeof(_serverSecret),
-                               toBeHashed, sizeof(toBeHashed),
-                               buf, bufLen);
+        Binding::hmacHash(_serverSecret, sizeof(_serverSecret),
+                          toBeHashed, sizeof(toBeHashed),
+                          buf, bufLen);
     }
     
     bool checkCookie(EmiTimeInterval stamp,
@@ -83,7 +83,7 @@ private:
             return false;
         }
         
-        char testBuf[SockDelegate::HMAC_HASH_SIZE];
+        char testBuf[Binding::HMAC_HASH_SIZE];
         
         hashCookie(stamp, buf, testBuf, sizeof(testBuf));
         generateCookie(stamp, buf+EMI_P2P_RAND_NUM_SIZE, bufLen-EMI_P2P_RAND_NUM_SIZE);
@@ -104,9 +104,9 @@ public:
     
     const SockConfig config;
     
-    EmiP2PSock(const SockConfig& config_, const SockDelegate& delegate) :
-    config(config_), _socket(NULL) {
-        SockDelegate::randomBytes(_serverSecret, sizeof(_serverSecret));
+    EmiP2PSock(const SockConfig& config_, const P2PSockDelegate& delegate) :
+    _socket(NULL), _delegate(delegate), config(config_) {
+        Binding::randomBytes(_serverSecret, sizeof(_serverSecret));
     }
     virtual ~EmiP2PSock() {
         // This will close the socket
@@ -119,14 +119,14 @@ public:
     
     void suspend() {
         if (_socket) {
-            SockDelegate::closeSocket(*this, _socket);
+            P2PSockDelegate::closeSocket(*this, _socket);
             _socket = NULL;
         }
     }
     
     bool desuspend(Error& err) {
         if (!_socket) {
-            _socket = _delegate.openSocket(*this, config.port, err);
+            _socket = _delegate.openSocket(config.port, err);
             if (!_socket) return false;
         }
         
@@ -137,10 +137,10 @@ public:
     size_t generateCookie(EmiTimeInterval stamp,
                           uint8_t *buf, size_t bufLen) const {
         if (bufLen < EMI_P2P_COOKIE_SIZE) {
-            SockDelegate::panic();
+            Binding::panic();
         }
         
-        SockDelegate::randomBytes(buf, EMI_P2P_RAND_NUM_SIZE);
+        P2PSockDelegate::randomBytes(buf, EMI_P2P_RAND_NUM_SIZE);
         
         hashCookie(stamp, /*randNum:*/buf,
                       buf+EMI_P2P_RAND_NUM_SIZE, bufLen-EMI_P2P_RAND_NUM_SIZE);
@@ -151,10 +151,10 @@ public:
     // Returns the size of the shared secret
     static size_t generateSharedSecret(uint8_t *buf, size_t bufLen) {
         if (bufLen < EMI_P2P_SHARED_SECRET_SIZE) {
-            SockDelegate::panic();
+            Binding::panic();
         }
         
-        SockDelegate::randomBytes(buf, EMI_P2P_SHARED_SECRET_SIZE);
+        Binding::randomBytes(buf, EMI_P2P_SHARED_SECRET_SIZE);
         
         return EMI_P2P_SHARED_SECRET_SIZE;
     }
@@ -171,21 +171,17 @@ public:
         
         __block const char *err = NULL;
         
-        const uint8_t *rawData(SockDelegate::extractData(data)+offset);
+        const uint8_t *rawData(Binding::extractData(data)+offset);
         
-        ConnMapIter cur = _conns.find(ckey);
+        ConnMapIter cur = _conns.find(address);
         __block Conn *conn = _conns.end() == cur ? NULL : (*cur).second;
         
         if (conn) {
-            conn->gotPacket(len);
+            conn->gotPacket();
         }
         
         if (EMI_TIMESTAMP_LENGTH+1 == len) {
             // This is a heartbeat packet
-            if (conn) {
-                conn->gotTimestamp(now, rawData, len);
-                conn->gotHeartbeat(!!(rawData[EMI_TIMESTAMP_LENGTH]));
-            }
         }
         else if (len < EMI_TIMESTAMP_LENGTH + EMI_HEADER_LENGTH) {
             err = "Packet too short";
@@ -194,6 +190,7 @@ public:
         else {
             EmiMessageHeader::EmiParseMessageBlock block =
             ^ bool (const EmiMessageHeader& header, size_t dataOffset) {
+                return true;  
             };
             
             if (!EmiMessageHeader::parseMessages(rawData+EMI_TIMESTAMP_LENGTH,
@@ -207,6 +204,14 @@ public:
     error:
         
         return;
+    }
+    
+    P2PSockDelegate& getDelegate() {
+        return _delegate;
+    }
+    
+    const P2PSockDelegate& getDelegate() const {
+        return _delegate;
     }
 };
 

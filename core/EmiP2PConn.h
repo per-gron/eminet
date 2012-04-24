@@ -11,9 +11,10 @@
 
 #include "EmiTypes.h"
 
-template<class SockDelegate, int CookieSize>
+template<class P2PSockDelegate, int CookieSize>
 class EmiP2PConn {
-    typedef typename SockDelegate::Address Address;
+    typedef typename P2PSockDelegate::Binding Binding;
+    typedef typename Binding::Address         Address;
     
 private:
     // Private copy constructor and assignment operator
@@ -31,6 +32,8 @@ private:
 public:
     EmiP2PConn() {}
     virtual ~EmiP2PConn() {}
+    
+    void gotPacket() {}
 };
 
 #endif

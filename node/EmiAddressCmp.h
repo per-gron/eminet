@@ -4,6 +4,7 @@
 #define emilir_EmiAddressCmp_h
 
 #include <netinet/in.h>
+#include <cstring>
 
 class EmiAddressCmp {
 public:

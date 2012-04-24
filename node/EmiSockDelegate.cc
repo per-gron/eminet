@@ -10,21 +10,6 @@
 
 using namespace v8;
 
-inline static uint16_t sockaddrPort(const struct sockaddr_storage& addr) {
-    if (AF_INET6 == addr.ss_family) {
-        struct sockaddr_in6& addr6(*((struct sockaddr_in6 *)&addr));
-        return addr6.sin6_port;
-    }
-    else if (AF_INET == addr.ss_family) {
-        struct sockaddr_in& addr(*((struct sockaddr_in *)&addr));
-        return addr.sin_port;
-    }
-    else {
-        ASSERT(0 && "unexpected address family");
-        abort();
-    }
-}
-
 static void recv_cb(uv_udp_t *socket,
                     const struct sockaddr_storage& addr,
                     ssize_t nread,

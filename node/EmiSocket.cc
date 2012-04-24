@@ -77,10 +77,7 @@ void EmiSocket::Init(Handle<Object> target) {
 Handle<Value> EmiSocket::SetCallbacks(const Arguments& args) {
     HandleScope scope;
     
-    size_t numArgs = args.Length();
-    if (6 != numArgs) {
-        THROW_TYPE_ERROR("Wrong number of arguments");
-    }
+    ENSURE_NUM_ARGS(6, args);
     
     if (!args[0]->IsFunction() ||
         !args[1]->IsFunction() ||

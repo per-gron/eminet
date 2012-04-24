@@ -3,6 +3,7 @@
 #include "EmiSocket.h"
 #include "EmiConnection.h"
 #include "EmiConnectionParams.h"
+#include "EmiP2PSocket.h"
 #include "../core/EmiTypes.h"
 
 #include <node.h>
@@ -15,6 +16,7 @@ void InitAll(Handle<Object> target) {
     EmiSocket::Init(target);
     EmiConnection::Init(target);
     EmiConnectionParams::Init(target);
+    EmiP2PSocket::Init(target);
     
     
     Local<Object> obj(Object::New());

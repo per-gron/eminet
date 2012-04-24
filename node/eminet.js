@@ -67,6 +67,11 @@ var connectionError = function() {
   console.log("!!! Connection error", arguments);
 };
 
+var p2pSockError = function() {
+  // TODO
+  console.log("!!! P2P Socket error", arguments);
+}
+
 EmiNetAddon.setCallbacks(
     gotConnection,
     connectionMessage,
@@ -74,6 +79,10 @@ EmiNetAddon.setCallbacks(
     connectionRegained,
     connectionDisconnect,
     connectionError
+);
+
+EmiNetAddon.setP2PCallbacks(
+    p2pSockError
 );
 
 

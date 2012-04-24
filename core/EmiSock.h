@@ -200,9 +200,6 @@ public:
     const SockDelegate& getDelegate() const {
         return _delegate;
     }
-    void setDelegate(const SockDelegate& delegate) {
-        _delegate = delegate;
-    }
     
     bool isOpen() const {
         return _serverSocket || !_clientSockets.empty();

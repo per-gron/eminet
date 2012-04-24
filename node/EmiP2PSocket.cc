@@ -21,8 +21,10 @@ using namespace v8;
 EXPAND_SYMS
 #undef EXPAND_SYM
 
-EmiP2PSocket::EmiP2PSocket(v8::Handle<v8::Object> jsHandle, const EmiP2PSockConfig<EmiSockDelegate::Address>& sc) :
-_sock(sc, EmiSockDelegate(*this)),
+Persistent<Function> EmiP2PSocket::connectionError;
+
+EmiP2PSocket::EmiP2PSocket(v8::Handle<v8::Object> jsHandle, const EmiP2PSockConfig<EmiBinding::Address>& sc) :
+_sock(sc, EmiP2PSockDelegate(*this)),
 _jsHandle(v8::Persistent<v8::Object>::New(jsHandle)) {}
 
 EmiP2PSocket::~EmiP2PSocket() {
@@ -53,12 +55,36 @@ void EmiP2PSocket::Init(Handle<Object> target) {
     
     Persistent<Function> constructor = Persistent<Function>::New(tpl->GetFunction());
     target->Set(String::NewSymbol("EmiP2PSocket"), constructor);
+    
+    target->Set(String::NewSymbol("setP2PCallbacks"),
+                FunctionTemplate::New(SetCallbacks)->GetFunction());
+}
+
+Handle<Value> EmiP2PSocket::SetCallbacks(const Arguments& args) {
+    HandleScope scope;
+    
+    ENSURE_NUM_ARGS(1, args);
+    
+    if (!args[0]->IsFunction()) {
+        THROW_TYPE_ERROR("Wrong arguments");
+    }
+    
+#define X(name, num)                                            \
+    if (!name.IsEmpty()) name.Dispose();                        \
+    Local<Function> name##Fn(Local<Function>::Cast(args[num])); \
+    name = Persistent<Function>::New(name##Fn);
+    
+    X(connectionError, 0);
+    
+#undef X
+    
+    return scope.Close(Undefined());
 }
 
 Handle<Value> EmiP2PSocket::New(const Arguments& args) {
     HandleScope scope;
     
-    EmiSockConfig<EmiSockDelegate::Address> sc;
+    EmiP2PSockConfig<EmiBinding::Address> sc;
     
     size_t numArgs = args.Length();
     if (1 != numArgs && 2 != numArgs) {
