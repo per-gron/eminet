@@ -27,29 +27,18 @@ private:
     inline EmiSocket(const EmiSocket& other);
     inline EmiSocket& operator=(const EmiSocket& other);
     
-    EmiSocket(v8::Handle<v8::Object> jsHandle, const EmiSockConfig<EmiSockDelegate::Address>& sc);
-    virtual ~EmiSocket();
+    EmiP2PSocket(v8::Handle<v8::Object> jsHandle, const EmiP2PSockConfig<EmiSockDelegate::Address>& sc);
+    virtual ~EmiP2PSocket();
     
-    static v8::Handle<v8::Value> SetCallbacks(const v8::Arguments& args);
     static v8::Handle<v8::Value> New(const v8::Arguments& args);
     static v8::Handle<v8::Value> Suspend(const v8::Arguments& args);
     static v8::Handle<v8::Value> Desuspend(const v8::Arguments& args);
-    static v8::Handle<v8::Value> DoConnect(const v8::Arguments& args, int family);
-    static v8::Handle<v8::Value> Connect4(const v8::Arguments& args);
-    static v8::Handle<v8::Value> Connect6(const v8::Arguments& args);
     
 public:
     static void Init(v8::Handle<v8::Object> target);
     
-    static v8::Persistent<v8::Function> gotConnection;
-    static v8::Persistent<v8::Function> connectionMessage;
-    static v8::Persistent<v8::Function> connectionLost;
-    static v8::Persistent<v8::Function> connectionRegained;
-    static v8::Persistent<v8::Function> connectionDisconnect;
-    static v8::Persistent<v8::Function> connectionError;
-    
-    inline ES& getSock() { return _sock; }
-    inline const ES& getSock() const { return _sock; }
+    inline EPS& getP2PSock() { return _sock; }
+    inline const EPS& getP2PSock() const { return _sock; }
     inline v8::Handle<v8::Object> getJsHandle() const { return _jsHandle; }
 };
 

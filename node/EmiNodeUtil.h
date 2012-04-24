@@ -6,6 +6,23 @@
 
 struct sockaddr_storage;
 
+#define THROW_TYPE_ERROR(err)                                 \
+  do {                                                        \
+    ThrowException(Exception::TypeError(String::New(err)));   \
+    return scope.Close(Undefined());                          \
+  } while (0)
+
+#define ENSURE_NUM_ARGS(num, args)                            \
+  do {                                                        \
+    if (num != args.Length()) {                               \
+      THROW_TYPE_ERROR("Wrong number of arguments");          \
+    }                                                         \
+  } while (0)
+
+#define ENSURE_ZERO_ARGS(args) ENSURE_NUM_ARGS(0, args)
+
+#define UNWRAP(type, name, args) type *name(ObjectWrap::Unwrap<type>(args.This()))
+
 class EmiNodeUtil {
 public:
     static const uint64_t NSECS_PER_SEC = 1000*1000*1000;

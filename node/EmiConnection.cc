@@ -71,23 +71,6 @@ Handle<Object> EmiConnection::NewInstance(EmiSocket& es,
     return scope.Close(instance);
 }
 
-#define THROW_TYPE_ERROR(err)                                 \
-  do {                                                        \
-    ThrowException(Exception::TypeError(String::New(err)));   \
-    return scope.Close(Undefined());                          \
-  } while (0)
-
-#define ENSURE_NUM_ARGS(num, args)                            \
-  do {                                                        \
-    if (num != args.Length()) {                               \
-      THROW_TYPE_ERROR("Wrong number of arguments");          \
-    }                                                         \
-  } while (0)
-
-#define ENSURE_ZERO_ARGS(args) ENSURE_NUM_ARGS(0, args)
-
-#define UNWRAP(name, args) EmiConnection *name(ObjectWrap::Unwrap<EmiConnection>(args.This()))
-
 Handle<Value> EmiConnection::New(const Arguments& args) {
     HandleScope scope;
     
@@ -114,7 +97,7 @@ Handle<Value> EmiConnection::Close(const Arguments& args) {
     HandleScope scope;
     
     ENSURE_ZERO_ARGS(args);
-    UNWRAP(ec, args);
+    UNWRAP(EmiConnection, ec, args);
     
     EmiError err;
     if (!ec->_conn.close(Now(), err)) {
@@ -128,7 +111,7 @@ Handle<Value> EmiConnection::ForceClose(const Arguments& args) {
     HandleScope scope;
     
     ENSURE_ZERO_ARGS(args);
-    UNWRAP(ec, args);
+    UNWRAP(EmiConnection, ec, args);
     
     ec->_conn.forceClose();
     
@@ -139,7 +122,7 @@ Handle<Value> EmiConnection::CloseOrForceClose(const Arguments& args) {
     HandleScope scope;
     
     ENSURE_ZERO_ARGS(args);
-    UNWRAP(ec, args);
+    UNWRAP(EmiConnection, ec, args);
     
     EmiError err;
     if (!ec->_conn.close(Now(), err)) {
@@ -153,7 +136,7 @@ Handle<Value> EmiConnection::Flush(const Arguments& args) {
     HandleScope scope;
     
     ENSURE_ZERO_ARGS(args);
-    UNWRAP(ec, args);
+    UNWRAP(EmiConnection, ec, args);
     
     ec->_conn.flush(Now());
     
@@ -206,7 +189,7 @@ Handle<Value> EmiConnection::Send(const Arguments& args) {
     
     // Do the actual send
     
-    UNWRAP(ec, args);
+    UNWRAP(EmiConnection, ec, args);
     
     EmiError err;
     if (!ec->_conn.send(Now(),
@@ -224,7 +207,7 @@ Handle<Value> EmiConnection::HasIssuedConnectionWarning(const Arguments& args) {
     HandleScope scope;
     
     ENSURE_ZERO_ARGS(args);
-    UNWRAP(ec, args);
+    UNWRAP(EmiConnection, ec, args);
     
     return scope.Close(Boolean::New(ec->_conn.issuedConnectionWarning()));
 }
@@ -233,7 +216,7 @@ Handle<Value> EmiConnection::GetSocket(const Arguments& args) {
     HandleScope scope;
     
     ENSURE_ZERO_ARGS(args);
-    UNWRAP(ec, args);
+    UNWRAP(EmiConnection, ec, args);
     
     return scope.Close(ec->_conn.getEmiSock().getDelegate().getEmiSocket().getJsHandle());
 }
@@ -242,7 +225,7 @@ Handle<Value> EmiConnection::GetAddressType(const Arguments& args) {
     HandleScope scope;
     
     ENSURE_ZERO_ARGS(args);
-    UNWRAP(ec, args);
+    UNWRAP(EmiConnection, ec, args);
     
     const char *type;
     
@@ -264,7 +247,7 @@ Handle<Value> EmiConnection::GetPort(const Arguments& args) {
     HandleScope scope;
     
     ENSURE_ZERO_ARGS(args);
-    UNWRAP(ec, args);
+    UNWRAP(EmiConnection, ec, args);
     
     uint16_t port;
     
@@ -286,7 +269,7 @@ Handle<Value> EmiConnection::GetAddress(const Arguments& args) {
     HandleScope scope;
     
     ENSURE_ZERO_ARGS(args);
-    UNWRAP(ec, args);
+    UNWRAP(EmiConnection, ec, args);
     
     char buf[256];
     
@@ -308,7 +291,7 @@ Handle<Value> EmiConnection::GetInboundPort(const Arguments& args) {
     HandleScope scope;
     
     ENSURE_ZERO_ARGS(args);
-    UNWRAP(ec, args);
+    UNWRAP(EmiConnection, ec, args);
     
     return scope.Close(Number::New(ec->_conn.getInboundPort()));
 }
@@ -317,7 +300,7 @@ Handle<Value> EmiConnection::IsOpen(const Arguments& args) {
     HandleScope scope;
     
     ENSURE_ZERO_ARGS(args);
-    UNWRAP(ec, args);
+    UNWRAP(EmiConnection, ec, args);
     
     return scope.Close(Boolean::New(ec->_conn.isOpen()));
 }
@@ -326,7 +309,7 @@ Handle<Value> EmiConnection::IsOpening(const Arguments& args) {
     HandleScope scope;
     
     ENSURE_ZERO_ARGS(args);
-    UNWRAP(ec, args);
+    UNWRAP(EmiConnection, ec, args);
     
     return scope.Close(Boolean::New(ec->_conn.isOpening()));
 }

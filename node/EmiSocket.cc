@@ -74,12 +74,6 @@ void EmiSocket::Init(Handle<Object> target) {
                 FunctionTemplate::New(SetCallbacks)->GetFunction());
 }
 
-#define THROW_TYPE_ERROR(err)                                 \
-  do {                                                        \
-    ThrowException(Exception::TypeError(String::New(err)));   \
-    return scope.Close(Undefined());                          \
-  } while (0)
-
 Handle<Value> EmiSocket::SetCallbacks(const Arguments& args) {
     HandleScope scope;
     
@@ -213,8 +207,6 @@ Handle<Value> EmiSocket::New(const Arguments& args) {
     return args.This();
 }
 
-#define UNWRAP(name, args) EmiSocket *name(ObjectWrap::Unwrap<EmiSocket>(args.This()))
-
 Handle<Value> EmiSocket::Suspend(const Arguments& args) {
     HandleScope scope;
     
@@ -222,7 +214,7 @@ Handle<Value> EmiSocket::Suspend(const Arguments& args) {
         THROW_TYPE_ERROR("Wrong number of arguments");
     }
     
-    UNWRAP(es, args);
+    UNWRAP(EmiSocket, es, args);
     es->_sock.suspend();
     
     return scope.Close(Undefined());
@@ -235,7 +227,7 @@ Handle<Value> EmiSocket::Desuspend(const Arguments& args) {
         THROW_TYPE_ERROR("Wrong number of arguments");
     }
     
-    UNWRAP(es, args);
+    UNWRAP(EmiSocket, es, args);
     EmiError err;
     if (!es->_sock.desuspend(err)) {
         return err.raise("Failed to desuspend socket");
@@ -273,7 +265,7 @@ Handle<Value> EmiSocket::DoConnect(const Arguments& args, int family) {
     
     /// Do the actual connect
     
-    UNWRAP(es, args);
+    UNWRAP(EmiSocket, es, args);
     EmiError err;
     
     // Create a new Persistent handle. EmiSockDelegate::connectionOpened
