@@ -7,7 +7,6 @@
 
 #include "../core/EmiTypes.h"
 #include <node.h>
-#include <node_buffer.h>
 #include <uv.h>
 
 class EmiSocket;

@@ -4,8 +4,10 @@
 
 #include <stdint.h>
 #include <uv.h>
+#include <node.h>
 
 struct sockaddr_storage;
+class EmiError;
 
 #define THROW_TYPE_ERROR(err)                                 \
   do {                                                        \
@@ -73,6 +75,12 @@ struct sockaddr_storage;
 
 class EmiNodeUtil {
 public:
+    typedef void (EmiNodeUtilRecvCb)(uv_udp_t *socket,
+                                     const struct sockaddr_storage& addr,
+                                     ssize_t nread,
+                                     const v8::Local<v8::Object>& slab,
+                                     size_t offset);
+    
     static const uint64_t NSECS_PER_SEC = 1000*1000*1000;
     static const uint64_t MSECS_PER_SEC = 1000;
     
@@ -87,6 +95,13 @@ public:
     
     static bool parseAddressFamily(const char* typeStr, int *family);
     
+    static v8::Handle<v8::String> errStr(uv_err_t err);
+    
+    static void closeSocket(uv_udp_t *socket);
+    static uv_udp_t *openSocket(const sockaddr_storage& address,
+                                uint16_t port,
+                                EmiNodeUtilRecvCb *recvCb,
+                                EmiError& error);
     static void sendData(uv_udp_t *socket,
                          const sockaddr_storage& address,
                          const uint8_t *data,

@@ -5,31 +5,10 @@
 #include "EmiNodeUtil.h"
 #include "EmiSocket.h"
 #include "EmiConnection.h"
-#include "slab_allocator.h"
 
 #include <node.h>
 
-#define SLAB_SIZE (1024 * 1024)
-
 using namespace v8;
-
-static node::SlabAllocator slab_allocator(SLAB_SIZE);
-
-static Handle<String> errStr(uv_err_t err) {
-    HandleScope scope;
-    
-    Local<String> errStr;
-    
-    if (err.code == UV_UNKNOWN) {
-        char errno_buf[100];
-        snprintf(errno_buf, 100, "Unknown system errno %d", err.sys_errno_);
-        errStr = String::New(errno_buf);
-    } else {
-        errStr = String::NewSymbol(uv_err_name(err));
-    }
-    
-    return scope.Close(errStr);
-}
 
 inline static uint16_t sockaddrPort(const struct sockaddr_storage& addr) {
     if (AF_INET6 == addr.ss_family) {
@@ -46,50 +25,32 @@ inline static uint16_t sockaddrPort(const struct sockaddr_storage& addr) {
     }
 }
 
-static uv_buf_t alloc_cb(uv_handle_t* handle, size_t suggested_size) {
-    char *buf = slab_allocator.Allocate(Context::GetCurrent()->Global(), suggested_size);
-    return uv_buf_init(buf, suggested_size);
-}
-
-static void recv_cb(uv_udp_t *handle,
+static void recv_cb(uv_udp_t *socket,
+                    const struct sockaddr_storage& addr,
                     ssize_t nread,
-                    uv_buf_t buf,
-                    struct sockaddr *addr,
-                    unsigned flags) {
+                    const v8::Local<v8::Object>& slab,
+                    size_t offset) {
     HandleScope scope;
     
-    EmiSocket *wrap = reinterpret_cast<EmiSocket *>(handle->data);
-    
-    Local<Object> slab = slab_allocator.Shrink(Context::GetCurrent()->Global(),
-                                               buf.base,
-                                               nread < 0 ? 0 : nread);
-    if (nread == 0) return;
+    EmiSocket *wrap = reinterpret_cast<EmiSocket *>(socket->data);
     
     if (nread < 0) {
         const unsigned argc = 2;
         Handle<Value> argv[argc] = {
             wrap->handle_,
-            errStr(uv_last_error(uv_default_loop()))
+            EmiNodeUtil::errStr(uv_last_error(uv_default_loop()))
         };
         EmiSocket::connectionError->Call(Context::GetCurrent()->Global(), argc, argv);
         return;
     }
-    
-    if (flags & UV_UDP_PARTIAL) {
-        // Discard the packet
-        return;
+    if (nread > 0) {
+        wrap->getSock().onMessage(EmiConnection::Now(),
+                                  socket,
+                                  addr,
+                                  slab,
+                                  offset,
+                                  nread);
     }
-    
-    wrap->getSock().onMessage(EmiConnection::Now(),
-                              handle,
-                              *((struct sockaddr_storage *)addr),
-                              slab,
-                              buf.base - node::Buffer::Data(slab),
-                              nread);
-}
-
-static void close_cb(uv_handle_t* handle) {
-    free(handle);
 }
 
 EmiSockDelegate::EmiSockDelegate(EmiSocket& es) : _es(es) {}
@@ -103,61 +64,22 @@ void EmiSockDelegate::closeSocket(EmiSockDelegate::ES& sock, uv_udp_t *socket) {
     // TODO What happens when this method is actually called from _es's destructor?
     sock.getDelegate()._es.Unref();
     
-    uv_close((uv_handle_t *)socket, close_cb);
+    EmiNodeUtil::closeSocket(socket);
 }
 
 uv_udp_t *EmiSockDelegate::openSocket(uint16_t port, Error& error) {
-    int err;
-    uv_udp_t *socket = (uv_udp_t *)malloc(sizeof(uv_udp_t));
-    
     ES& sock(_es._sock);
     
-    err = uv_udp_init(uv_default_loop(), socket);
-    if (0 != err) {
-        goto error;
-    }
+    uv_udp_t *ret(EmiNodeUtil::openSocket(sock.config.address, port, recv_cb, error));
     
-    if (AF_INET == sock.config.address.ss_family) {
-        struct sockaddr_in addr(*((struct sockaddr_in *)&sock.config.address));
-        addr.sin_port = htons(port);
+    if (ret) {
+        ret->data = &sock.getDelegate()._es;
         
-        char buf[100];
-        uv_ip4_name(&addr, buf, sizeof(buf));
-        
-        err = uv_udp_bind(socket, addr, /*flags:*/0);
-        if (0 != err) {
-            goto error;
-        }
-    }
-    else if (AF_INET6 == sock.config.address.ss_family) {
-        struct sockaddr_in6 addr6(*((struct sockaddr_in6 *)&sock.config.address));
-        addr6.sin6_port = htons(port);
-        
-        err = uv_udp_bind6(socket, addr6, /*flags:*/0);
-        if (0 != err) {
-            goto error;
-        }
-    }
-    else {
-        ASSERT(0 && "unexpected address family");
-        abort();
+        // This prevents V8's GC to reclaim the EmiSocket while UDP sockets are open
+        sock.getDelegate()._es.Ref();
     }
     
-    err = uv_udp_recv_start(socket, alloc_cb, recv_cb);
-    if (0 != err) {
-        goto error;
-    }
-    
-    socket->data = &sock.getDelegate()._es;
-    
-    // This prevents V8's GC to reclaim the EmiSocket while UDP sockets are open
-    sock.getDelegate()._es.Ref();
-    
-    return socket;
-    
-error:
-    free(socket);
-    return NULL;
+    return ret;
 }
 
 uint16_t EmiSockDelegate::extractLocalPort(uv_udp_t *socket) {
