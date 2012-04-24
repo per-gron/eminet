@@ -38,7 +38,7 @@ struct EmiMessageHeader {
     int32_t ack;
     
     // Returns true if the parse was successful
-    static bool parseMessageHeader(const uint8_t *buf, size_t bufSize, EmiMessageHeader *header) {
+    static bool parseMessageHeader(const uint8_t *buf, size_t bufSize, EmiMessageHeader& header) {
         if (bufSize < EMI_HEADER_LENGTH) return false;
         
         uint8_t connByte = buf[0];
@@ -57,13 +57,13 @@ struct EmiMessageHeader {
         
         if (headerLength > bufSize) return false;
         
-        header->flags = connByte;
-        header->channelQualifier = buf[1];
-        header->sequenceNumber = (length || synFlag) ? ntohs(*((uint16_t *)(buf+4))) : -1;
-        header->splitId = length ? buf[6] : -1;
-        header->headerLength = headerLength;
-        header->length = length;
-        header->ack = messageHasAckData ? ntohs(*((uint16_t *)(buf+4+lengthOffset))) : -1;
+        header.flags = connByte;
+        header.channelQualifier = buf[1];
+        header.sequenceNumber = (length || synFlag) ? ntohs(*((uint16_t *)(buf+4))) : -1;
+        header.splitId = length ? buf[6] : -1;
+        header.headerLength = headerLength;
+        header.length = length;
+        header.ack = messageHasAckData ? ntohs(*((uint16_t *)(buf+4+lengthOffset))) : -1;
         
         return true;
     }
@@ -76,7 +76,7 @@ struct EmiMessageHeader {
             EmiMessageHeader header;
             if (!EmiMessageHeader::parseMessageHeader(buf+offset, 
                                                       bufSize-offset,
-                                                      &header)) {
+                                                      header)) {
                 return false;
             }
             
