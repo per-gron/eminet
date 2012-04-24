@@ -9,6 +9,7 @@
 #ifndef roshambo_EmiP2PSock_h
 #define roshambo_EmiP2PSock_h
 
+#include "EmiTypes.h"
 #include "EmiP2PSockConfig.h"
 #include "EmiP2PConn.h"
 #include "EmiMessageHeader.h"
@@ -100,6 +101,29 @@ private:
         return false;
     }
     
+    void tryToForwardPacket(EmiTimeInterval now,
+                            SocketHandle *sock,
+                            const Address& address,
+                            const TemporaryData& data,
+                            size_t offset,
+                            size_t len) {
+        // TODO
+    }
+    
+    void gotConnectionOpen() {
+        // TODO
+    }
+    
+    void gotConnectionOpenAck() {
+        // TODO
+    }
+    
+    void gotConnectionClose(EmiTimeInterval now,
+                            SocketHandle *sock,
+                            const Address& address) {
+        // TODO
+    }
+    
 public:
     
     const SockConfig config;
@@ -169,34 +193,75 @@ public:
             return;
         }
         
-        __block const char *err = NULL;
+        const char *err = NULL;
         
         const uint8_t *rawData(Binding::extractData(data)+offset);
         
         ConnMapIter cur = _conns.find(address);
-        __block Conn *conn = _conns.end() == cur ? NULL : (*cur).second;
+        Conn *conn = _conns.end() == cur ? NULL : (*cur).second;
         
         if (conn) {
             conn->gotPacket();
         }
         
         if (EMI_TIMESTAMP_LENGTH+1 == len) {
-            // This is a heartbeat packet
+            // This is a heartbeat packet. Just forward the packet (if we can)
+            tryToForwardPacket(now, sock, address, data, offset, len);
         }
         else if (len < EMI_TIMESTAMP_LENGTH + EMI_HEADER_LENGTH) {
             err = "Packet too short";
             goto error;
         }
         else {
-            EmiMessageHeader::EmiParseMessageBlock block =
-            ^ bool (const EmiMessageHeader& header, size_t dataOffset) {
-                return true;  
-            };
-            
-            if (!EmiMessageHeader::parseMessages(rawData+EMI_TIMESTAMP_LENGTH,
-                                                 len-EMI_TIMESTAMP_LENGTH,
-                                                 block)) {
+            EmiMessageHeader header;
+            if (!EmiMessageHeader::parseMessageHeader(rawData+EMI_TIMESTAMP_LENGTH,
+                                                      len-EMI_TIMESTAMP_LENGTH,
+                                                      header)) {
+                err = "Invalid message header";
                 goto error;
+            }
+            
+            bool isControlMessage = !!(header.flags & (EMI_PRX_FLAG | EMI_RST_FLAG | EMI_SYN_FLAG));
+            
+            bool isTheOnlyMessageInThisPacket = (len == EMI_TIMESTAMP_LENGTH+header.headerLength+header.length);
+            
+            if (isControlMessage) {
+                if (!isTheOnlyMessageInThisPacket) {
+                    err = "Invalid message length";
+                    goto error;
+                }
+                
+                // EMI_SACK_FLAG counts as a relevant flag because a control
+                // message with this flag is an invalid flag, and counting it
+                // as relevant makes sure that it is interpreted as an invalid
+                // message.
+                EmiFlags relevantFlags = (header.flags & (EMI_PRX_FLAG | EMI_RST_FLAG |
+                                                          EMI_SYN_FLAG | EMI_ACK_FLAG |
+                                                          EMI_SACK_FLAG));
+                
+                if (EMI_SYN_FLAG == relevantFlags) {
+                    // This is a connection open message.
+                    gotConnectionOpen();
+                }
+                else if ((EMI_PRX_FLAG | EMI_ACK_FLAG) == relevantFlags) {
+                    // This is a connection open ACK message.
+                    gotConnectionOpenAck();
+                }
+                else if ((EMI_PRX_FLAG | EMI_RST_FLAG) == relevantFlags ||
+                         EMI_RST_FLAG                  == relevantFlags) {
+                    // This is a proxy connection close message,
+                    // or a plain connection close message.
+                    gotConnectionClose(now, sock, address);
+                }
+                else {
+                    err = "Invalid message flags";
+                    goto error;
+                }
+            }
+            else {
+                // This is not a control message, so we don't care about its
+                // contents. Just forward it (if we can)
+                tryToForwardPacket(now, sock, address, data, offset, len);
             }
         }
         
