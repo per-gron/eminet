@@ -74,7 +74,8 @@ private:
                             0, /* ack */
                             msg->channelQualifier,
                             msg->sequenceNumber,
-                            msg->data,
+                            Binding::extractData(msg->data),
+                            Binding::extractLength(msg->data),
                             msg->flags);
         
         _conn.sendDatagram(_buf, tlen+plen);
@@ -152,7 +153,8 @@ public:
                                     hasAck && (*cur).second, /* ack */
                                     msg->channelQualifier,
                                     msg->sequenceNumber,
-                                    msg->data,
+                                    Binding::extractData(msg->data),
+                                    Binding::extractLength(msg->data),
                                     msg->flags);
                 
                 ++iter;
@@ -171,7 +173,8 @@ public:
                                         sn, /* ack */
                                         cq, /* channelQualifier */
                                         0, /* sequenceNumber */
-                                        PersistentData(), /* data */
+                                        NULL, /* data */
+                                        0, /* dataLength */
                                         0 /* flags */);
                 }
                 

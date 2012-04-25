@@ -11,6 +11,7 @@
 
 #include "EmiTypes.h"
 #include "EmiConnTime.h"
+#include "EmiNetUtil.h"
 
 #include <cmath>
 #include <algorithm>
@@ -124,42 +125,43 @@ public:
                            EmiSequenceNumber ack,
                            int32_t channelQualifier,
                            EmiSequenceNumber sequenceNumber,
-                           const PersistentData& data,
+                           const uint8_t *data,
+                           size_t dataLength,
                            EmiFlags flags) {
-        const size_t msgLength = Binding::extractLength(data);
         size_t pos = offset;
         
         flags |= (hasAck ? EMI_ACK_FLAG : 0); // SYN/RST/ACK flags
         
-        if (0 == flags && 0 == msgLength) {
+        if (0 == flags && 0 == dataLength) {
             return 0;
         }
         
         *((uint8_t*)  (buf+pos)) = flags; pos += 1;
         *((uint8_t*)  (buf+pos)) = std::max(0, channelQualifier); pos += 1; // Channel qualifier. cq == -1 means SYN/RST message
-        *((uint16_t*) (buf+pos)) = htons(msgLength); pos += 2;
-        if (0 != msgLength || flags & EMI_SYN_FLAG) {
+        *((uint16_t*) (buf+pos)) = htons(dataLength); pos += 2;
+        if (0 != dataLength || flags & EMI_SYN_FLAG) {
             *((uint16_t*) (buf+pos)) = htons(sequenceNumber); pos += 2;
         }
-        if (0 != msgLength) {
+        if (0 != dataLength) {
             *((uint8_t*) (buf+pos)) = 0; pos += 1; // Split id
         }
         if (hasAck) {
             *((uint16_t*) (buf+pos)) = htons(ack); pos += 2;
         }
-        if (msgLength) {
-            if (pos+msgLength > bufSize) {
+        if (dataLength) {
+            if (pos+dataLength > bufSize) {
                 // The data doesn't fit in the buffer
                 return 0;
             }
-            memcpy(buf+pos, Binding::extractData(data), msgLength); pos += msgLength;
+            memcpy(buf+pos, data, dataLength); pos += dataLength;
         }
         
         return pos-offset;
     }
     
-    static void writeControlPacket(EmiFlags flags, SendSynRstAckPacketCallback callback) {
-        const int BUF_SIZE = 80; // 80 ought to be plenty
+    template<int BUF_SIZE>
+    static void writeControlPacketWithData(EmiFlags flags, SendSynRstAckPacketCallback callback,
+                                           const uint8_t *data, size_t dataLength) {
         uint8_t buf[BUF_SIZE];
         
         // Zero out the timestamp
@@ -175,10 +177,18 @@ public:
                         0, /* ack */
                         -1, /* channelQualifier */
                         0, /* sequenceNumber */
-                        PersistentData(), /* data */
+                        data,
+                        dataLength,
                         flags);
         
+        ASSERT(plen);
+        
         callback(buf, tlen+plen);
+    }
+    
+    static void writeControlPacket(EmiFlags flags, SendSynRstAckPacketCallback callback) {
+        // BUF_SIZE=80 ought to be plenty
+        writeControlPacketWithData<80>(flags, callback, NULL, 0);
     }
     
     static void fillTimestamps(EmiConnTime& connTime, void *data, EmiTimeInterval now) {
