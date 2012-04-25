@@ -80,8 +80,10 @@ private:
                   const TemporaryData& data,
                   size_t offset,
                   size_t len) {
-        // TODO Implement rate limiting
         _bytesSentSinceRateLimitTimeout += len;
+        if (_bytesSentSinceRateLimitTimeout > _rateLimit) {
+            return;
+        }
         
         P2PSockDelegate::sendData(_sock,
                                   address,
@@ -94,6 +96,10 @@ private:
             EmiMessage<Binding>::fillTimestamps(_times[addrIdx], buf, size);
             P2PSockDelegate::sendData(_sock, _peers[addrIdx], buf, size);
         });
+    }
+    
+    static void rateLimitTimeoutCallback(EmiTimeInterval now, Timer *timer, void *data) {
+        _bytesSentSinceRateLimitTimeout = 0;
     }
     
 public:
@@ -118,6 +124,10 @@ public:
         
         _connectionTimer[0] = Binding::makeTimer();
         _connectionTimer[1] = Binding::makeTimer();
+        
+        
+        Binding::scheduleTimer(_rateLimitTimer, rateLimitTimeoutCallback,
+                               this, 1, /*repeating:*/true);
     }
     
     virtual ~EmiP2PConn() {
