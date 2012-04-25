@@ -12,7 +12,7 @@
 #include "EmiTypes.h"
 #include "EmiNetUtil.h"
 
-template<class P2PSockDelegate, int CookieSize>
+template<class P2PSockDelegate>
 class EmiP2PConn {
     typedef typename P2PSockDelegate::Binding Binding;
     typedef typename Binding::Address         Address;
@@ -28,7 +28,6 @@ private:
     const AddressCmp _acmp;
     Address          _peers[2];
     Address          _innerEndpoints[2];
-    uint8_t          _cookie[CookieSize];
     size_t           _bytesSentSinceRateLimitTimeout;
     
     // TODO connection timeout
@@ -74,7 +73,7 @@ private:
     }
     
 public:
-    EmiP2PConn(const Address& firstPeer, const uint8_t *cookie, size_t cookieSize) :
+    EmiP2PConn(const Address& firstPeer) :
     _acmp(AddressCmp()),
     _bytesSentSinceRateLimitTimeout(0) {
         int family = EmiBinding::extractFamily(firstPeer);
@@ -83,9 +82,6 @@ public:
         EmiBinding::fillNilAddress(family, _peers[1]);
         EmiBinding::fillNilAddress(family, _innerEndpoints[0]);
         EmiBinding::fillNilAddress(family, _innerEndpoints[1]);
-        
-        ASSERT(CookieSize == cookieSize);
-        memcpy(_cookie, cookie, CookieSize);
     }
     virtual ~EmiP2PConn() {}
     
@@ -103,6 +99,12 @@ public:
         }
         
         sendData(sock, *otherAddr, data, offset, len);
+    }
+    
+    void gotOtherAddress(const Address& address) {
+        _peers[1] = address;
+        
+        // TODO Send reliable SYN-ACK message
     }
 };
 

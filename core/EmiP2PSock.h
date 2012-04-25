@@ -18,6 +18,7 @@
 #include <algorithm>
 #include <cmath>
 #include <map>
+#include <utility>
 
 static const EmiTimeInterval EMI_P2P_COOKIE_RESOLUTION  = 5*60; // In seconds
 
@@ -37,10 +38,33 @@ class EmiP2PSock {
     static const size_t          EMI_P2P_RAND_NUM_SIZE = 8;
     static const size_t          EMI_P2P_COOKIE_SIZE = EMI_P2P_RAND_NUM_SIZE + Binding::HMAC_HASH_SIZE;
     
+    class ConnCookie {
+    public:
+        uint8_t cookie[EMI_P2P_COOKIE_SIZE];
+        
+        ConnCookie(const uint8_t *cookie_, size_t cookieLength) {
+            ASSERT(EMI_P2P_COOKIE_SIZE == cookieLength);
+            memcpy(cookie, cookie_, sizeof(cookie));
+        }
+        
+        inline ConnCookie(const ConnCookie& other) {
+            memcpy(cookie, other.cookie, sizeof(cookie));
+        }
+        inline ConnCookie& operator=(const ConnCookie& other) {
+            memcpy(cookie, other.cookie, sizeof(cookie));
+        }
+        
+        inline bool operator<(const ConnCookie& rhs) const {
+            return 0 > memcmp(cookie, rhs.cookie, sizeof(cookie));
+        }
+    };
+    
     typedef EmiP2PSockConfig<Address>                        SockConfig;
-    typedef EmiP2PConn<P2PSockDelegate, EMI_P2P_COOKIE_SIZE> Conn;
+    typedef EmiP2PConn<P2PSockDelegate> Conn;
     typedef std::map<Address, Conn*, AddressCmp>             ConnMap;
     typedef typename ConnMap::iterator                       ConnMapIter;
+    typedef std::map<ConnCookie, Conn*>                      ConnCookieMap;
+    typedef typename ConnCookieMap::iterator                 ConnCookieMapIter;
     
 private:
     // Private copy constructor and assignment operator
@@ -53,7 +77,8 @@ private:
     
     // The keys of this map are the Conn*'s peer addresses;
     // each conn has two entries in _conns.
-    ConnMap _conns;
+    ConnMap       _conns;
+    ConnCookieMap _connCookies;
     
     inline bool shouldArtificiallyDropPacket() const {
         if (0 == config.fabricatedPacketDropRate) return false;
@@ -110,7 +135,7 @@ private:
                            SocketHandle *sock,
                            const Address& address,
                            const uint8_t *cookie,
-                           const size_t cookieLength) {
+                           size_t cookieLength) {
         if (!checkCookie(now, cookie, cookieLength)) {
             // Invalid cookie. Ignore packet.
             return;
@@ -119,16 +144,35 @@ private:
         Conn *conn = findConn(address);
         
         if (!conn) {
-            // We did not already have a connection
+            // We did not already have a connection with this address
+            // Check to see if we have a connection with this cookie
+            ConnCookie cc(cookie, cookieLength);
             
-            // TODO Set up an EmiP2PConn object and save it in _conns
+            ConnCookieMapIter cur = _connCookies.find(cc);
+            
+            if (_connCookies.end() != cur) {
+                // There was a connection open with this cookie
+                
+                conn = (*cur).second;
+                // We don't need to save the cookie anymore
+                _connCookies.erase(cur);
+                
+                conn->gotOtherAddress(address);
+            }
+            else {
+                // There was no connection open with this cookie. Open new one
+                
+                conn = new Conn(address);
+                _connCookies.insert(std::make_pair(cc, conn));
+            }
+            
+            _conns.insert(std::make_pair(address, conn));
         }
         
         // Regardless of whether we had an EmiP2PConn object set up
         // for this address, we want to reply to the host with an
         // acknowledgement that we have received the SYN message.
         
-        // Regardless of whether we still have a connection up, respond with a SYN-RST-ACK message
         EmiMessage<Binding>::writeControlPacket(EMI_PRX_FLAG, ^(uint8_t *buf, size_t size) {
             P2PSockDelegate::sendData(sock, address, buf, size);
         });
