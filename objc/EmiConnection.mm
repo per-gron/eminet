@@ -11,15 +11,6 @@
 #include "EmiConnDelegate.h"
 #import "EmiSocketInternal.h"
 
-@interface EmiConnection()
-
-- (void)_connectionTimeoutCallback:(NSTimer *)timer;
-- (void)_connectionWarningCallback:(NSTimer *)timer;
-- (void)_heartbeatTimeoutCallback:(NSTimer *)timer;
-- (void)_rtoTimeoutCallback:(NSTimer *)timer;
-
-@end
-
 @implementation EmiConnection
 
 @synthesize delegate = _delegate;
