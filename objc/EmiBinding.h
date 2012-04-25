@@ -28,7 +28,7 @@ public:
         inline Timer(const Timer& other);
         inline Timer& operator=(const Timer& other);
     public:
-        Timer(TimerCb *timerCb_) : data(NULL), timer(nil), timerCb(timerCb_) {}
+        Timer() : data(NULL), timer(nil), timerCb(NULL) {}
         virtual ~Timer() {
             [timer invalidate];
             timer = nil;
@@ -36,7 +36,7 @@ public:
         
         void *data;
         NSTimer *timer;
-        TimerCb *const timerCb;
+        TimerCb *timerCb;
     };
     
     typedef __strong NSError* Error;
@@ -99,9 +99,9 @@ public:
                          uint8_t *buf, size_t bufLen);
     static void randomBytes(uint8_t *buf, size_t bufSize);
     
-    static Timer *makeTimer(TimerCb *timerCb);
+    static Timer *makeTimer();
     static void freeTimer(Timer *timer);
-    static void scheduleTimer(Timer *timer, void *data, EmiTimeInterval interval, bool repeating);
+    static void scheduleTimer(Timer *timer, TimerCb *timerCb, void *data, EmiTimeInterval interval, bool repeating);
     static void descheduleTimer(Timer *timer);
     static bool timerIsActive(Timer *timer);
 };

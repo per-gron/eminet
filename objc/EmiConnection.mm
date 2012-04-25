@@ -46,28 +46,12 @@
     return [NSDate timeIntervalSinceReferenceDate];
 }
 
-- (void)_connectionTimeoutCallback:(NSTimer *)timer {
-    ((EC *)_ec)->connectionTimeoutCallback();
-}
-
-- (void)_connectionWarningCallback:(NSTimer *)timer {
-    ((EC *)_ec)->connectionWarningCallback([((NSNumber *)timer.userInfo) doubleValue]);
-}
-
 - (BOOL)issuedConnectionWarning {
     return ((EC *)_ec)->issuedConnectionWarning();
 }
 
 - (void)_resetConnectionTimeout {
     ((EC *)_ec)->resetConnectionTimeout();
-}
-
-- (void)_heartbeatTimeoutCallback:(NSTimer *)timer {
-    ((EC *)_ec)->heartbeatTimeoutCallback([self _now]);
-}
-
-- (void)_rtoTimeoutCallback:(NSTimer *)timer {
-    ((EC *)_ec)->rtoTimeoutCallback([self _now], [((NSNumber *)timer.userInfo) doubleValue]);
 }
 
 - (EmiSocket *)emiSocket {

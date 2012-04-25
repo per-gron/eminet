@@ -66,9 +66,8 @@ static void timer_cb(uv_timer_t *handle, int status) {
     timerCb(EmiConnection::Now(), handle, handle->data);
 }
 
-EmiBinding::Timer *EmiBinding::makeTimer(TimerCb *timerCb) {
+EmiBinding::Timer *EmiBinding::makeTimer() {
     EmiBinding::Timer *timer = (uv_timer_t *)malloc(sizeof(uv_timer_t)+sizeof(TimerCb));
-    *(reinterpret_cast<TimerCb**>(timer+1)) = timerCb;
     
     uv_timer_init(uv_default_loop(), timer);
     
@@ -80,8 +79,10 @@ void EmiBinding::freeTimer(Timer *timer) {
     uv_close((uv_handle_t *)timer, close_cb);
 }
 
-void EmiBinding::scheduleTimer(Timer *timer, void *data, EmiTimeInterval interval, bool repeating) {
+void EmiBinding::scheduleTimer(Timer *timer, TimerCb *timerCb, void *data, EmiTimeInterval interval, bool repeating) {
     uv_timer_stop(timer);
+    
+    *(reinterpret_cast<TimerCb**>(timer+1)) = timerCb;
     
     uint64_t timeout = interval*EmiNodeUtil::MSECS_PER_SEC;
     timer->data = data;

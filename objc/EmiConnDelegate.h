@@ -12,8 +12,6 @@
 #import "EmiConnection.h"
 
 class EmiConnDelegate {
-    NSTimer *_connectionTimer;
-    
     EmiConnection *_conn;
 public:
     
@@ -22,9 +20,6 @@ public:
     void invalidate();
     
     void emiConnMessage(EmiChannelQualifier channelQualifier, NSData *data, NSUInteger offset, NSUInteger size);
-    
-    void scheduleConnectionWarning(EmiTimeInterval warningTimeout);
-    void scheduleConnectionTimeout(EmiTimeInterval interval);
     
     void emiConnLost();
     void emiConnRegained();

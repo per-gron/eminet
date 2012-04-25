@@ -54,6 +54,8 @@ class EmiConn {
     Timer *_heartbeatTimer;
     Timer *_rtoTimer;
     EmiTimeInterval _rtoWhenRtoTimerWasScheduled;
+    Timer *_connectionTimer;
+    EmiTimeInterval _warningTimeoutWhenWarningTimerWasScheduled;
     
     bool _issuedConnectionWarning;
     
@@ -97,10 +99,12 @@ public:
     _sendQueue(*this),
     _time(),
     _receivedDataSinceLastHeartbeat(false),
-    _tickTimer(Binding::makeTimer(tickTimeoutCallback)),
-    _heartbeatTimer(Binding::makeTimer(heartbeatTimeoutCallback)),
-    _rtoTimer(Binding::makeTimer(rtoTimeoutCallback)),
+    _tickTimer(Binding::makeTimer()),
+    _heartbeatTimer(Binding::makeTimer()),
+    _rtoTimer(Binding::makeTimer()),
     _rtoWhenRtoTimerWasScheduled(0),
+    _connectionTimer(Binding::makeTimer()),
+    _warningTimeoutWhenWarningTimerWasScheduled(0),
     _issuedConnectionWarning(false) {
         resetConnectionTimeout();
     }
@@ -109,6 +113,7 @@ public:
         Binding::freeTimer(_tickTimer);
         Binding::freeTimer(_heartbeatTimer);
         Binding::freeTimer(_rtoTimer);
+        Binding::freeTimer(_connectionTimer);
         
         _emisock.deregisterConnection(this);
         
@@ -119,26 +124,35 @@ public:
         return 1/_emisock.config.heartbeatFrequency * _emisock.config.heartbeatsBeforeConnectionWarning;
     }
     
-    void connectionTimeoutCallback() {
-        forceClose(EMI_REASON_CONNECTION_TIMED_OUT);
+    static void connectionTimeoutCallback(EmiTimeInterval now, Timer *timer, void *data) {
+        EmiConn *conn = (EmiConn *)data;
+        
+        conn->forceClose(EMI_REASON_CONNECTION_TIMED_OUT);
     }
-    void connectionWarningCallback(EmiTimeInterval alreadyWaitedTime) {
-        EmiTimeInterval connectionTimeout = _emisock.config.connectionTimeout;
+    static void connectionWarningCallback(EmiTimeInterval now, Timer *timer, void *data) {
+        EmiConn *conn = (EmiConn *)data;
         
-        _issuedConnectionWarning = true;
-        _delegate.scheduleConnectionTimeout(connectionTimeout - alreadyWaitedTime);
+        EmiTimeInterval connectionTimeout = conn->_emisock.config.connectionTimeout;
         
-        _delegate.emiConnLost();
+        conn->_issuedConnectionWarning = true;
+        Binding::scheduleTimer(conn->_connectionTimer, connectionTimeoutCallback, conn,
+                               connectionTimeout - conn->_warningTimeoutWhenWarningTimerWasScheduled,
+                               /*repeating:*/false);
+        
+        conn->_delegate.emiConnLost();
     }
     void resetConnectionTimeout() {
         EmiTimeInterval warningTimeout = timeBeforeConnectionWarning();
         EmiTimeInterval connectionTimeout = _emisock.config.connectionTimeout;
         
         if (warningTimeout < connectionTimeout) {
-            _delegate.scheduleConnectionWarning(warningTimeout);
+            _warningTimeoutWhenWarningTimerWasScheduled = warningTimeout;
+            Binding::scheduleTimer(_connectionTimer, connectionWarningCallback,
+                                   this, warningTimeout, /*repeating:*/false);
         }
         else {
-            _delegate.scheduleConnectionTimeout(connectionTimeout);
+            Binding::scheduleTimer(_connectionTimer, connectionTimeoutCallback,
+                                   this, connectionTimeout, /*repeating:*/false);
         }
         
         if (_issuedConnectionWarning) {
@@ -149,13 +163,14 @@ public:
     
     static void tickTimeoutCallback(EmiTimeInterval now, Timer *timer, void *data) {
         EmiConn *conn = (EmiConn *)data;
+        
         if (conn->flush(now)) {
             conn->resetHeartbeatTimeout();
         }
     }
     void ensureTickTimeout() {
         if (!Binding::timerIsActive(_tickTimer)) {
-            Binding::scheduleTimer(_tickTimer, this, 1/_emisock.config.tickFrequency, /*repeating:*/false);
+            Binding::scheduleTimer(_tickTimer, tickTimeoutCallback, this, 1/_emisock.config.tickFrequency, /*repeating:*/false);
         }
     }
     
@@ -177,7 +192,9 @@ public:
         
         // Don't send heartbeats until we've got a response from the remote host
         if (!isOpening()) {
-            Binding::scheduleTimer(_heartbeatTimer, this, 1/_emisock.config.heartbeatFrequency, /*repeating:*/false);
+            Binding::scheduleTimer(_heartbeatTimer, heartbeatTimeoutCallback,
+                                   this, 1/_emisock.config.heartbeatFrequency,
+                                   /*repeating:*/false);
         }
     }
     
@@ -207,7 +224,9 @@ public:
                 // the timeout was set, not when it fires. That's why we store
                 // rto with the NSTimer.
                 _rtoWhenRtoTimerWasScheduled = _time.getRto();
-                Binding::scheduleTimer(_rtoTimer, this, _rtoWhenRtoTimerWasScheduled, /*repeating:*/false);
+                Binding::scheduleTimer(_rtoTimer, rtoTimeoutCallback,
+                                       this, _rtoWhenRtoTimerWasScheduled,
+                                       /*repeating:*/false);
             }
         }
     }

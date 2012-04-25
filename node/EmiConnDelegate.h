@@ -11,17 +11,6 @@ class EmiConnection;
 class EmiConnDelegate {
     EmiConnection& _conn;
     
-    // We must use pointers to malloc'ed memory for the timers,
-    // because the memory can't be freed in this class' destructor,
-    // it has to be freed in the close callback of the timer handle,
-    // which is called asynchronously.
-    uv_timer_t *_connectionTimer;
-    
-    EmiTimeInterval _warningTimeoutWhenWarningTimerWasScheduled;
-    
-    static void warningTimeout(uv_timer_t *handle, int status);
-    static void connectionTimeout(uv_timer_t *handle, int status);
-    
 public:
     EmiConnDelegate(EmiConnection& conn);
     
@@ -33,7 +22,6 @@ public:
                         size_t size);
     
     void scheduleConnectionWarning(EmiTimeInterval warningTimeout);
-    void scheduleConnectionTimeout(EmiTimeInterval interval);
     
     void emiConnLost();
     void emiConnRegained();

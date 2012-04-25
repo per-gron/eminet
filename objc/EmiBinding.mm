@@ -53,17 +53,18 @@ void EmiBinding::randomBytes(uint8_t *buf, size_t bufSize) {
 
 @end
 
-EmiBinding::Timer *EmiBinding::makeTimer(TimerCb *timerCb) {
-    return new Timer(timerCb);
+EmiBinding::Timer *EmiBinding::makeTimer() {
+    return new Timer();
 }
 
 void EmiBinding::freeTimer(Timer *timer) {
     delete timer;
 }
 
-void EmiBinding::scheduleTimer(Timer *timer, void *data, EmiTimeInterval interval, bool repeating) {
+void EmiBinding::scheduleTimer(Timer *timer, TimerCb *timerCb, void *data, EmiTimeInterval interval, bool repeating) {
     [timer->timer invalidate];
     timer->data = data;
+    timer->timerCb = timerCb;
     
     EmiBindingTimer *ebt = [[EmiBindingTimer alloc] initWithTimer:timer];
     
