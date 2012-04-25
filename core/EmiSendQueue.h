@@ -19,6 +19,8 @@
 #include <algorithm>
 #include <cmath>
 
+class EmiConnTime;
+
 template<class SockDelegate, class ConnDelegate>
 class EmiConn;
 
@@ -57,20 +59,6 @@ private:
         }
         _queue.clear();
         _queueSize = 0;
-    }
-    
-    void fillTimestamps(void *data, EmiTimeInterval now) {
-        uint16_t *buf = (uint16_t *)data;
-        
-        buf[0] = htons(floor(_conn.getCurrentTime(now)*1000));
-        if (_conn.hasReceivedTime()) {
-            buf[1] = htons(_conn.largestReceivedTime());
-            buf[2] = htons(floor((now - _conn.gotLargestReceivedTimeAt())*1000));
-        }
-        else {
-            buf[1] = htons(0);
-            buf[2] = htons(0);
-        }
     }
     
     void sendMessageInSeparatePacket(const EM *msg) {
@@ -117,11 +105,11 @@ public:
         _enqueueHeartbeat = true;
     }
     
-    void sendHeartbeat(bool isResponse, EmiTimeInterval now) {
+    void sendHeartbeat(EmiConnTime& connTime, bool isResponse, EmiTimeInterval now) {
         if (_conn.isOpen()) {
             const size_t bufLen = EMI_TIMESTAMP_LENGTH+1;
             uint8_t buf[bufLen];
-            fillTimestamps(buf, now);
+            EM::fillTimestamps(connTime, buf, now);
             buf[EMI_TIMESTAMP_LENGTH] = isResponse ? 1 : 0;
             
             _conn.sendDatagram(buf, bufLen);
@@ -129,14 +117,14 @@ public:
     }
     
     // Returns true if something was sent
-    bool flush(EmiTimeInterval now) {
+    bool flush(EmiConnTime& connTime, EmiTimeInterval now) {
         bool sentPacket = false;
         
         if (!_queue.empty() || !_acks.empty()) {
             SendQueueAcksSet acksInThisPacket;
             size_t pos = 0;
             
-            fillTimestamps(_buf, now); pos += EMI_TIMESTAMP_LENGTH;
+            EM::fillTimestamps(connTime, _buf, now); pos += EMI_TIMESTAMP_LENGTH;
             
             SendQueueAcksMap::iterator ackIter = _acks.begin();
             SendQueueAcksMap::iterator ackEnd = _acks.end();
@@ -200,7 +188,7 @@ public:
         
         if (!sentPacket && _enqueueHeartbeat) {
             // Send heartbeat response
-            sendHeartbeat(true, now);
+            sendHeartbeat(connTime, true, now);
             sentPacket = true;
         }
         
@@ -225,7 +213,7 @@ public:
         return !_acks.empty();
     }
     
-    void enqueueMessage(EM *msg, EmiTimeInterval now) {
+    void enqueueMessage(EM *msg, EmiConnTime& connTime, EmiTimeInterval now) {
         if (msg->flags & (EMI_PRX_FLAG | EMI_RST_FLAG | EMI_SYN_FLAG)) {
             // This is a control message, one that cannot be bundled with
             // other messages. We might just as well send it right away.
@@ -241,7 +229,7 @@ public:
             size_t msgSize = msg->approximateSize();
             
             if (_queueSize + msgSize >= _bufLength) { // _bufLength is the MTU of the EmiSocket
-                flush(now);
+                flush(connTime, now);
             }
             
             msg->retain();

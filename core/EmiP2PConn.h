@@ -12,6 +12,7 @@
 #include "EmiTypes.h"
 #include "EmiNetUtil.h"
 #include "EmiConnTime.h"
+#include "EmiMessage.h"
 
 template<class P2PSockDelegate>
 class EmiP2PConn {
@@ -30,6 +31,7 @@ private:
     Address          _peers[2];
     Address          _innerEndpoints[2];
     EmiConnTime      _times[2];
+    bool             _waitingForPrxAck[2];
     size_t           _bytesSentSinceRateLimitTimeout;
     
     // TODO connection timeout
@@ -65,7 +67,7 @@ private:
         return addr;
     }
     
-    void sendData(uv_udp_t *sock,
+    void sendData(SocketHandle *sock,
                   const Address& address,
                   const TemporaryData& data,
                   size_t offset,
@@ -79,6 +81,15 @@ private:
                                   len);
     }
     
+    void sendSynAck(SocketHandle *sock, int addrIdx) {
+        EmiMessage<Binding>::writeControlPacket(EMI_SYN_FLAG | EMI_ACK_FLAG, ^(uint8_t *buf, size_t size) {
+            // TODO Fill timestamps. To do that, we need to make sure that
+            // gotTimstamps has been invoked on conn (the current code does
+            // not do this)
+            P2PSockDelegate::sendData(sock, _peers[addrIdx], buf, size);
+        });
+    }
+    
 public:
     EmiP2PConn(const Address& firstPeer) :
     _acmp(AddressCmp()),
@@ -90,6 +101,9 @@ public:
         EmiBinding::fillNilAddress(family, _peers[1]);
         EmiBinding::fillNilAddress(family, _innerEndpoints[0]);
         EmiBinding::fillNilAddress(family, _innerEndpoints[1]);
+        
+        _waitingForPrxAck[0] = false;
+        _waitingForPrxAck[1] = false;
     }
     virtual ~EmiP2PConn() {}
     
@@ -114,10 +128,15 @@ public:
         sendData(sock, *otherAddr, data, offset, len);
     }
     
-    void gotOtherAddress(const Address& address) {
+    void gotOtherAddress(SocketHandle *sock, const Address& address) {
         _peers[1] = address;
         
-        // TODO Send reliable SYN-ACK message
+        _waitingForPrxAck[0] = true;
+        _waitingForPrxAck[1] = true;
+        sendSynAck(sock, 0);
+        sendSynAck(sock, 1);
+        
+        // TODO Make sure that we re-send the syn-ack messages on rto timeout
     }
     
     void gotTimestamp(const Address& address, EmiTimeInterval now, const uint8_t *data, size_t len) {

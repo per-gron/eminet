@@ -10,7 +10,9 @@
 #define emilir_EmiMessage_h
 
 #include "EmiTypes.h"
+#include "EmiConnTime.h"
 
+#include <cmath>
 #include <algorithm>
 
 // A message, as it is represented in the sender side of the pipeline
@@ -177,6 +179,20 @@ public:
                         flags);
         
         callback(buf, tlen+plen);
+    }
+    
+    static void fillTimestamps(EmiConnTime& connTime, void *data, EmiTimeInterval now) {
+        uint16_t *buf = (uint16_t *)data;
+        
+        buf[0] = htons(floor(connTime.getCurrentTime(now)*1000));
+        if (connTime.hasReceivedTime()) {
+            buf[1] = htons(connTime.getLargestReceivedTime());
+            buf[2] = htons(floor((now - connTime.gotLargestReceivedTimeAt())*1000));
+        }
+        else {
+            buf[1] = htons(0);
+            buf[2] = htons(0);
+        }
     }
 };
 

@@ -132,6 +132,8 @@ private:
     }
     
     void gotConnectionOpen(EmiTimeInterval now,
+                           const uint8_t *rawData,
+                           size_t len,
                            SocketHandle *sock,
                            const Address& address,
                            const uint8_t *cookie,
@@ -157,7 +159,7 @@ private:
                 // We don't need to save the cookie anymore
                 _connCookies.erase(cur);
                 
-                conn->gotOtherAddress(address);
+                conn->gotOtherAddress(sock, address);
             }
             else {
                 // There was no connection open with this cookie. Open new one
@@ -169,22 +171,42 @@ private:
             _conns.insert(std::make_pair(address, conn));
         }
         
+        conn->gotTimestamp(address, now, rawData, len);
+        
         // Regardless of whether we had an EmiP2PConn object set up
         // for this address, we want to reply to the host with an
         // acknowledgement that we have received the SYN message.
         
         EmiMessage<Binding>::writeControlPacket(EMI_PRX_FLAG, ^(uint8_t *buf, size_t size) {
+            // TODO Fill timestamps. To do that, we need to make sure that
+            // gotTimstamps has been invoked on conn (the current code does
+            // not do this)
             P2PSockDelegate::sendData(sock, address, buf, size);
         });
     }
     
-    void gotConnectionOpenAck() {
+    // conn must not be NULL
+    void gotConnectionOpenAck(const Address& address,
+                              Conn *conn,
+                              EmiTimeInterval now,
+                              const uint8_t *rawData,
+                              size_t len) {
+        conn->gotTimestamp(address, now, rawData, len);
+        
         // TODO
     }
     
-    void gotConnectionClose(EmiTimeInterval now,
+    // conn might be NULL
+    void gotConnectionClose(Conn *conn,
+                            EmiTimeInterval now,
+                            const uint8_t *rawData,
+                            size_t len,
                             SocketHandle *sock,
                             const Address& address) {
+        if (conn) {
+            conn->gotTimestamp(address, now, rawData, len);
+        }
+        
         // TODO
     }
     
@@ -275,6 +297,7 @@ public:
         if (EMI_TIMESTAMP_LENGTH+1 == len) {
             // This is a heartbeat packet. Just forward the packet (if we can)
             if (conn) {
+                conn->gotTimestamp(address, now, rawData, len);
                 conn->forwardPacket(now, sock, address, data, offset, len);
             }
         }
@@ -314,6 +337,8 @@ public:
                 if (EMI_SYN_FLAG == relevantFlags) {
                     // This is a connection open message.
                     gotConnectionOpen(now,
+                                      rawData,
+                                      len,
                                       sock,
                                       address,
                                       rawData+EMI_TIMESTAMP_LENGTH+header.headerLength,
@@ -321,13 +346,13 @@ public:
                 }
                 else if ((EMI_PRX_FLAG | EMI_ACK_FLAG) == relevantFlags) {
                     // This is a connection open ACK message.
-                    gotConnectionOpenAck();
+                    gotConnectionOpenAck(address, conn, now, rawData, len);
                 }
                 else if ((EMI_PRX_FLAG | EMI_RST_FLAG) == relevantFlags ||
                          EMI_RST_FLAG                  == relevantFlags) {
                     // This is a proxy connection close message,
                     // or a plain connection close message.
-                    gotConnectionClose(now, sock, address);
+                    gotConnectionClose(conn, now, rawData, len, sock, address);
                 }
                 else {
                     err = "Invalid message flags";
@@ -338,18 +363,9 @@ public:
                 // This is not a control message, so we don't care about its
                 // contents. Just forward it.
                 if (conn) {
+                    conn->gotTimestamp(address, now, rawData, len);
                     conn->forwardPacket(now, sock, address, data, offset, len);
                 }
-            }
-        }
-        
-        // Update timestamp
-        {
-            // connAfterMessage might not be == conn because of connection close/open
-            // Furthermore, conn might have been deallocated by now because of close.
-            Conn *connAfterMessage = findConn(address);
-            if (connAfterMessage) {
-                connAfterMessage->gotTimestamp(address, now, rawData, len);
             }
         }
         

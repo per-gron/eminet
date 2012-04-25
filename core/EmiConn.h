@@ -144,7 +144,7 @@ public:
     void heartbeatTimeoutCallback(EmiTimeInterval now) {
         if (_initiator) {
             // If we have received data since the last heartbeat, we don't need to ask for a heartbeat reply
-            _sendQueue.sendHeartbeat(_receivedDataSinceLastHeartbeat, now);
+            _sendQueue.sendHeartbeat(_time, _receivedDataSinceLastHeartbeat, now);
         }
         else {
             _sendQueue.enqueueHeartbeat();
@@ -201,20 +201,6 @@ public:
         }
     }
     
-    // Returns the time relative to when the connection was initiated
-    EmiTimeInterval getCurrentTime(EmiTimeInterval now) {
-        return _time.getCurrentTime(now);
-    }
-    EmiTimestamp largestReceivedTime() const {
-        return _time.getLargestReceivedTime();
-    }
-    bool hasReceivedTime() const {
-        return _time.hasReceivedTime();
-    }
-    EmiTimeInterval gotLargestReceivedTimeAt() const {
-        return _time.gotLargestReceivedTimeAt();
-    }
-    
     void gotPacket() {
         resetConnectionTimeout();
     }
@@ -263,7 +249,7 @@ public:
             updateRtoTimeout();
         }
         
-        _sendQueue.enqueueMessage(msg, now);
+        _sendQueue.enqueueMessage(msg, _time, now);
         ensureTickTimeout();
         
         return true;
@@ -363,7 +349,7 @@ public:
     
     // Delegates to EmiSendQueue
     bool flush(EmiTimeInterval now) {
-        return _sendQueue.flush(now);
+        return _sendQueue.flush(_time, now);
     }
     
     // Delegates to EmiLogicalConnection
