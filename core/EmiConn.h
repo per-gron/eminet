@@ -17,6 +17,7 @@
 #include "EmiLogicalConnection.h"
 #include "EmiMessage.h"
 #include "EmiConnTime.h"
+#include "EmiRtoTimer.h"
 
 template<class SockDelegate, class ConnDelegate>
 class EmiConn {
@@ -50,12 +51,11 @@ class EmiConn {
     
     ConnDelegate _delegate;
     
-    Timer *_tickTimer;
-    Timer *_heartbeatTimer;
-    Timer *_rtoTimer;
-    EmiTimeInterval _rtoWhenRtoTimerWasScheduled;
-    Timer *_connectionTimer;
-    EmiTimeInterval _warningTimeoutWhenWarningTimerWasScheduled;
+    Timer                         *_tickTimer;
+    Timer                         *_heartbeatTimer;
+    EmiRtoTimer<Binding, EmiConn>  _rtoTimer;
+    Timer                         *_connectionTimer;
+    EmiTimeInterval                _warningTimeoutWhenWarningTimerWasScheduled;
     
     bool _issuedConnectionWarning;
     
@@ -101,8 +101,7 @@ public:
     _receivedDataSinceLastHeartbeat(false),
     _tickTimer(Binding::makeTimer()),
     _heartbeatTimer(Binding::makeTimer()),
-    _rtoTimer(Binding::makeTimer()),
-    _rtoWhenRtoTimerWasScheduled(0),
+    _rtoTimer(_time, *this),
     _connectionTimer(Binding::makeTimer()),
     _warningTimeoutWhenWarningTimerWasScheduled(0),
     _issuedConnectionWarning(false) {
@@ -112,7 +111,6 @@ public:
     virtual ~EmiConn() {
         Binding::freeTimer(_tickTimer);
         Binding::freeTimer(_heartbeatTimer);
-        Binding::freeTimer(_rtoTimer);
         Binding::freeTimer(_connectionTimer);
         
         _emisock.deregisterConnection(this);
@@ -198,37 +196,16 @@ public:
         }
     }
     
-    static void rtoTimeoutCallback(EmiTimeInterval now, Timer *timer, void *data) {
-        EmiConn *conn = (EmiConn *)data;
-        
-        conn->_senderBuffer.eachCurrentMessage(now, conn->_rtoWhenRtoTimerWasScheduled, ^(EmiMessage<Binding> *msg) {
+    void rtoTimeout(EmiTimeInterval now, EmiTimeInterval rtoWhenRtoTimerWasScheduled) {
+        _senderBuffer.eachCurrentMessage(now, rtoWhenRtoTimerWasScheduled, ^(EmiMessage<Binding> *msg) {
             Error err;
             // Reliable is set to false, because if the message is reliable, it is
             // already in the sender buffer and shouldn't be reinserted anyway
-            if (!conn->enqueueMessage(now, msg, /*reliable:*/false, err)) {
+            if (!enqueueMessage(now, msg, /*reliable:*/false, err)) {
                 // This can't happen because the reliable parameter was false
                 Binding::panic();
             }
         });
-        
-        conn->_time.onRtoTimeout();
-        
-        conn->updateRtoTimeout();
-    }
-    void updateRtoTimeout() {
-        if (!_senderBuffer.empty()) {
-            if (!Binding::timerIsActive(_rtoTimer)) {
-                
-                // this._rto will likely change before the timeout fires. When
-                // the timeout fires we want the value of _rto at the time
-                // the timeout was set, not when it fires. That's why we store
-                // rto with the NSTimer.
-                _rtoWhenRtoTimerWasScheduled = _time.getRto();
-                Binding::scheduleTimer(_rtoTimer, rtoTimeoutCallback,
-                                       this, _rtoWhenRtoTimerWasScheduled,
-                                       /*repeating:*/false);
-            }
-        }
     }
     
     void forceClose(EmiDisconnectReason reason) {
@@ -275,9 +252,12 @@ public:
     void deregisterReliableMessages(int32_t channelQualifier, EmiSequenceNumber sequenceNumber) {
         _senderBuffer.deregisterReliableMessages(channelQualifier, sequenceNumber);
         
-        if (_senderBuffer.empty()) {
-            Binding::descheduleTimer(_rtoTimer);
-        }
+        // This will clear the rto timeout if the sender buffer is empty
+        _rtoTimer.updateRtoTimeout();
+    }
+    
+    bool senderBufferIsEmpty() const {
+        return _senderBuffer.empty();
     }
     
     /// Delegates to EmiReceiverBuffer
@@ -295,7 +275,7 @@ public:
             if (!_senderBuffer.registerReliableMessage(msg, err, now)) {
                 return false;
             }
-            updateRtoTimeout();
+            _rtoTimer.updateRtoTimeout();
         }
         
         _sendQueue.enqueueMessage(msg, _time, now);
