@@ -238,6 +238,10 @@ public:
         ASSERT(-1 != idx);
         
         _innerEndpoints[0 == idx ? 1 : 0] = innerAddress;
+        
+        // Stop re-sending the SYN-ACK that this PRX-ACK message is a response to
+        _waitingForPrxAck[idx] = false;
+        (0 == idx ? _rtoTimer0 : _rtoTimer1).updateRtoTimeout();
     }
     
     bool hasBothInnerAddresses() const {
