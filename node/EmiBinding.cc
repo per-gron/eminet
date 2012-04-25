@@ -55,3 +55,44 @@ void EmiBinding::randomBytes(uint8_t *buf, size_t bufSize) {
         panic();
     }
 }
+
+static void close_cb(uv_handle_t* handle) {
+    free(handle);
+}
+
+static void timer_cb(uv_timer_t *handle, int status) {
+    EmiBinding::TimerCb *timerCb = *(reinterpret_cast<EmiBinding::TimerCb**>(handle+1));
+    timerCb(handle, handle->data);
+}
+
+EmiBinding::Timer *EmiBinding::makeTimer(TimerCb *timerCb, void *data) {
+    EmiBinding::Timer *timer = (uv_timer_t *)malloc(sizeof(uv_timer_t)+sizeof(TimerCb));
+    *(reinterpret_cast<TimerCb**>(timer+1)) = timerCb;
+    
+    timer->data = data;
+    
+    uv_timer_init(uv_default_loop(), timer);
+    
+    return timer;
+}
+
+void EmiBinding::freeTimer(Timer *timer) {
+    uv_timer_stop(timer);
+    uv_close((uv_handle_t *)timer, close_cb);
+}
+
+void EmiBinding::scheduleTimer(Timer *timer, EmiTimeInterval interval, bool repeating) {
+    uint64_t timeout = interval*EmiNodeUtil::MSECS_PER_SEC;
+    uv_timer_start(timer,
+                   timer_cb,
+                   timeout,
+                   repeating ? timeout : 0);
+}
+
+void EmiBinding::descheduleTimer(Timer *timer) {
+    uv_timer_stop(timer);
+}
+
+bool EmiBinding::timerIsActive(Timer *timer) {
+    return uv_is_active((uv_handle_t *)timer);
+}

@@ -22,6 +22,8 @@ public:
     typedef struct sockaddr_storage    Address;
     typedef v8::Local<v8::Object>      TemporaryData;
     typedef v8::Persistent<v8::Object> PersistentData;
+    typedef uv_timer_t                 Timer;
+    typedef void (TimerCb)(Timer *timer, void *data);
     
     // Will fill address with an address that cannot be the receiver of a packet
     static void fillNilAddress(int family, Address& address);
@@ -56,6 +58,12 @@ public:
                          const uint8_t *data, size_t dataLength,
                          uint8_t *buf, size_t bufLen);
     static void randomBytes(uint8_t *buf, size_t bufSize);
+    
+    static Timer *makeTimer(TimerCb *timerCb, void *data);
+    static void freeTimer(Timer *timer);
+    static void scheduleTimer(Timer *timer, EmiTimeInterval interval, bool repeating);
+    static void descheduleTimer(Timer *timer);
+    static bool timerIsActive(Timer *timer);
 };
 
 #endif
