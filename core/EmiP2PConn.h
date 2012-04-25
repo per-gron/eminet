@@ -15,8 +15,32 @@
 #include "EmiMessage.h"
 #include "EmiRtoTimer.h"
 
-template<class P2PSockDelegate>
+template<class P2PSockDelegate, int EMI_P2P_COOKIE_SIZE>
 class EmiP2PConn {
+public:
+    
+    class ConnCookie {
+    public:
+        uint8_t cookie[EMI_P2P_COOKIE_SIZE];
+        
+        ConnCookie(const uint8_t *cookie_, size_t cookieLength) {
+            ASSERT(EMI_P2P_COOKIE_SIZE == cookieLength);
+            memcpy(cookie, cookie_, sizeof(cookie));
+        }
+        
+        inline ConnCookie(const ConnCookie& other) {
+            memcpy(cookie, other.cookie, sizeof(cookie));
+        }
+        inline ConnCookie& operator=(const ConnCookie& other) {
+            memcpy(cookie, other.cookie, sizeof(cookie));
+        }
+        
+        inline bool operator<(const ConnCookie& rhs) const {
+            return 0 > memcmp(cookie, rhs.cookie, sizeof(cookie));
+        }
+    };
+    
+private:
     typedef typename P2PSockDelegate::Binding Binding;
     typedef typename Binding::Address         Address;
     typedef typename Binding::AddressCmp      AddressCmp;
@@ -26,7 +50,6 @@ class EmiP2PConn {
     
     typedef EmiRtoTimer<Binding, EmiP2PConn> ERT;
     
-private:
     // Private copy constructor and assignment operator
     inline EmiP2PConn(const EmiP2PConn& other);
     inline EmiP2PConn& operator=(const EmiP2PConn& other);
@@ -99,11 +122,15 @@ private:
     }
     
     static void rateLimitTimeoutCallback(EmiTimeInterval now, Timer *timer, void *data) {
-        _bytesSentSinceRateLimitTimeout = 0;
+        EmiP2PConn *conn = (EmiP2PConn *)data;
+        conn->_bytesSentSinceRateLimitTimeout = 0;
     }
     
 public:
-    EmiP2PConn(SocketHandle *sock, const Address& firstPeer, size_t rateLimit) :
+    ConnCookie cookie;
+    
+    EmiP2PConn(const ConnCookie &cookie_, SocketHandle *sock, const Address& firstPeer, size_t rateLimit) :
+    cookie(cookie_),
     _sock(sock),
     _acmp(AddressCmp()),
     _times(),
@@ -199,6 +226,29 @@ public:
     bool senderBufferIsEmpty(ERT& ert) const {
         int idx = (&_rtoTimer0 == &ert) ? 0 : 1;
         return !_waitingForPrxAck[idx];
+    }
+    
+    void gotInnerAddress(const Address& address, const Address& innerAddress) {
+        int idx(addressIndex(address));
+        ASSERT(-1 != idx);
+        
+        _innerEndpoints[0 == idx ? 1 : 0] = innerAddress;
+    }
+    
+    bool hasBothInnerAddresses() const {
+        return !EmiBinding::isNilAddress(_innerEndpoints[0]) &&
+               !EmiBinding::isNilAddress(_innerEndpoints[1]);
+    }
+    
+    void sendPrxRstSynAck(int idx) {
+        EmiFlags flags = EMI_PRX_FLAG | EMI_RST_FLAG | EMI_SYN_FLAG | EMI_ACK_FLAG;
+        EmiMessage<Binding>::writeControlPacket(flags, ^(uint8_t *buf, size_t size) {
+            ASSERT(0 == idx || 1 == idx);
+            EmiMessage<Binding>::fillTimestamps(_times[idx], buf, size);
+            P2PSockDelegate::sendData(_sock, _peers[idx], buf, size);
+            
+            // TODO These packets should contain the endpoint pairs
+        });
     }
 };
 

@@ -38,29 +38,9 @@ class EmiP2PSock {
     static const size_t          EMI_P2P_RAND_NUM_SIZE = 8;
     static const size_t          EMI_P2P_COOKIE_SIZE = EMI_P2P_RAND_NUM_SIZE + Binding::HMAC_HASH_SIZE;
     
-    class ConnCookie {
-    public:
-        uint8_t cookie[EMI_P2P_COOKIE_SIZE];
-        
-        ConnCookie(const uint8_t *cookie_, size_t cookieLength) {
-            ASSERT(EMI_P2P_COOKIE_SIZE == cookieLength);
-            memcpy(cookie, cookie_, sizeof(cookie));
-        }
-        
-        inline ConnCookie(const ConnCookie& other) {
-            memcpy(cookie, other.cookie, sizeof(cookie));
-        }
-        inline ConnCookie& operator=(const ConnCookie& other) {
-            memcpy(cookie, other.cookie, sizeof(cookie));
-        }
-        
-        inline bool operator<(const ConnCookie& rhs) const {
-            return 0 > memcmp(cookie, rhs.cookie, sizeof(cookie));
-        }
-    };
-    
     typedef EmiP2PSockConfig<Address>                        SockConfig;
-    typedef EmiP2PConn<P2PSockDelegate> Conn;
+    typedef EmiP2PConn<P2PSockDelegate, EMI_P2P_COOKIE_SIZE> Conn;
+    typedef typename Conn::ConnCookie                        ConnCookie;
     typedef std::map<Address, Conn*, AddressCmp>             ConnMap;
     typedef typename ConnMap::iterator                       ConnMapIter;
     typedef std::map<ConnCookie, Conn*>                      ConnCookieMap;
@@ -164,7 +144,7 @@ private:
             else {
                 // There was no connection open with this cookie. Open new one
                 
-                conn = new Conn(sock, address, config.rateLimit);
+                conn = new Conn(cc, sock, address, config.rateLimit);
                 _connCookies.insert(std::make_pair(cc, conn));
             }
             
@@ -179,15 +159,56 @@ private:
         conn->sendPrx(address);
     }
     
+    inline size_t ipLength(const Address& address) {
+        int family = Binding::extractFamily(address);
+        if (AF_INET == family) {
+            return 4;
+        }
+        else if (AF_INET6 == family) {
+            return 16;
+        }
+        else {
+            ASSERT(0 && "unexpected address family");
+            abort();
+        }
+    }
+    
     // conn must not be NULL
     void gotConnectionOpenAck(const Address& address,
                               Conn *conn,
                               EmiTimeInterval now,
                               const uint8_t *rawData,
                               size_t len) {
+        size_t ipLen = ipLength(address);
+        size_t portLen = 2;
+        if (len != Binding::HMAC_HASH_SIZE+ipLen+portLen) {
+            // Invalid packet
+            return;
+        }
+        
+        uint8_t hashResult[Binding::HMAC_HASH_SIZE];
+        
+        Binding::hmacHash(conn->cookie.cookie, EMI_P2P_COOKIE_SIZE,
+                          rawData+Binding::HMAC_HASH_SIZE, sizeof(ipLen+portLen),
+                          hashResult, sizeof(hashResult));
+        
+        if (0 != memcmp(hashResult, rawData, Binding::HMAC_HASH_SIZE)) {
+            // Invalid packet
+            return;
+        }
+        
         conn->gotTimestamp(address, now, rawData, len);
         
-        // TODO
+        Address innerAddress(Binding::makeAddress(Binding::extractFamily(address),
+                                                  rawData+Binding::HMAC_HASH_SIZE, ipLen,
+                                                  *((uint16_t *)(rawData+Binding::HMAC_HASH_SIZE+ipLen))));
+        
+        conn->gotInnerAddress(address, innerAddress);
+        
+        if (conn->hasBothInnerAddresses()) {
+            conn->sendPrxRstSynAck(0);
+            conn->sendPrxRstSynAck(1);
+        }
     }
     
     // conn might be NULL
@@ -199,9 +220,11 @@ private:
                             const Address& address) {
         if (conn) {
             conn->gotTimestamp(address, now, rawData, len);
+            
+            // TODO Remove the connection from our registry (is this the right time?)
+            
+            // TODO Find a way to also remove the potential _connCookies entry
         }
-        
-        // TODO
     }
     
 public:

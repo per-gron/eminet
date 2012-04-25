@@ -101,6 +101,34 @@ void EmiNodeUtil::anyIp(uint16_t port,
     }
 }
 
+void EmiNodeUtil::makeAddress(int family, const uint8_t *ip, size_t ipLen, uint16_t port, sockaddr_storage *out) {
+    if (AF_INET6 == family) {
+        ASSERT(16 == ipLen);
+        
+        struct sockaddr_in6& addr6(*((struct sockaddr_in6 *)out));
+        addr6.sin6_len       = sizeof(struct sockaddr_in6);
+        addr6.sin6_family    = AF_INET6;
+        addr6.sin6_port      = htons(port);
+        addr6.sin6_flowinfo  = 0;
+        addr6.sin6_addr      = *((struct in6_addr *)ip);
+        addr6.sin6_scope_id  = 0;
+    }
+    else if (AF_INET == family) {
+        ASSERT(5 == ipLen);
+        
+		struct sockaddr_in& addr(*((struct sockaddr_in *)out));
+		addr.sin_len         = sizeof(struct sockaddr_in);
+		addr.sin_family      = AF_INET;
+		addr.sin_port        = htons(port);
+		addr.sin_addr.s_addr = htonl(*((uint32_t *)ip));
+		memset(&(addr.sin_zero), 0, sizeof(addr.sin_zero));
+    }
+    else {
+        ASSERT(0 && "unexpected address family");
+        abort();
+    }
+}
+
 uint16_t EmiNodeUtil::extractPort(const sockaddr_storage& address) {
     if (AF_INET6 == address.ss_family) {
         const struct sockaddr_in6& addr6(*((const struct sockaddr_in6 *)&address));
