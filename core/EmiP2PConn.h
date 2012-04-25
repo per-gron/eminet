@@ -200,6 +200,9 @@ public:
         _rtoTimer1.updateRtoTimeout();
     }
     
+    const Address& getFirstAddress() const { return _peers[0]; }
+    const Address& getOtherAddress() const { return _peers[0]; }
+    
     void gotTimestamp(const Address& address, EmiTimeInterval now, const uint8_t *data, size_t len) {
         int idx(addressIndex(address));
         if (-1 != idx) {
