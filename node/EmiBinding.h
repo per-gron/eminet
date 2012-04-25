@@ -59,9 +59,9 @@ public:
                          uint8_t *buf, size_t bufLen);
     static void randomBytes(uint8_t *buf, size_t bufSize);
     
-    static Timer *makeTimer(TimerCb *timerCb, void *data);
+    static Timer *makeTimer(TimerCb *timerCb);
     static void freeTimer(Timer *timer);
-    static void scheduleTimer(Timer *timer, EmiTimeInterval interval, bool repeating);
+    static void scheduleTimer(Timer *timer, void *data, EmiTimeInterval interval, bool repeating);
     static void descheduleTimer(Timer *timer);
     static bool timerIsActive(Timer *timer);
 };

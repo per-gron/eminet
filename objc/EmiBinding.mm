@@ -23,3 +23,46 @@ void EmiBinding::randomBytes(uint8_t *buf, size_t bufSize) {
         panic();
     }
 }
+
+
+@interface EmiBindingTimer : NSObject
+
++ (void)timerFired:(NSTimer *)timer;
+
+@end
+
+@implementation EmiBindingTimer
+
++ (void)timerFired:(NSTimer *)nsTimer {
+    Timer *timer = [nsTimer userInfo];
+    timer->timerCb(nsTimer, timer->data);
+}
+
+@end
+
+EmiBinding::Timer *EmiBinding::makeTimer(TimerCb *timerCb) {
+    return new Timer(timerCb);
+}
+
+void EmiBinding::freeTimer(Timer *timer) {
+    delete timer;
+}
+
+void EmiBinding::scheduleTimer(Timer *timer, void *data, EmiTimeInterval interval, bool repeating) {
+    [timer->timer invalidate];
+    timer->data = data;
+    timer->timer = [NSTimer scheduledTimerWithTimeInterval:interval
+                                                    target:[EmiBindingTimer class]
+                                                  selector:@selector(timerFired:)
+                                                  userInfo:timer
+                                                   repeats:repeating];
+}
+
+void EmiBinding::descheduleTimer(Timer *timer) {
+    [timer->timer invalidate];
+    timer->timer = nil;
+}
+
+bool EmiBinding::timerIsActive(Timer *timer) {
+    return timer->timer && [timer->timer isValid];
+}

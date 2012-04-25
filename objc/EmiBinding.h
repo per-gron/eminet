@@ -20,6 +20,25 @@ private:
     inline EmiBinding();
 public:
     
+    class Timer;
+    typedef void (TimerCb)(Timer *timer, void *data);
+    class Timer {
+    private:
+        // Private copy constructor and assignment operator
+        inline Timer(const Timer& other);
+        inline Timer& operator=(const Timer& other);
+    public:
+        Timer(TimerCb *timerCb_) : data(NULL), timer(nil), timerCb(timerCb_) {}
+        virtual ~Timer() {
+            [timer invalidate];
+            timer = nil;
+        }
+        
+        void *data;
+        NSTimer *timer;
+        TimerCb *const timerCb;
+    };
+    
     typedef __strong NSError* Error;
     typedef EmiAddressCmp AddressCmp;
     typedef GCDAsyncUdpSocket SocketHandle;
@@ -79,6 +98,12 @@ public:
                          const uint8_t *data, size_t dataLength,
                          uint8_t *buf, size_t bufLen);
     static void randomBytes(uint8_t *buf, size_t bufSize);
+    
+    static Timer *makeTimer(TimerCb *timerCb);
+    static void freeTimer(Timer *timer);
+    static void scheduleTimer(Timer *timer, void *data, EmiTimeInterval interval, bool repeating);
+    static void descheduleTimer(Timer *timer);
+    static bool timerIsActive(Timer *timer);
 };
 
 #endif
