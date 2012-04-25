@@ -123,6 +123,7 @@ private:
     
     static void rateLimitTimeoutCallback(EmiTimeInterval now, Timer *timer, void *data) {
         EmiP2PConn *conn = (EmiP2PConn *)data;
+        
         conn->_bytesSentSinceRateLimitTimeout = 0;
     }
     
@@ -152,9 +153,10 @@ public:
         _connectionTimer[0] = Binding::makeTimer();
         _connectionTimer[1] = Binding::makeTimer();
         
-        
-        Binding::scheduleTimer(_rateLimitTimer, rateLimitTimeoutCallback,
-                               this, 1, /*repeating:*/true);
+        if (rateLimit) {
+            Binding::scheduleTimer(_rateLimitTimer, rateLimitTimeoutCallback,
+                                   this, 1, /*repeating:*/true);
+        }
     }
     
     virtual ~EmiP2PConn() {
