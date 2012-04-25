@@ -240,8 +240,8 @@ public:
                !EmiBinding::isNilAddress(_innerEndpoints[1]);
     }
     
-    void sendPrxRstSynAck(int idx) {
-        EmiFlags flags = EMI_PRX_FLAG | EMI_RST_FLAG | EMI_SYN_FLAG | EMI_ACK_FLAG;
+    void sendEndpointPair(int idx) {
+        EmiFlags flags(EMI_PRX_FLAG | EMI_RST_FLAG | EMI_SYN_FLAG | EMI_ACK_FLAG);
         EmiMessage<Binding>::writeControlPacket(flags, ^(uint8_t *buf, size_t size) {
             ASSERT(0 == idx || 1 == idx);
             EmiMessage<Binding>::fillTimestamps(_times[idx], buf, size);

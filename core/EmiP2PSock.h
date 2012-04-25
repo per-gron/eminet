@@ -206,18 +206,18 @@ private:
         conn->gotInnerAddress(address, innerAddress);
         
         if (conn->hasBothInnerAddresses()) {
-            conn->sendPrxRstSynAck(0);
-            conn->sendPrxRstSynAck(1);
+            conn->sendEndpointPair(0);
+            conn->sendEndpointPair(1);
         }
     }
     
     // conn might be NULL
-    void gotConnectionClose(Conn *conn,
-                            EmiTimeInterval now,
-                            const uint8_t *rawData,
-                            size_t len,
-                            SocketHandle *sock,
-                            const Address& address) {
+    void gotProxyConnectionClose(Conn *conn,
+                                 EmiTimeInterval now,
+                                 const uint8_t *rawData,
+                                 size_t len,
+                                 SocketHandle *sock,
+                                 const Address& address) {
         if (conn) {
             conn->gotTimestamp(address, now, rawData, len);
             
@@ -371,11 +371,30 @@ public:
                         goto error;
                     }
                 }
-                else if ((EMI_PRX_FLAG | EMI_RST_FLAG) == relevantFlags ||
-                         EMI_RST_FLAG                  == relevantFlags) {
-                    // This is a proxy connection close message,
-                    // or a plain connection close message.
-                    gotConnectionClose(conn, now, rawData, len, sock, address);
+                else if (EMI_RST_FLAG == relevantFlags) {
+                    // This is a connection close message.
+                    //
+                    // We don't need to be smart about this type of packet,
+                    // we can simply forward it.
+                    conn->gotTimestamp(address, now, rawData, len);
+                    conn->forwardPacket(now, address, data, offset, len);
+                }
+                else if ((EMI_RST_FLAG | EMI_ACK_FLAG) == relevantFlags) {
+                    // This is a connection close ack message
+                    //
+                    // We don't need to be smart about this type of packet,
+                    // we can simply forward it.
+                    conn->gotTimestamp(address, now, rawData, len);
+                    conn->forwardPacket(now, address, data, offset, len);
+                }
+                else if ((EMI_RST_FLAG | EMI_SYN_FLAG | EMI_ACK_FLAG) == relevantFlags) {
+                    // This is a connection close ack ack message
+                    
+                    // TODO
+                }
+                else if ((EMI_PRX_FLAG | EMI_RST_FLAG) == relevantFlags) {
+                    // This is a proxy connection close message.
+                    gotProxyConnectionClose(conn, now, rawData, len, sock, address);
                 }
                 else {
                     err = "Invalid message flags";
