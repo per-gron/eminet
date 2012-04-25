@@ -22,26 +22,13 @@ void EmiConnDelegate::connectionTimeout(uv_timer_t *handle, int status) {
     conn->_conn.connectionTimeoutCallback();
 }
 
-void EmiConnDelegate::rtoTimeout(uv_timer_t *handle, int status) {
-    EmiConnection *conn = (EmiConnection *)handle->data;
-    conn->_conn.rtoTimeoutCallback(EmiConnection::Now(),
-                                        conn->_conn.getDelegate()._rtoWhenRtoTimerWasScheduled);
-}
-
 EmiConnDelegate::EmiConnDelegate(EmiConnection& conn) : _conn(conn) {
-    _rtoTimer = (uv_timer_t *)malloc(sizeof(uv_timer_t));
-    _rtoTimer->data = &conn;
-    uv_timer_init(uv_default_loop(), _rtoTimer);
-    
     _connectionTimer = (uv_timer_t *)malloc(sizeof(uv_timer_t));
     _connectionTimer->data = &conn;
     uv_timer_init(uv_default_loop(), _connectionTimer);
 }
 
 void EmiConnDelegate::invalidate() {
-    uv_timer_stop(_rtoTimer);
-    uv_close((uv_handle_t *)_rtoTimer, close_cb);
-    
     uv_timer_stop(_connectionTimer);
     uv_close((uv_handle_t *)_connectionTimer, close_cb);
     
@@ -88,24 +75,6 @@ void EmiConnDelegate::scheduleConnectionTimeout(EmiTimeInterval interval) {
                    EmiConnDelegate::connectionTimeout,
                    interval*EmiNodeUtil::MSECS_PER_SEC,
                    /*repeats:*/0);
-}
-
-void EmiConnDelegate::ensureRtoTimeout(EmiTimeInterval rto) {
-    if (!uv_is_active((uv_handle_t *)_rtoTimer)) {
-        // this._rto will likely change before the timeout fires. When
-        // the timeout fires we want the value of _rto at the time
-        // the timeout was set, not when it fires. That's why we store
-        // rto with the NSTimer.
-        _rtoWhenRtoTimerWasScheduled = rto;
-        uv_timer_start(_rtoTimer,
-                       EmiConnDelegate::rtoTimeout,
-                       rto*EmiNodeUtil::MSECS_PER_SEC,
-                       /*repeats:*/0);
-    }
-}
-
-void EmiConnDelegate::invalidateRtoTimeout() {
-    uv_timer_stop(_rtoTimer);
 }
 
 void EmiConnDelegate::emiConnLost() {

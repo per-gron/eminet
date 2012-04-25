@@ -10,13 +10,9 @@
 
 EmiConnDelegate::EmiConnDelegate(EmiConnection *conn) :
 _conn(conn),
-_rtoTimer(nil),
 _connectionTimer(nil) {}
 
 void EmiConnDelegate::invalidate() {
-    [_rtoTimer invalidate];
-    _rtoTimer = nil;
-    
     [_connectionTimer invalidate];
     _connectionTimer = nil;
     
@@ -50,25 +46,6 @@ void EmiConnDelegate::scheduleConnectionTimeout(EmiTimeInterval interval) {
                                                       selector:@selector(_connectionTimeoutCallback:) 
                                                       userInfo:nil 
                                                        repeats:NO];
-}
-
-void EmiConnDelegate::ensureRtoTimeout(EmiTimeInterval rto) {
-    if (!_rtoTimer || ![_rtoTimer isValid]) {
-        // this._rto will likely change before the timeout fires. When
-        // the timeout fires we want the value of _rto at the time
-        // the timeout was set, not when it fires. That's why we store
-        // rto with the NSTimer.
-        _rtoTimer = [NSTimer scheduledTimerWithTimeInterval:rto
-                                                     target:_conn
-                                                   selector:@selector(_rtoTimeoutCallback:)
-                                                   userInfo:[NSNumber numberWithDouble:rto]
-                                                    repeats:NO];
-    }
-}
-
-void EmiConnDelegate::invalidateRtoTimeout() {
-    [_rtoTimer invalidate];
-    _rtoTimer = nil;
 }
 
 void EmiConnDelegate::emiConnLost() {

@@ -52,6 +52,8 @@ class EmiConn {
     
     Timer *_tickTimer;
     Timer *_heartbeatTimer;
+    Timer *_rtoTimer;
+    EmiTimeInterval _rtoWhenRtoTimerWasScheduled;
     
     bool _issuedConnectionWarning;
     
@@ -97,6 +99,8 @@ public:
     _receivedDataSinceLastHeartbeat(false),
     _tickTimer(Binding::makeTimer(tickTimeoutCallback)),
     _heartbeatTimer(Binding::makeTimer(heartbeatTimeoutCallback)),
+    _rtoTimer(Binding::makeTimer(rtoTimeoutCallback)),
+    _rtoWhenRtoTimerWasScheduled(0),
     _issuedConnectionWarning(false) {
         resetConnectionTimeout();
     }
@@ -104,6 +108,7 @@ public:
     virtual ~EmiConn() {
         Binding::freeTimer(_tickTimer);
         Binding::freeTimer(_heartbeatTimer);
+        Binding::freeTimer(_rtoTimer);
         
         _emisock.deregisterConnection(this);
         
@@ -156,6 +161,7 @@ public:
     
     static void heartbeatTimeoutCallback(EmiTimeInterval now, Timer *timer, void *data) {
         EmiConn *conn = (EmiConn *)data;
+        
         if (conn->_initiator) {
             // If we have received data since the last heartbeat, we don't need to ask for a heartbeat reply
             conn->_sendQueue.sendHeartbeat(conn->_time, conn->_receivedDataSinceLastHeartbeat, now);
@@ -175,24 +181,34 @@ public:
         }
     }
     
-    void rtoTimeoutCallback(EmiTimeInterval now, EmiTimeInterval rto) {
-        _senderBuffer.eachCurrentMessage(now, rto, ^(EmiMessage<Binding> *msg) {
+    static void rtoTimeoutCallback(EmiTimeInterval now, Timer *timer, void *data) {
+        EmiConn *conn = (EmiConn *)data;
+        
+        conn->_senderBuffer.eachCurrentMessage(now, conn->_rtoWhenRtoTimerWasScheduled, ^(EmiMessage<Binding> *msg) {
             Error err;
             // Reliable is set to false, because if the message is reliable, it is
             // already in the sender buffer and shouldn't be reinserted anyway
-            if (!enqueueMessage(now, msg, /*reliable:*/false, err)) {
+            if (!conn->enqueueMessage(now, msg, /*reliable:*/false, err)) {
                 // This can't happen because the reliable parameter was false
                 Binding::panic();
             }
         });
         
-        _time.onRtoTimeout();
+        conn->_time.onRtoTimeout();
         
-        updateRtoTimeout();
+        conn->updateRtoTimeout();
     }
     void updateRtoTimeout() {
         if (!_senderBuffer.empty()) {
-            _delegate.ensureRtoTimeout(_time.getRto());
+            if (!Binding::timerIsActive(_rtoTimer)) {
+                
+                // this._rto will likely change before the timeout fires. When
+                // the timeout fires we want the value of _rto at the time
+                // the timeout was set, not when it fires. That's why we store
+                // rto with the NSTimer.
+                _rtoWhenRtoTimerWasScheduled = _time.getRto();
+                Binding::scheduleTimer(_rtoTimer, this, _rtoWhenRtoTimerWasScheduled, /*repeating:*/false);
+            }
         }
     }
     
@@ -241,7 +257,7 @@ public:
         _senderBuffer.deregisterReliableMessages(channelQualifier, sequenceNumber);
         
         if (_senderBuffer.empty()) {
-            _delegate.invalidateRtoTimeout();
+            Binding::descheduleTimer(_rtoTimer);
         }
     }
     

@@ -15,15 +15,12 @@ class EmiConnDelegate {
     // because the memory can't be freed in this class' destructor,
     // it has to be freed in the close callback of the timer handle,
     // which is called asynchronously.
-    uv_timer_t *_rtoTimer;
     uv_timer_t *_connectionTimer;
     
     EmiTimeInterval _warningTimeoutWhenWarningTimerWasScheduled;
-    EmiTimeInterval _rtoWhenRtoTimerWasScheduled;
     
     static void warningTimeout(uv_timer_t *handle, int status);
     static void connectionTimeout(uv_timer_t *handle, int status);
-    static void rtoTimeout(uv_timer_t *handle, int status);
     
 public:
     EmiConnDelegate(EmiConnection& conn);
@@ -37,9 +34,6 @@ public:
     
     void scheduleConnectionWarning(EmiTimeInterval warningTimeout);
     void scheduleConnectionTimeout(EmiTimeInterval interval);
-    
-    void ensureRtoTimeout(EmiTimeInterval rto);
-    void invalidateRtoTimeout();
     
     void emiConnLost();
     void emiConnRegained();
