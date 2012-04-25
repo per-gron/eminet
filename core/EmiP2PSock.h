@@ -69,9 +69,7 @@ private:
     
     void hashCookie(EmiTimeInterval stamp, const uint8_t *randNum,
                     uint8_t *buf, size_t bufLen, bool minusOne = false) const {
-        if (bufLen < Binding::HMAC_HASH_SIZE) {
-            Binding::panic();
-        }
+        ASSERT(bufLen >= Binding::HMAC_HASH_SIZE);
         
         uint64_t integerStamp = floor(stamp/EMI_P2P_COOKIE_RESOLUTION - (minusOne ? 1 : 0));
         
@@ -214,6 +212,8 @@ private:
     
 public:
     
+    // This method is public because it is also invoked by EmiP2PConn
+    //
     // conn might be NULL. In that case, this is a no-op
     void removeConnection(Conn *conn) {
         if (conn) {
@@ -266,9 +266,7 @@ public:
     // Returns the size of the cookie
     size_t generateCookie(EmiTimeInterval stamp,
                           uint8_t *buf, size_t bufLen) const {
-        if (bufLen < EMI_P2P_COOKIE_SIZE) {
-            Binding::panic();
-        }
+        ASSERT(bufLen >= EMI_P2P_COOKIE_SIZE);
         
         Binding::randomBytes(buf, EMI_P2P_RAND_NUM_SIZE);
         
@@ -280,9 +278,7 @@ public:
     
     // Returns the size of the shared secret
     static size_t generateSharedSecret(uint8_t *buf, size_t bufLen) {
-        if (bufLen < EMI_P2P_SHARED_SECRET_SIZE) {
-            Binding::panic();
-        }
+        ASSERT(bufLen >= EMI_P2P_SHARED_SECRET_SIZE);
         
         Binding::randomBytes(buf, EMI_P2P_SHARED_SECRET_SIZE);
         
