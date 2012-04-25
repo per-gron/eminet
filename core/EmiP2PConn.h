@@ -11,6 +11,7 @@
 
 #include "EmiTypes.h"
 #include "EmiNetUtil.h"
+#include "EmiConnTime.h"
 
 template<class P2PSockDelegate>
 class EmiP2PConn {
@@ -28,27 +29,33 @@ private:
     const AddressCmp _acmp;
     Address          _peers[2];
     Address          _innerEndpoints[2];
+    EmiConnTime      _times[2];
     size_t           _bytesSentSinceRateLimitTimeout;
     
     // TODO connection timeout
     // TODO rate limit timeout
     
-    // Returns NULL on error
-    const Address* otherAddress(const Address& address) const {
-        bool eq0 = (0 == _acmp(_peers[0], address));
-        bool eq1 = (1 == _acmp(_peers[1], address));
-        
-        const Address *addr;
-        
-        if (eq0) {
-            addr = &_peers[1];
+    // Returns -1 on error
+    int addressIndex(const Address& address) const {
+        if (0 == _acmp(_peers[0], address)) {
+            return 0;
         }
-        else if (eq1) {
-            addr = &_peers[0];
+        else if (0 == _acmp(_peers[1], address)) {
+            return 1;
         }
         else {
+            return -1;
+        }
+    }
+    
+    // Returns NULL on error
+    const Address* otherAddress(const Address& address) const {
+        int idx = addressIndex(address);
+        if (-1 == idx) {
             return NULL;
         }
+        
+        const Address *addr(&_peers[idx]);
         
         // Return NULL if the address is a nil address
         if (EmiBinding::isNilAddress(*addr)) {
@@ -75,6 +82,7 @@ private:
 public:
     EmiP2PConn(const Address& firstPeer) :
     _acmp(AddressCmp()),
+    _times(),
     _bytesSentSinceRateLimitTimeout(0) {
         int family = EmiBinding::extractFamily(firstPeer);
         
@@ -85,7 +93,12 @@ public:
     }
     virtual ~EmiP2PConn() {}
     
-    void gotPacket() {}
+    void gotPacket(const Address& address) {
+        int idx(addressIndex(address));
+        if (-1 != idx) {
+            // TODO Reset connection timeout
+        }
+    }
     
     void forwardPacket(EmiTimeInterval now,
                        SocketHandle *sock,
@@ -105,6 +118,15 @@ public:
         _peers[1] = address;
         
         // TODO Send reliable SYN-ACK message
+    }
+    
+    void gotTimestamp(const Address& address, EmiTimeInterval now, const uint8_t *data, size_t len) {
+        int idx(addressIndex(address));
+        if (-1 != idx) {
+            // Since these P2P connections don't have a proper heartbeat frequency,
+            // we tell EmiConnTime that it is 3. It is a good enough default.
+            _times[idx].gotTimestamp(/*heartbeatFrequency:*/3, now, data, len);
+        }
     }
 };
 

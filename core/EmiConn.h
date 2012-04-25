@@ -163,9 +163,9 @@ public:
     
     void rtoTimeoutCallback(EmiTimeInterval now, EmiTimeInterval rto) {
         _senderBuffer.eachCurrentMessage(now, rto, ^(EmiMessage<Binding> *msg) {
-            // Reliable is set to NO, because if the message is reliable, it is already
-            // in the sender buffer and shouldn't be reinserted anyway
             Error err;
+            // Reliable is set to false, because if the message is reliable, it is
+            // already in the sender buffer and shouldn't be reinserted anyway
             if (!enqueueMessage(now, msg, /*reliable:*/false, err)) {
                 // This can't happen because the reliable parameter was false
                 Binding::panic();

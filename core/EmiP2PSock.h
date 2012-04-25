@@ -265,10 +265,11 @@ public:
         }
         
         const char *err = NULL;
+        const uint8_t *rawData(Binding::extractData(data)+offset);
         
         Conn *conn = findConn(address);
         if (conn) {
-            conn->gotPacket();
+            conn->gotPacket(address);
         }
         
         if (EMI_TIMESTAMP_LENGTH+1 == len) {
@@ -282,7 +283,6 @@ public:
             goto error;
         }
         else {
-            const uint8_t *rawData(Binding::extractData(data)+offset);
             EmiMessageHeader header;
             if (!EmiMessageHeader::parseMessageHeader(rawData+EMI_TIMESTAMP_LENGTH,
                                                       len-EMI_TIMESTAMP_LENGTH,
@@ -340,6 +340,16 @@ public:
                 if (conn) {
                     conn->forwardPacket(now, sock, address, data, offset, len);
                 }
+            }
+        }
+        
+        // Update timestamp
+        {
+            // connAfterMessage might not be == conn because of connection close/open
+            // Furthermore, conn might have been deallocated by now because of close.
+            Conn *connAfterMessage = findConn(address);
+            if (connAfterMessage) {
+                connAfterMessage->gotTimestamp(address, now, rawData, len);
             }
         }
         
