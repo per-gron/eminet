@@ -49,7 +49,9 @@ class EmiConn {
     bool _receivedDataSinceLastHeartbeat;
     
     ConnDelegate _delegate;
+    
     Timer *_tickTimer;
+    Timer *_heartbeatTimer;
     
     bool _issuedConnectionWarning;
     
@@ -94,13 +96,17 @@ public:
     _time(),
     _receivedDataSinceLastHeartbeat(false),
     _tickTimer(Binding::makeTimer(tickTimeoutCallback)),
+    _heartbeatTimer(Binding::makeTimer(heartbeatTimeoutCallback)),
     _issuedConnectionWarning(false) {
         resetConnectionTimeout();
     }
     
     virtual ~EmiConn() {
         Binding::freeTimer(_tickTimer);
+        Binding::freeTimer(_heartbeatTimer);
+        
         _emisock.deregisterConnection(this);
+        
         deleteELC(_conn);
     }
     
@@ -148,23 +154,24 @@ public:
         }
     }
     
-    void heartbeatTimeoutCallback(EmiTimeInterval now) {
-        if (_initiator) {
+    static void heartbeatTimeoutCallback(EmiTimeInterval now, Timer *timer, void *data) {
+        EmiConn *conn = (EmiConn *)data;
+        if (conn->_initiator) {
             // If we have received data since the last heartbeat, we don't need to ask for a heartbeat reply
-            _sendQueue.sendHeartbeat(_time, _receivedDataSinceLastHeartbeat, now);
+            conn->_sendQueue.sendHeartbeat(conn->_time, conn->_receivedDataSinceLastHeartbeat, now);
         }
         else {
-            _sendQueue.enqueueHeartbeat();
-            ensureTickTimeout();
+            conn->_sendQueue.enqueueHeartbeat();
+            conn->ensureTickTimeout();
         }
-        resetHeartbeatTimeout();
+        conn->resetHeartbeatTimeout();
     }
     void resetHeartbeatTimeout() {
         _receivedDataSinceLastHeartbeat = false;
         
         // Don't send heartbeats until we've got a response from the remote host
         if (!isOpening()) {
-            _delegate.scheduleHeartbeatTimeout(1/_emisock.config.heartbeatFrequency);
+            Binding::scheduleTimer(_heartbeatTimer, this, 1/_emisock.config.heartbeatFrequency, /*repeating:*/false);
         }
     }
     

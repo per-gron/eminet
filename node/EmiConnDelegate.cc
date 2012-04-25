@@ -22,11 +22,6 @@ void EmiConnDelegate::connectionTimeout(uv_timer_t *handle, int status) {
     conn->_conn.connectionTimeoutCallback();
 }
 
-void EmiConnDelegate::heartbeatTimeout(uv_timer_t *handle, int status) {
-    EmiConnection *conn = (EmiConnection *)handle->data;
-    conn->_conn.heartbeatTimeoutCallback(EmiConnection::Now());
-}
-
 void EmiConnDelegate::rtoTimeout(uv_timer_t *handle, int status) {
     EmiConnection *conn = (EmiConnection *)handle->data;
     conn->_conn.rtoTimeoutCallback(EmiConnection::Now(),
@@ -34,10 +29,6 @@ void EmiConnDelegate::rtoTimeout(uv_timer_t *handle, int status) {
 }
 
 EmiConnDelegate::EmiConnDelegate(EmiConnection& conn) : _conn(conn) {
-    _heartbeatTimer = (uv_timer_t *)malloc(sizeof(uv_timer_t));
-    _heartbeatTimer->data = &conn;
-    uv_timer_init(uv_default_loop(), _heartbeatTimer);
-    
     _rtoTimer = (uv_timer_t *)malloc(sizeof(uv_timer_t));
     _rtoTimer->data = &conn;
     uv_timer_init(uv_default_loop(), _rtoTimer);
@@ -48,9 +39,6 @@ EmiConnDelegate::EmiConnDelegate(EmiConnection& conn) : _conn(conn) {
 }
 
 void EmiConnDelegate::invalidate() {
-    uv_timer_stop(_heartbeatTimer);
-    uv_close((uv_handle_t *)_heartbeatTimer, close_cb);
-    
     uv_timer_stop(_rtoTimer);
     uv_close((uv_handle_t *)_rtoTimer, close_cb);
     
@@ -98,14 +86,6 @@ void EmiConnDelegate::scheduleConnectionTimeout(EmiTimeInterval interval) {
     uv_timer_stop(_connectionTimer);
     uv_timer_start(_connectionTimer,
                    EmiConnDelegate::connectionTimeout,
-                   interval*EmiNodeUtil::MSECS_PER_SEC,
-                   /*repeats:*/0);
-}
-
-void EmiConnDelegate::scheduleHeartbeatTimeout(EmiTimeInterval interval) {
-    uv_timer_stop(_heartbeatTimer);
-    uv_timer_start(_heartbeatTimer,
-                   EmiConnDelegate::heartbeatTimeout,
                    interval*EmiNodeUtil::MSECS_PER_SEC,
                    /*repeats:*/0);
 }

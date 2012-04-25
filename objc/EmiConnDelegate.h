@@ -12,7 +12,6 @@
 #import "EmiConnection.h"
 
 class EmiConnDelegate {
-    NSTimer *_heartbeatTimer;
     NSTimer *_rtoTimer;
     NSTimer *_connectionTimer;
     
@@ -27,8 +26,6 @@ public:
     
     void scheduleConnectionWarning(EmiTimeInterval warningTimeout);
     void scheduleConnectionTimeout(EmiTimeInterval interval);
-    
-    void scheduleHeartbeatTimeout(EmiTimeInterval interval);
     
     void ensureRtoTimeout(EmiTimeInterval rto);
     void invalidateRtoTimeout();
