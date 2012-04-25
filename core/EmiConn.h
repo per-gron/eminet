@@ -256,7 +256,7 @@ public:
         _rtoTimer.updateRtoTimeout();
     }
     
-    bool senderBufferIsEmpty() const {
+    bool senderBufferIsEmpty(EmiRtoTimer<Binding, EmiConn>& ert) const {
         return _senderBuffer.empty();
     }
     

@@ -46,7 +46,7 @@ public:
     }
     
     void updateRtoTimeout() {
-        if (!_delegate.senderBufferIsEmpty()) {
+        if (!_delegate.senderBufferIsEmpty(*this)) {
             if (!Binding::timerIsActive(_rtoTimer)) {
                 
                 // this._rto will likely change before the timeout fires. When

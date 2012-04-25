@@ -159,12 +159,12 @@ private:
                 // We don't need to save the cookie anymore
                 _connCookies.erase(cur);
                 
-                conn->gotOtherAddress(sock, address);
+                conn->gotOtherAddress(address);
             }
             else {
                 // There was no connection open with this cookie. Open new one
                 
-                conn = new Conn(address);
+                conn = new Conn(sock, address, config.rateLimit);
                 _connCookies.insert(std::make_pair(cc, conn));
             }
             
@@ -176,7 +176,7 @@ private:
         // Regardless of whether we had an EmiP2PConn object set up
         // for this address, we want to reply to the host with an
         // acknowledgement that we have received the SYN message.
-        conn->sendPrxPacket(sock, address);
+        conn->sendPrx(address);
     }
     
     // conn must not be NULL
@@ -292,7 +292,7 @@ public:
             // This is a heartbeat packet. Just forward the packet (if we can)
             if (conn) {
                 conn->gotTimestamp(address, now, rawData, len);
-                conn->forwardPacket(now, sock, address, data, offset, len);
+                conn->forwardPacket(now, address, data, offset, len);
             }
         }
         else if (len < EMI_TIMESTAMP_LENGTH + EMI_HEADER_LENGTH) {
@@ -340,7 +340,13 @@ public:
                 }
                 else if ((EMI_PRX_FLAG | EMI_ACK_FLAG) == relevantFlags) {
                     // This is a connection open ACK message.
-                    gotConnectionOpenAck(address, conn, now, rawData, len);
+                    if (conn) {
+                        gotConnectionOpenAck(address, conn, now, rawData, len);
+                    }
+                    else {
+                        err = "Got PRX-ACK message without open conection";
+                        goto error;
+                    }
                 }
                 else if ((EMI_PRX_FLAG | EMI_RST_FLAG) == relevantFlags ||
                          EMI_RST_FLAG                  == relevantFlags) {
@@ -358,7 +364,7 @@ public:
                 // contents. Just forward it.
                 if (conn) {
                     conn->gotTimestamp(address, now, rawData, len);
-                    conn->forwardPacket(now, sock, address, data, offset, len);
+                    conn->forwardPacket(now, address, data, offset, len);
                 }
             }
         }

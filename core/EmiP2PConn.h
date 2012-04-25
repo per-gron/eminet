@@ -13,6 +13,7 @@
 #include "EmiNetUtil.h"
 #include "EmiConnTime.h"
 #include "EmiMessage.h"
+#include "EmiRtoTimer.h"
 
 template<class P2PSockDelegate>
 class EmiP2PConn {
@@ -21,21 +22,29 @@ class EmiP2PConn {
     typedef typename Binding::AddressCmp      AddressCmp;
     typedef typename Binding::SocketHandle    SocketHandle;
     typedef typename Binding::TemporaryData   TemporaryData;
+    typedef typename Binding::Timer           Timer;
+    
+    typedef EmiRtoTimer<Binding, EmiP2PConn> ERT;
     
 private:
     // Private copy constructor and assignment operator
     inline EmiP2PConn(const EmiP2PConn& other);
     inline EmiP2PConn& operator=(const EmiP2PConn& other);
     
-    const AddressCmp _acmp;
-    Address          _peers[2];
-    Address          _innerEndpoints[2];
-    EmiConnTime      _times[2];
-    bool             _waitingForPrxAck[2];
+    SocketHandle     *_sock;
+    const AddressCmp  _acmp;
+    Address           _peers[2];
+    Address           _innerEndpoints[2];
+    EmiConnTime       _times[2];
+    bool              _waitingForPrxAck[2];
+    
+    const size_t     _rateLimit;
     size_t           _bytesSentSinceRateLimitTimeout;
     
-    // TODO connection timeout
-    // TODO rate limit timeout
+    Timer *_connectionTimer[2];
+    ERT    _rtoTimer0;
+    ERT    _rtoTimer1;
+    Timer *_rateLimitTimer;
     
     // Returns -1 on error
     int addressIndex(const Address& address) const {
@@ -67,32 +76,36 @@ private:
         return addr;
     }
     
-    void sendData(SocketHandle *sock,
-                  const Address& address,
+    void sendData(const Address& address,
                   const TemporaryData& data,
                   size_t offset,
                   size_t len) {
         // TODO Implement rate limiting
         _bytesSentSinceRateLimitTimeout += len;
         
-        P2PSockDelegate::sendData(sock,
+        P2PSockDelegate::sendData(_sock,
                                   address,
                                   Binding::extractData(data)+offset,
                                   len);
     }
     
-    void sendSynAck(SocketHandle *sock, int addrIdx) {
+    void sendSynAck(int addrIdx) {
         EmiMessage<Binding>::writeControlPacket(EMI_SYN_FLAG | EMI_ACK_FLAG, ^(uint8_t *buf, size_t size) {
             EmiMessage<Binding>::fillTimestamps(_times[addrIdx], buf, size);
-            P2PSockDelegate::sendData(sock, _peers[addrIdx], buf, size);
+            P2PSockDelegate::sendData(_sock, _peers[addrIdx], buf, size);
         });
     }
     
 public:
-    EmiP2PConn(const Address& firstPeer) :
+    EmiP2PConn(SocketHandle *sock, const Address& firstPeer, size_t rateLimit) :
+    _sock(sock),
     _acmp(AddressCmp()),
     _times(),
-    _bytesSentSinceRateLimitTimeout(0) {
+    _rateLimit(rateLimit),
+    _bytesSentSinceRateLimitTimeout(0),
+    _rtoTimer0(_times[0], *this),
+    _rtoTimer1(_times[0], *this),
+    _rateLimitTimer(rateLimit ? Binding::makeTimer() : NULL) {
         int family = EmiBinding::extractFamily(firstPeer);
         
         _peers[0] = firstPeer;
@@ -102,8 +115,20 @@ public:
         
         _waitingForPrxAck[0] = false;
         _waitingForPrxAck[1] = false;
+        
+        _connectionTimer[0] = Binding::makeTimer();
+        _connectionTimer[1] = Binding::makeTimer();
     }
-    virtual ~EmiP2PConn() {}
+    
+    virtual ~EmiP2PConn() {
+        Binding::freeTimer(_connectionTimer[0]);
+        Binding::freeTimer(_connectionTimer[1]);
+        
+        // _rateLimitTimer is never created if 0 == _rateLimit
+        if (_rateLimitTimer) {
+            Binding::freeTimer(_rateLimitTimer);
+        }
+    }
     
     void gotPacket(const Address& address) {
         int idx(addressIndex(address));
@@ -113,7 +138,6 @@ public:
     }
     
     void forwardPacket(EmiTimeInterval now,
-                       SocketHandle *sock,
                        const Address& address,
                        const TemporaryData& data,
                        size_t offset,
@@ -123,18 +147,20 @@ public:
             return;
         }
         
-        sendData(sock, *otherAddr, data, offset, len);
+        sendData(*otherAddr, data, offset, len);
     }
     
-    void gotOtherAddress(SocketHandle *sock, const Address& address) {
+    void gotOtherAddress(const Address& address) {
         _peers[1] = address;
         
         _waitingForPrxAck[0] = true;
         _waitingForPrxAck[1] = true;
-        sendSynAck(sock, 0);
-        sendSynAck(sock, 1);
+        sendSynAck(0);
+        sendSynAck(1);
         
-        // TODO Make sure that we re-send the syn-ack messages on rto timeout
+        // Make sure that we re-send the syn-ack messages on rto timeout
+        _rtoTimer0.updateRtoTimeout();
+        _rtoTimer1.updateRtoTimeout();
     }
     
     void gotTimestamp(const Address& address, EmiTimeInterval now, const uint8_t *data, size_t len) {
@@ -146,13 +172,23 @@ public:
         }
     }
     
-    void sendPrxPacket(SocketHandle *sock, const Address& address) {
+    void sendPrx(const Address& address) {
         EmiMessage<Binding>::writeControlPacket(EMI_PRX_FLAG, ^(uint8_t *buf, size_t size) {
             int idx(addressIndex(address));
             ASSERT(-1 != idx);
             EmiMessage<Binding>::fillTimestamps(_times[idx], buf, size);
-            P2PSockDelegate::sendData(sock, address, buf, size);
+            P2PSockDelegate::sendData(_sock, address, buf, size);
         });
+    }
+    
+    void rtoTimeout(EmiTimeInterval now, EmiTimeInterval rtoWhenRtoTimerWasScheduled) {
+        if (_waitingForPrxAck[0]) sendSynAck(0);
+        if (_waitingForPrxAck[1]) sendSynAck(1);
+    }
+    
+    bool senderBufferIsEmpty(ERT& ert) const {
+        int idx = (&_rtoTimer0 == &ert) ? 0 : 1;
+        return !_waitingForPrxAck[idx];
     }
 };
 
