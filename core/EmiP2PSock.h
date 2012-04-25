@@ -176,13 +176,7 @@ private:
         // Regardless of whether we had an EmiP2PConn object set up
         // for this address, we want to reply to the host with an
         // acknowledgement that we have received the SYN message.
-        
-        EmiMessage<Binding>::writeControlPacket(EMI_PRX_FLAG, ^(uint8_t *buf, size_t size) {
-            // TODO Fill timestamps. To do that, we need to make sure that
-            // gotTimstamps has been invoked on conn (the current code does
-            // not do this)
-            P2PSockDelegate::sendData(sock, address, buf, size);
-        });
+        conn->sendPrxPacket(sock, address);
     }
     
     // conn must not be NULL

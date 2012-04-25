@@ -83,9 +83,7 @@ private:
     
     void sendSynAck(SocketHandle *sock, int addrIdx) {
         EmiMessage<Binding>::writeControlPacket(EMI_SYN_FLAG | EMI_ACK_FLAG, ^(uint8_t *buf, size_t size) {
-            // TODO Fill timestamps. To do that, we need to make sure that
-            // gotTimstamps has been invoked on conn (the current code does
-            // not do this)
+            EmiMessage<Binding>::fillTimestamps(_times[addrIdx], buf, size);
             P2PSockDelegate::sendData(sock, _peers[addrIdx], buf, size);
         });
     }
@@ -146,6 +144,15 @@ public:
             // we tell EmiConnTime that it is 3. It is a good enough default.
             _times[idx].gotTimestamp(/*heartbeatFrequency:*/3, now, data, len);
         }
+    }
+    
+    void sendPrxPacket(SocketHandle *sock, const Address& address) {
+        EmiMessage<Binding>::writeControlPacket(EMI_PRX_FLAG, ^(uint8_t *buf, size_t size) {
+            int idx(addressIndex(address));
+            ASSERT(-1 != idx);
+            EmiMessage<Binding>::fillTimestamps(_times[idx], buf, size);
+            P2PSockDelegate::sendData(sock, address, buf, size);
+        });
     }
 };
 
