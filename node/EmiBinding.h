@@ -23,7 +23,7 @@ public:
     typedef v8::Local<v8::Object>      TemporaryData;
     typedef v8::Persistent<v8::Object> PersistentData;
     typedef uv_timer_t                 Timer;
-    typedef void (TimerCb)(Timer *timer, void *data);
+    typedef void (TimerCb)(EmiTimeInterval now, Timer *timer, void *data);
     
     // Will fill address with an address that cannot be the receiver of a packet
     static void fillNilAddress(int family, Address& address);

@@ -15,7 +15,6 @@
 
 - (void)_connectionTimeoutCallback:(NSTimer *)timer;
 - (void)_connectionWarningCallback:(NSTimer *)timer;
-- (void)_tickTimeoutCallback:(NSTimer *)timer;
 - (void)_heartbeatTimeoutCallback:(NSTimer *)timer;
 - (void)_rtoTimeoutCallback:(NSTimer *)timer;
 
@@ -61,10 +60,6 @@
 
 - (void)_resetConnectionTimeout {
     ((EC *)_ec)->resetConnectionTimeout();
-}
-
-- (void)_tickTimeoutCallback:(NSTimer *)timer {
-    ((EC *)_ec)->tickTimeoutCallback([self _now]);
 }
 
 - (void)_heartbeatTimeoutCallback:(NSTimer *)timer {

@@ -25,6 +25,7 @@ class EmiConn {
     typedef typename Binding::PersistentData PersistentData;
     typedef typename Binding::TemporaryData  TemporaryData;
     typedef typename Binding::Address        Address;
+    typedef typename Binding::Timer          Timer;
     
     typedef typename SockDelegate::ConnectionOpenedCallbackCookie ConnectionOpenedCallbackCookie;
     
@@ -48,6 +49,7 @@ class EmiConn {
     bool _receivedDataSinceLastHeartbeat;
     
     ConnDelegate _delegate;
+    Timer *_tickTimer;
     
     bool _issuedConnectionWarning;
     
@@ -91,11 +93,13 @@ public:
     _sendQueue(*this),
     _time(),
     _receivedDataSinceLastHeartbeat(false),
+    _tickTimer(Binding::makeTimer(tickTimeoutCallback)),
     _issuedConnectionWarning(false) {
         resetConnectionTimeout();
     }
     
     virtual ~EmiConn() {
+        Binding::freeTimer(_tickTimer);
         _emisock.deregisterConnection(this);
         deleteELC(_conn);
     }
@@ -132,13 +136,16 @@ public:
         }
     }
     
-    void tickTimeoutCallback(EmiTimeInterval now) {
-        if (flush(now)) {
-            resetHeartbeatTimeout();
+    static void tickTimeoutCallback(EmiTimeInterval now, Timer *timer, void *data) {
+        EmiConn *conn = (EmiConn *)data;
+        if (conn->flush(now)) {
+            conn->resetHeartbeatTimeout();
         }
     }
     void ensureTickTimeout() {
-        _delegate.ensureTickTimeout(1/_emisock.config.tickFrequency);
+        if (!Binding::timerIsActive(_tickTimer)) {
+            Binding::scheduleTimer(_tickTimer, this, 1/_emisock.config.tickFrequency, /*repeating:*/false);
+        }
     }
     
     void heartbeatTimeoutCallback(EmiTimeInterval now) {

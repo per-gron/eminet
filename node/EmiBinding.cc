@@ -3,6 +3,7 @@
 #include "EmiBinding.h"
 
 #include "EmiNodeUtil.h"
+#include "EmiConnection.h"
 
 #include <stdexcept>
 #include <node.h>
@@ -62,7 +63,7 @@ static void close_cb(uv_handle_t* handle) {
 
 static void timer_cb(uv_timer_t *handle, int status) {
     EmiBinding::TimerCb *timerCb = *(reinterpret_cast<EmiBinding::TimerCb**>(handle+1));
-    timerCb(handle, handle->data);
+    timerCb(EmiConnection::Now(), handle, handle->data);
 }
 
 EmiBinding::Timer *EmiBinding::makeTimer(TimerCb *timerCb) {

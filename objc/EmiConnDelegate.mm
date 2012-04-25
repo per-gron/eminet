@@ -10,15 +10,11 @@
 
 EmiConnDelegate::EmiConnDelegate(EmiConnection *conn) :
 _conn(conn),
-_tickTimer(nil),
 _heartbeatTimer(nil),
 _rtoTimer(nil),
 _connectionTimer(nil) {}
 
 void EmiConnDelegate::invalidate() {
-    [_tickTimer invalidate];
-    _tickTimer = nil;
-    
     [_heartbeatTimer invalidate];
     _heartbeatTimer = nil;
     
@@ -58,16 +54,6 @@ void EmiConnDelegate::scheduleConnectionTimeout(EmiTimeInterval interval) {
                                                       selector:@selector(_connectionTimeoutCallback:) 
                                                       userInfo:nil 
                                                        repeats:NO];
-}
-
-void EmiConnDelegate::ensureTickTimeout(EmiTimeInterval interval) {
-    if (!_tickTimer || ![_tickTimer isValid]) {
-        _tickTimer = [NSTimer scheduledTimerWithTimeInterval:interval
-                                                      target:_conn
-                                                    selector:@selector(_tickTimeoutCallback:)
-                                                    userInfo:nil 
-                                                     repeats:NO];
-    }
 }
 
 void EmiConnDelegate::scheduleHeartbeatTimeout(EmiTimeInterval interval) {

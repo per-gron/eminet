@@ -6,6 +6,8 @@
 //  Copyright (c) 2012 __MyCompanyName__. All rights reserved.
 //
 
+#include "EmiBinding.h"
+
 #include <Security/Security.h>
 #include <CommonCrypto/CommonHMAC.h>
 
@@ -25,17 +27,28 @@ void EmiBinding::randomBytes(uint8_t *buf, size_t bufSize) {
 }
 
 
-@interface EmiBindingTimer : NSObject
+@interface EmiBindingTimer : NSObject {
+    EmiBinding::Timer *_timer;
+}
 
-+ (void)timerFired:(NSTimer *)timer;
+- (id)initWithTimer:(EmiBinding::Timer *)timer;
+
+- (void)timerFired:(NSTimer *)timer;
 
 @end
 
 @implementation EmiBindingTimer
 
-+ (void)timerFired:(NSTimer *)nsTimer {
-    Timer *timer = [nsTimer userInfo];
-    timer->timerCb(nsTimer, timer->data);
+- (id)initWithTimer:(EmiBinding::Timer *)timer {
+    if (self = [super init]) {
+        _timer = timer;
+    }
+    
+    return self;
+}
+
+- (void)timerFired:(NSTimer *)nsTimer {
+    _timer->timerCb([NSDate timeIntervalSinceReferenceDate], _timer, _timer->data);
 }
 
 @end
@@ -51,10 +64,13 @@ void EmiBinding::freeTimer(Timer *timer) {
 void EmiBinding::scheduleTimer(Timer *timer, void *data, EmiTimeInterval interval, bool repeating) {
     [timer->timer invalidate];
     timer->data = data;
+    
+    EmiBindingTimer *ebt = [[EmiBindingTimer alloc] initWithTimer:timer];
+    
     timer->timer = [NSTimer scheduledTimerWithTimeInterval:interval
-                                                    target:[EmiBindingTimer class]
+                                                    target:ebt
                                                   selector:@selector(timerFired:)
-                                                  userInfo:timer
+                                                  userInfo:nil
                                                    repeats:repeating];
 }
 

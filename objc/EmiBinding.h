@@ -21,7 +21,7 @@ private:
 public:
     
     class Timer;
-    typedef void (TimerCb)(Timer *timer, void *data);
+    typedef void (TimerCb)(EmiTimeInterval now, Timer *timer, void *data);
     class Timer {
     private:
         // Private copy constructor and assignment operator
