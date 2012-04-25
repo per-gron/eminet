@@ -38,13 +38,14 @@ class EmiP2PSock {
     static const size_t          EMI_P2P_RAND_NUM_SIZE = 8;
     static const size_t          EMI_P2P_COOKIE_SIZE = EMI_P2P_RAND_NUM_SIZE + Binding::HMAC_HASH_SIZE;
     
-    typedef EmiP2PSockConfig<Address>                        SockConfig;
-    typedef EmiP2PConn<P2PSockDelegate, EMI_P2P_COOKIE_SIZE> Conn;
-    typedef typename Conn::ConnCookie                        ConnCookie;
-    typedef std::map<Address, Conn*, AddressCmp>             ConnMap;
-    typedef typename ConnMap::iterator                       ConnMapIter;
-    typedef std::map<ConnCookie, Conn*>                      ConnCookieMap;
-    typedef typename ConnCookieMap::iterator                 ConnCookieMapIter;
+    typedef EmiP2PConn<P2PSockDelegate, EmiP2PSock, EMI_P2P_COOKIE_SIZE> Conn;
+    
+    typedef EmiP2PSockConfig<Address>            SockConfig;
+    typedef typename Conn::ConnCookie            ConnCookie;
+    typedef std::map<Address, Conn*, AddressCmp> ConnMap;
+    typedef typename ConnMap::iterator           ConnMapIter;
+    typedef std::map<ConnCookie, Conn*>          ConnCookieMap;
+    typedef typename ConnCookieMap::iterator     ConnCookieMapIter;
     
 private:
     // Private copy constructor and assignment operator
@@ -144,7 +145,7 @@ private:
             else {
                 // There was no connection open with this cookie. Open new one
                 
-                conn = new Conn(cc, sock, address, config.rateLimit);
+                conn = new Conn(*this, cc, sock, address, config.connectionTimeout, config.rateLimit);
                 _connCookies.insert(std::make_pair(cc, conn));
             }
             
@@ -211,6 +212,8 @@ private:
         }
     }
     
+public:
+    
     // conn might be NULL. In that case, this is a no-op
     void removeConnection(Conn *conn) {
         if (conn) {
@@ -221,8 +224,6 @@ private:
             delete conn;
         }
     }
-    
-public:
     
     const SockConfig config;
     

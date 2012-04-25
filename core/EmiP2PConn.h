@@ -15,7 +15,7 @@
 #include "EmiMessage.h"
 #include "EmiRtoTimer.h"
 
-template<class P2PSockDelegate, int EMI_P2P_COOKIE_SIZE>
+template<class P2PSockDelegate, class Delegate, int EMI_P2P_COOKIE_SIZE>
 class EmiP2PConn {
 public:
     
@@ -54,6 +54,8 @@ private:
     inline EmiP2PConn(const EmiP2PConn& other);
     inline EmiP2PConn& operator=(const EmiP2PConn& other);
     
+    Delegate& _delegate;
+    
     SocketHandle     *_sock;
     const AddressCmp  _acmp;
     Address           _peers[2];
@@ -64,10 +66,11 @@ private:
     const size_t     _rateLimit;
     size_t           _bytesSentSinceRateLimitTimeout;
     
-    Timer *_connectionTimer[2];
-    ERT    _rtoTimer0;
-    ERT    _rtoTimer1;
-    Timer *_rateLimitTimer;
+    const EmiTimeInterval  _connectionTimeout;
+    Timer                 *_connectionTimer[2];
+    ERT                    _rtoTimer0;
+    ERT                    _rtoTimer1;
+    Timer                 *_rateLimitTimer;
     
     // Returns -1 on error
     int addressIndex(const Address& address) const {
@@ -127,14 +130,33 @@ private:
         conn->_bytesSentSinceRateLimitTimeout = 0;
     }
     
+    
+    static void connectionTimeoutCallback(EmiTimeInterval now, Timer *timer, void *data) {
+        EmiP2PConn *conn = (EmiP2PConn *)data;
+        
+        conn->_delegate.removeConnection(conn);
+    }
+    
+    void resetConnectionTimeout(int idx) {
+        Binding::scheduleTimer(_connectionTimer[idx], connectionTimeoutCallback,
+                               this, _connectionTimeout, /*repeating:*/false);
+    }
+    
 public:
     ConnCookie cookie;
     
-    EmiP2PConn(const ConnCookie &cookie_, SocketHandle *sock, const Address& firstPeer, size_t rateLimit) :
+    EmiP2PConn(Delegate& delegate,
+               const ConnCookie &cookie_,
+               SocketHandle *sock,
+               const Address& firstPeer,
+               EmiTimeInterval connectionTimeout,
+               size_t rateLimit) :
     cookie(cookie_),
+    _delegate(delegate),
     _sock(sock),
     _acmp(AddressCmp()),
     _times(),
+    _connectionTimeout(connectionTimeout),
     _rateLimit(rateLimit),
     _bytesSentSinceRateLimitTimeout(0),
     _rtoTimer0(_times[0], *this),
@@ -152,6 +174,8 @@ public:
         
         _connectionTimer[0] = Binding::makeTimer();
         _connectionTimer[1] = Binding::makeTimer();
+        resetConnectionTimeout(0);
+        resetConnectionTimeout(1);
         
         if (rateLimit) {
             Binding::scheduleTimer(_rateLimitTimer, rateLimitTimeoutCallback,
@@ -171,9 +195,9 @@ public:
     
     void gotPacket(const Address& address) {
         int idx(addressIndex(address));
-        if (-1 != idx) {
-            // TODO Reset connection timeout
-        }
+        ASSERT(-1 != idx);
+        
+        resetConnectionTimeout(idx);
     }
     
     void forwardPacket(EmiTimeInterval now,
