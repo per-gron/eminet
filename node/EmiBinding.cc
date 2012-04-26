@@ -17,7 +17,7 @@ void EmiBinding::fillNilAddress(int family, Address& address) {
 }
 
 bool EmiBinding::isNilAddress(const Address& address) {
-    return 0 != EmiNodeUtil::extractPort(address);
+    return 0 != ntohs(EmiNodeUtil::extractPort(address));
 }
 
 EmiBinding::Address EmiBinding::makeAddress(int family, const uint8_t *ip, size_t ipLen, uint16_t port) {
@@ -28,6 +28,46 @@ EmiBinding::Address EmiBinding::makeAddress(int family, const uint8_t *ip, size_
 
 int EmiBinding::extractFamily(const Address& address) {
     return address.ss_family;
+}
+
+size_t EmiBinding::ipLength(const Address& address) {
+    int family = extractFamily(address);
+    if (AF_INET == family) {
+        return sizeof(in_addr);
+    }
+    else if (AF_INET6 == family) {
+        return sizeof(in6_addr);
+    }
+    else {
+        ASSERT(0 && "unexpected address family");
+        abort();
+    }
+}
+
+size_t EmiBinding::extractIp(const Address& address, uint8_t *buf, size_t bufSize) {
+    int family = extractFamily(address);
+    if (AF_INET == family) {
+        const struct sockaddr_in& addr(*((struct sockaddr_in *)&address));
+        size_t addrSize = sizeof(in_addr);
+        ASSERT(bufSize >= addrSize);
+        memcpy(buf, &addr.sin_addr, addrSize);
+        return addrSize;
+    }
+    else if (AF_INET6 == family) {
+        const struct sockaddr_in6& addr6(*((struct sockaddr_in6 *)&address));
+        size_t addrSize = sizeof(in6_addr);
+        ASSERT(bufSize >= addrSize);
+        memcpy(buf, &addr6.sin6_addr, addrSize);
+        return addrSize;
+    }
+    else {
+        ASSERT(0 && "unexpected address family");
+        abort();
+    }
+}
+
+uint16_t EmiBinding::extractPort(const Address& address) {
+    return EmiNodeUtil::extractPort(address);
 }
 
 void EmiBinding::panic() {

@@ -158,28 +158,14 @@ private:
         conn->sendPrx(address);
     }
     
-    inline size_t ipLength(const Address& address) {
-        int family = Binding::extractFamily(address);
-        if (AF_INET == family) {
-            return 4;
-        }
-        else if (AF_INET6 == family) {
-            return 16;
-        }
-        else {
-            ASSERT(0 && "unexpected address family");
-            abort();
-        }
-    }
-    
     // conn must not be NULL
     void gotConnectionOpenAck(const Address& address,
                               Conn *conn,
                               EmiTimeInterval now,
                               const uint8_t *rawData,
                               size_t len) {
-        size_t ipLen = ipLength(address);
-        size_t portLen = 2;
+        const size_t ipLen = Binding::ipLength(address);
+        static const size_t portLen = 2;
         if (len != Binding::HMAC_HASH_SIZE+ipLen+portLen) {
             // Invalid packet
             return;

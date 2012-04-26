@@ -274,13 +274,50 @@ public:
     }
     
     void sendEndpointPair(int idx) {
-        EmiFlags flags(EMI_PRX_FLAG | EMI_RST_FLAG | EMI_SYN_FLAG | EMI_ACK_FLAG);
-        EmiMessage<Binding>::writeControlPacket(flags, ^(uint8_t *buf, size_t size) {
-            ASSERT(0 == idx || 1 == idx);
-            EmiMessage<Binding>::fillTimestamps(_times[idx], buf, size);
-            P2PSockDelegate::sendData(_sock, _peers[idx], buf, size);
+        ASSERT(0 == idx || 1 == idx);
+        
+        int otherIdx = (0 == idx) ? 1 : 0;
+        
+        const size_t ipLen = Binding::ipLength(_peers[idx]);
+        static const size_t portLen = sizeof(uint16_t);
+        const size_t endpointPairLen = 2*(ipLen+portLen);
+        const size_t dataLen = 2*endpointPairLen;
+        
+        uint8_t buf[96];
+        ASSERT(sizeof(buf) >= dataLen);
+        
+        // All IP addresses we deal with here are in network byte order
+        
+        // These port numbers are in network byte order
+        uint16_t myOuterPort    = Binding::extractPort(_peers[idx]);
+        uint16_t otherOuterPort = Binding::extractPort(_peers[otherIdx]);
+        uint16_t myInnerPort    = Binding::extractPort(_innerEndpoints[idx]);
+        uint16_t otherInnerPort = Binding::extractPort(_innerEndpoints[otherIdx]);
+        
+        /// Save the endpoint pairs in buf
+        {
+            uint8_t *bufCur = buf;
             
-            // TODO These packets should contain the endpoint pairs
+            Binding::extractIp(_peers[idx], bufCur, sizeof(buf));          bufCur += ipLen;
+            memcpy(bufCur, &myOuterPort, portLen);                         bufCur += portLen;
+            Binding::extractIp(_innerEndpoints[idx], bufCur, sizeof(buf)); bufCur += ipLen;
+            memcpy(buf+ipLen, &myInnerPort, portLen);                      bufCur += portLen;
+            
+            Binding::extractIp(_peers[otherIdx], bufCur, sizeof(buf));          bufCur += ipLen;
+            memcpy(bufCur, &otherOuterPort, portLen);                           bufCur += portLen;
+            Binding::extractIp(_innerEndpoints[otherIdx], bufCur, sizeof(buf)); bufCur += ipLen;
+            memcpy(buf+ipLen, &otherInnerPort, portLen);                        bufCur += portLen;
+        }
+        
+        
+        /// Prepare the message headers
+        EmiFlags flags(EMI_PRX_FLAG | EMI_RST_FLAG | EMI_SYN_FLAG | EMI_ACK_FLAG);
+        EmiMessage<Binding>::template writeControlPacketWithData<128>(flags, buf, dataLen, ^(uint8_t *buf, size_t size) {
+            /// Fill the timestamps
+            EmiMessage<Binding>::fillTimestamps(_times[idx], buf, size);
+            
+            /// Actually send the packet
+            P2PSockDelegate::sendData(_sock, _peers[idx], buf, size);
         });
     }
 };

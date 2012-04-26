@@ -108,19 +108,19 @@ void EmiNodeUtil::makeAddress(int family, const uint8_t *ip, size_t ipLen, uint1
         struct sockaddr_in6& addr6(*((struct sockaddr_in6 *)out));
         addr6.sin6_len       = sizeof(struct sockaddr_in6);
         addr6.sin6_family    = AF_INET6;
-        addr6.sin6_port      = htons(port);
+        addr6.sin6_port      = port;
         addr6.sin6_flowinfo  = 0;
         addr6.sin6_addr      = *((struct in6_addr *)ip);
         addr6.sin6_scope_id  = 0;
     }
     else if (AF_INET == family) {
-        ASSERT(5 == ipLen);
+        ASSERT(4 == ipLen);
         
 		struct sockaddr_in& addr(*((struct sockaddr_in *)out));
 		addr.sin_len         = sizeof(struct sockaddr_in);
 		addr.sin_family      = AF_INET;
-		addr.sin_port        = htons(port);
-		addr.sin_addr.s_addr = htonl(*((uint32_t *)ip));
+		addr.sin_port        = port;
+		addr.sin_addr.s_addr = *((uint32_t *)ip);
 		memset(&(addr.sin_zero), 0, sizeof(addr.sin_zero));
     }
     else {

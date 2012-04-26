@@ -88,7 +88,9 @@ public:
                         uint16_t port,
                         int family,
                         sockaddr_storage *out);
+    // The IP and port number should be in network byte order
     static void makeAddress(int family, const uint8_t *ip, size_t ipLen, uint16_t port, sockaddr_storage *out);
+    // Returns the port number in network byte order
     static uint16_t extractPort(const sockaddr_storage& addr);
     static void anyIp(uint16_t port,
                       int family,

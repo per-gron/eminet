@@ -160,8 +160,8 @@ public:
     }
     
     template<int BUF_SIZE>
-    static void writeControlPacketWithData(EmiFlags flags, SendSynRstAckPacketCallback callback,
-                                           const uint8_t *data, size_t dataLength) {
+    static void writeControlPacketWithData(EmiFlags flags, const uint8_t *data, size_t dataLength,
+                                           SendSynRstAckPacketCallback callback) {
         uint8_t buf[BUF_SIZE];
         
         // Zero out the timestamp
@@ -187,8 +187,8 @@ public:
     }
     
     static void writeControlPacket(EmiFlags flags, SendSynRstAckPacketCallback callback) {
-        // BUF_SIZE=80 ought to be plenty
-        writeControlPacketWithData<80>(flags, callback, NULL, 0);
+        // BUF_SIZE=96 ought to be plenty
+        writeControlPacketWithData<96>(flags, NULL, 0, callback);
     }
     
     static void fillTimestamps(EmiConnTime& connTime, void *data, EmiTimeInterval now) {
