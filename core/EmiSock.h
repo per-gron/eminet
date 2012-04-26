@@ -172,7 +172,9 @@ private:
         // Assert that openClientSocket returned an unused port number.
         ASSERT(0 == _conns.count(key));
         
-        EC *ec(_delegate.makeConnection(ECP(address, inboundPort, EMI_CONNECTION_TYPE_CLIENT)));
+        EC *ec(_delegate.makeConnection(ECP(address, inboundPort, 
+                                            p2pCookie, p2pCookieLength,
+                                            sharedSecret, sharedSecretLength)));
         _conns.insert(std::make_pair(key, ec));
         ec->open(now, callbackCookie);
         

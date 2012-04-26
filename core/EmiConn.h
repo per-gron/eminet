@@ -18,6 +18,7 @@
 #include "EmiMessage.h"
 #include "EmiConnTime.h"
 #include "EmiRtoTimer.h"
+#include "EmiP2PData.h"
 
 template<class SockDelegate, class ConnDelegate>
 class EmiConn {
@@ -39,6 +40,8 @@ class EmiConn {
     const Address _address;
     
     ES &_emisock;
+    
+    EmiP2PData        _p2p;
     EmiConnectionType _type;
     
     ELC *_conn;
@@ -92,6 +95,7 @@ public:
     _delegate(delegate),
     _emisock(socket),
     _type(params.type),
+    _p2p(params.p2p),
     _senderBuffer(_emisock.config.senderBufferSize),
     _receiverBuffer(_emisock.config.receiverBufferSize, *this),
     _sendQueue(*this),
