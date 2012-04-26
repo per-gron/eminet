@@ -5,7 +5,6 @@
 #include "EmiNodeUtil.h"
 #include "EmiConnection.h"
 
-#include <stdexcept>
 #include <node.h>
 #include <openssl/rand.h>
 #include <openssl/hmac.h>
@@ -70,10 +69,6 @@ uint16_t EmiBinding::extractPort(const Address& address) {
     return EmiNodeUtil::extractPort(address);
 }
 
-void EmiBinding::panic() {
-    throw std::runtime_error("EmiNet internal error");
-}
-
 Persistent<Object> EmiBinding::makePersistentData(const Local<Object>& data,
                                                   size_t offset,
                                                   size_t length) {
@@ -91,16 +86,12 @@ void EmiBinding::hmacHash(const uint8_t *key, size_t keyLength,
                           const uint8_t *data, size_t dataLength,
                           uint8_t *buf, size_t bufLen) {
     unsigned int bufLenInt = bufLen;
-    if (!HMAC(EVP_sha256(), key, keyLength, data, dataLength, buf, &bufLenInt)) {
-        panic();
-    }
+    ASSERT(HMAC(EVP_sha256(), key, keyLength, data, dataLength, buf, &bufLenInt));
 }
 
 void EmiBinding::randomBytes(uint8_t *buf, size_t bufSize) {
     // TODO I'm not sure this is actually secure. Double check this.
-    if (!RAND_bytes(buf, bufSize)) {
-        panic();
-    }
+    ASSERT(RAND_bytes(buf, bufSize));
 }
 
 static void close_cb(uv_handle_t* handle) {

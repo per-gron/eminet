@@ -78,13 +78,11 @@ public:
     inline void gotReceiverBufferMessage(typename ERB::Entry *entry) {
         if (!_conn) return;
         
-        if (!_conn->gotMessage(entry->header, Binding::castToTemporary(entry->data), 0, /*dontFlush:*/true)) {
-            // gotMessage should only return false if the message arrived out of order or
-            // some other similar error occured, but that should not happen because this
-            // callback should only be called by the receiver buffer for messages that are
-            // exactly in order.
-            Binding::panic();
-        }
+        // gotMessage should only return false if the message arrived out of order or
+        // some other similar error occured, but that should not happen because this
+        // callback should only be called by the receiver buffer for messages that are
+        // exactly in order.
+        ASSERT(_conn->gotMessage(entry->header, Binding::castToTemporary(entry->data), 0, /*dontFlush:*/true));
     }
     
     EmiConn(const ConnDelegate& delegate, ES& socket, const EmiConnParams<Address>& params) :
@@ -201,10 +199,9 @@ public:
             Error err;
             // Reliable is set to false, because if the message is reliable, it is
             // already in the sender buffer and shouldn't be reinserted anyway
-            if (!enqueueMessage(now, msg, /*reliable:*/false, err)) {
-                // This can't happen because the reliable parameter was false
-                Binding::panic();
-            }
+            
+            // enqueueMessage can't fail because the reliable parameter is false
+            ASSERT(enqueueMessage(now, msg, /*reliable:*/false, err));
         });
     }
     
@@ -290,13 +287,12 @@ public:
         ASSERT(!_initiator);
         
         if (_conn) {
+            // resendInitMessage should not fail, because it can only
+            // fail when it attempts to send a SYN message, but we're
+            // sending a SYN-RST message here.
             Error err;
-            if (!_conn->resendInitMessage(now, err)) {
-                // This should not happen, because resendInitMessage can only
-                // fail when it attempts to send a SYN message, but we're
-                // sending a SYN-RST message here.
-                Binding::panic();
-            }
+            ASSERT(_conn->resendInitMessage(now, err));
+            
             return false;
         }
         else {

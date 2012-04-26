@@ -37,8 +37,6 @@ public:
     // Returns the port number in network byte order
     static uint16_t extractPort(const Address& address);
     
-    static void panic();
-    
     inline static EmiError makeError(const char *domain, int32_t code) {
         return EmiError(domain, code);
     }

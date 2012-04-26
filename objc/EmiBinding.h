@@ -63,10 +63,6 @@ public:
     // with the lifetime of the buffer.
     typedef NSData* TemporaryData;
     
-    inline static void panic() {
-        [NSException raise:@"EmiNetPanic" format:@"EmiNet internal error"];
-    }
-    
     inline static NSError *makeError(const char *domain, int32_t code) {
         return [NSError errorWithDomain:[NSString stringWithCString:domain encoding:NSUTF8StringEncoding]
                                    code:code

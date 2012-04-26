@@ -8,22 +8,20 @@
 
 #include "EmiBinding.h"
 
+#include "EmiNetUtil.h"
+
 #include <Security/Security.h>
 #include <CommonCrypto/CommonHMAC.h>
 
 void EmiBinding::hmacHash(const uint8_t *key, size_t keyLength,
                           const uint8_t *data, size_t dataLength,
                           uint8_t *buf, size_t bufLen) {
-    if (bufLen < 256/8) {
-        panic();
-    }
+    ASSERT(bufLen >= 256/8);
     CCHmac(kCCHmacAlgSHA256, key, keyLength, data, dataLength, buf);
 }
 
 void EmiBinding::randomBytes(uint8_t *buf, size_t bufSize) {
-    if (0 != SecRandomCopyBytes(kSecRandomDefault, bufSize, buf)) {
-        panic();
-    }
+    ASSERT(0 == SecRandomCopyBytes(kSecRandomDefault, bufSize, buf));
 }
 
 

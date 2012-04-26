@@ -223,11 +223,8 @@ public:
             sendMessageInSeparatePacket(msg);
         }
         else {
-            if (EMI_PRIORITY_HIGH != msg->priority) {
-                // Only EMI_PRIORITY_HIGH messages are implemented
-                Binding::panic();
-                return;
-            }
+            // Only EMI_PRIORITY_HIGH messages are implemented
+            ASSERT(EMI_PRIORITY_HIGH == msg->priority);
             
             size_t msgSize = msg->approximateSize();
             

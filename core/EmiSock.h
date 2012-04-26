@@ -176,9 +176,7 @@ public:
             // We do this check to make sure we don't enter an infinite loop.
             // It shouldn't be required.
             size_t newNumConns = _conns.size();
-            if (newNumConns >= numConns) {
-                Binding::panic();
-            }
+            ASSERT(newNumConns < numConns);
             numConns = newNumConns;
             
             // We can't increment iter, it has been
