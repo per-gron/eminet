@@ -13,7 +13,7 @@
 class EmiConnection : public node::ObjectWrap {
     friend class EmiConnDelegate;
     typedef EmiConn<EmiSockDelegate, EmiConnDelegate> EC;
-    typedef EmiConnParams<EmiBinding::Address>        ECP;
+    typedef EmiConnParams                             ECP;
     
 private:
     EC _conn;

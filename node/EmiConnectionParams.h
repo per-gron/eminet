@@ -13,7 +13,7 @@ class EmiSocket;
 
 // This is a class designed to help EmiConnection::NewInstance
 class EmiConnectionParams : public node::ObjectWrap {
-    typedef EmiConnParams<EmiBinding::Address>   ECP;
+    typedef EmiConnParams ECP;
 private:
     EmiConnectionParams(EmiSocket& es_,
                         const ECP& params_);

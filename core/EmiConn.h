@@ -88,7 +88,7 @@ public:
         ASSERT(_conn->gotMessage(entry->header, Binding::castToTemporary(entry->data), 0, /*dontFlush:*/true));
     }
     
-    EmiConn(const ConnDelegate& delegate, ES& socket, const EmiConnParams<Address>& params) :
+    EmiConn(const ConnDelegate& delegate, ES& socket, const EmiConnParams& params) :
     _inboundPort(params.inboundPort),
     _address(params.address),
     _conn(NULL),

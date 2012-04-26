@@ -87,7 +87,7 @@ uint16_t EmiSockDelegate::extractLocalPort(uv_udp_t *socket) {
     }
 }
 
-EmiSockDelegate::EC *EmiSockDelegate::makeConnection(const EmiConnParams<Address>& params) {
+EmiSockDelegate::EC *EmiSockDelegate::makeConnection(const EmiConnParams& params) {
     HandleScope scope;
     
     // TODO I think the HandleScope will dispose of EmiConnection after

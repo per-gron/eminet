@@ -91,7 +91,7 @@ class EmiSock {
         }
     };
     
-    typedef EmiConnParams<Address>              ECP;
+    typedef EmiConnParams                       ECP;
     typedef EmiConn<SockDelegate, ConnDelegate> EC;
     typedef EmiMessage<Binding>                 EM;
     

@@ -15,14 +15,13 @@
 
 class EmiSockDelegate;
 class EmiConnDelegate;
-template<class Address>
 class EmiConnParams;
 typedef EmiConn<EmiSockDelegate, EmiConnDelegate> EC;
 
 @interface EmiConnection()
 
 - (id)initWithSocket:(EmiSocket *)socket
-              params:(const EmiConnParams<NSData *> *)params;
+              params:(const EmiConnParams *)params;
 
 - (EC*)conn;
 

@@ -16,7 +16,7 @@
 @synthesize delegate = _delegate;
 
 - (id)initWithSocket:(EmiSocket *)socket
-             params:(const EmiConnParams<NSData *> *)params {
+             params:(const EmiConnParams *)params {
     if (self = [super init]) {
         _emiSocket = socket;
         _ec = new EC(EmiConnDelegate(self), *socket.sock, *params);
