@@ -109,25 +109,21 @@ public:
     _sendingSyn(false), _connectionOpenedCallbackCookie() {
         commonInit();
         
+        // resendInitMessage should not fail, because it only fails when this
+        // host is the connection's initiator, which is not the case here.
         Error err;
-        if (!resendInitMessage(now, err)) {
-            // This should not happen, because resendInitMessage only fails when
-            // this host is the connection's initiator, which is not the case here.
-            Binding::panic();
-        }
+        ASSERT(resendInitMessage(now, err));
     }
     EmiLogicalConnection(EC *connection, EmiTimeInterval now, const ConnectionOpenedCallbackCookie& connectionOpenedCallbackCookie) :
     _closing(false), _conn(connection), _otherHostInitialSequenceNumber(0),
     _sendingSyn(true), _connectionOpenedCallbackCookie(connectionOpenedCallbackCookie) {
         commonInit();
         
+        // resendInitMessage really ought not to fail; it only fails when the
+        // sender buffer is full, but this init message should be the first
+        // message on the whole connection.
         Error err;
-        if (!resendInitMessage(now, err)) {
-            // This really ought not to happen; resendInitMessage only fails when
-            // the sender buffer is full, but this init message should be the first
-            // message on the whole connection.
-            Binding::panic();
-        }
+        ASSERT(resendInitMessage(now, err));
     }
     virtual ~EmiLogicalConnection() {
         // Just to be sure, since these ivars are __unsafe_unretained
