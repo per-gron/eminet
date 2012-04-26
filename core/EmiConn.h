@@ -47,7 +47,7 @@ class EmiConn {
     ESQ _sendQueue;
     EmiConnTime _time;
     
-    bool _receivedDataSinceLastHeartbeat;
+    bool _sentDataSinceLastHeartbeat;
     
     ConnDelegate _delegate;
     
@@ -96,7 +96,7 @@ public:
     _receiverBuffer(_emisock.config.receiverBufferSize, *this),
     _sendQueue(*this),
     _time(),
-    _receivedDataSinceLastHeartbeat(false),
+    _sentDataSinceLastHeartbeat(false),
     _tickTimer(Binding::makeTimer()),
     _heartbeatTimer(Binding::makeTimer()),
     _rtoTimer(_time, *this),
@@ -173,18 +173,14 @@ public:
     static void heartbeatTimeoutCallback(EmiTimeInterval now, Timer *timer, void *data) {
         EmiConn *conn = (EmiConn *)data;
         
-        if (conn->_initiator) {
-            // If we have received data since the last heartbeat, we don't need to ask for a heartbeat reply
-            conn->_sendQueue.sendHeartbeat(conn->_time, conn->_receivedDataSinceLastHeartbeat, now);
-        }
-        else {
+        if (!conn->_sentDataSinceLastHeartbeat) {
             conn->_sendQueue.enqueueHeartbeat();
             conn->ensureTickTimeout();
         }
         conn->resetHeartbeatTimeout();
     }
     void resetHeartbeatTimeout() {
-        _receivedDataSinceLastHeartbeat = false;
+        _sentDataSinceLastHeartbeat = false;
         
         // Don't send heartbeats until we've got a response from the remote host
         if (!isOpening()) {
@@ -224,15 +220,11 @@ public:
         }
     }
     
+    void sentPacket() {
+        _sentDataSinceLastHeartbeat = true;
+    }
     void gotPacket() {
         resetConnectionTimeout();
-    }
-    void gotHeartbeat(bool wasResponse) {
-        resetConnectionTimeout();
-        if (!wasResponse) {
-            _sendQueue.enqueueHeartbeat();
-            ensureTickTimeout();
-        }
     }
     void gotTimestamp(EmiTimeInterval now, const uint8_t *data, size_t len) {
         _time.gotTimestamp(_emisock.config.heartbeatFrequency, now, data, len);
@@ -337,7 +329,6 @@ public:
             return false;
         }
         else {
-            _receivedDataSinceLastHeartbeat = true;
             return _conn->gotMessage(header, data, offset, dontFlush);
         }
     }

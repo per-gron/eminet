@@ -290,7 +290,6 @@ public:
             // This is a heartbeat packet
             if (conn) {
                 conn->gotTimestamp(now, rawData, len);
-                conn->gotHeartbeat(!!(rawData[EMI_TIMESTAMP_LENGTH]));
             }
         }
         else if (len < EMI_TIMESTAMP_LENGTH + EMI_HEADER_LENGTH) {
@@ -466,6 +465,8 @@ public:
     }
     
     void sendDatagram(EC *conn, const uint8_t *data, size_t size) {
+        conn->sentPacket();
+        
         if (shouldArtificiallyDropPacket()) {
             return;
         }

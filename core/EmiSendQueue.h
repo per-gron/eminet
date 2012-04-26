@@ -106,12 +106,12 @@ public:
         _enqueueHeartbeat = true;
     }
     
-    void sendHeartbeat(EmiConnTime& connTime, bool isResponse, EmiTimeInterval now) {
+    void sendHeartbeat(EmiConnTime& connTime, EmiTimeInterval now) {
         if (_conn.isOpen()) {
             const size_t bufLen = EMI_TIMESTAMP_LENGTH+1;
             uint8_t buf[bufLen];
             EM::fillTimestamps(connTime, buf, now);
-            buf[EMI_TIMESTAMP_LENGTH] = isResponse ? 1 : 0;
+            buf[EMI_TIMESTAMP_LENGTH] = 0;
             
             _conn.sendDatagram(buf, bufLen);
         }
@@ -190,8 +190,8 @@ public:
         }
         
         if (!sentPacket && _enqueueHeartbeat) {
-            // Send heartbeat response
-            sendHeartbeat(connTime, true, now);
+            // Send heartbeat
+            sendHeartbeat(connTime, now);
             sentPacket = true;
         }
         
