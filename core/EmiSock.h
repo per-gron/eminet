@@ -92,9 +92,10 @@ class EmiSock {
     typedef EmiConn<SockDelegate, ConnDelegate> EC;
     typedef EmiMessage<Binding>                 EM;
     
-    typedef std::map<EmiConnectionKey, EC*>     EmiConnectionMap;
-    typedef std::map<uint16_t, EmiClientSocket> EmiClientSocketMap;
-    typedef typename EmiConnectionMap::iterator EmiConnectionMapIter;
+    typedef std::map<EmiConnectionKey, EC*>       EmiConnectionMap;
+    typedef typename EmiConnectionMap::iterator   EmiConnectionMapIter;
+    typedef std::map<uint16_t, EmiClientSocket>   EmiClientSocketMap;
+    typedef typename EmiClientSocketMap::iterator EmiClientSocketMapIter;
     
 private:
     // Private copy constructor and assignment operator
@@ -109,8 +110,8 @@ private:
     int32_t findFreeClientPort(const Address& address) {
         EmiClientSocketKey key(address);
         
-        typename EmiClientSocketMap::iterator iter = _clientSockets.begin();
-        typename EmiClientSocketMap::iterator end  = _clientSockets.end();
+        EmiClientSocketMapIter iter = _clientSockets.begin();
+        EmiClientSocketMapIter end  = _clientSockets.end();
         while (iter != end) {
             if (0 == (*iter).second.addresses.count(key)) {
                 return (*iter).first;
@@ -154,6 +155,28 @@ private:
         if (0 == config.fabricatedPacketDropRate) return false;
         
         return ((float)arc4random() / ARC4RANDOM_MAX) < config.fabricatedPacketDropRate;
+    }
+    
+    // SockDelegate::connectionOpened will be called on the cookie iff this function returns true.
+    bool connectHelper(EmiTimeInterval now, const Address& address,
+                       const uint8_t *p2pCookie, size_t p2pCookieLength,
+                       const uint8_t *sharedSecret, size_t sharedSecretLength,
+                       const ConnectionOpenedCallbackCookie& callbackCookie, Error& err) {
+        uint16_t inboundPort = openClientSocket(address, err);
+        
+        if (!inboundPort) {
+            return false;
+        }
+        
+        EmiConnectionKey key(address, inboundPort);
+        // Assert that openClientSocket returned an unused port number.
+        ASSERT(0 == _conns.count(key));
+        
+        EC *ec(_delegate.makeConnection(ECP(address, inboundPort, /*initiator:*/true)));
+        _conns.insert(std::make_pair(key, ec));
+        ec->open(now, callbackCookie);
+        
+        return true;
     }
 
     
@@ -210,8 +233,8 @@ public:
                 _serverSocket = NULL;
             }
             
-            typename EmiClientSocketMap::iterator iter = _clientSockets.begin();
-            typename EmiClientSocketMap::iterator end = _clientSockets.end();
+            EmiClientSocketMapIter iter = _clientSockets.begin();
+            EmiClientSocketMapIter end = _clientSockets.end();
             while (iter != end) {
                 (*iter).second.close();
                 ++iter;
@@ -226,8 +249,8 @@ public:
                 if (!_serverSocket) return false;
             }
             
-            typename EmiClientSocketMap::iterator iter = _clientSockets.begin();
-            typename EmiClientSocketMap::iterator end = _clientSockets.end();
+            EmiClientSocketMapIter iter = _clientSockets.begin();
+            EmiClientSocketMapIter end = _clientSockets.end();
             while (iter != end) {
                 if (!(*iter).second.open(err)) {
                     return false;
@@ -425,26 +448,21 @@ public:
     
     // SockDelegate::connectionOpened will be called on the cookie iff this function returns true.
     bool connect(EmiTimeInterval now, const Address& address, const ConnectionOpenedCallbackCookie& callbackCookie, Error& err) {
-        uint16_t inboundPort = openClientSocket(address, err);
-        
-        if (!inboundPort) {
-            return false;
-        }
-        
-        EmiConnectionKey key(address, inboundPort);
-        if (0 != _conns.count(key)) {
-            // This should not happen, because openClientSocket should
-            // have returned an unused port number.
-            err = Binding::makeError("com.emilir.eminet.internalerror", 0);
-            return false;
-        }
-        
-        
-        EC *ec(_delegate.makeConnection(ECP(address, inboundPort, /*initiator:*/true)));
-        _conns.insert(std::make_pair(key, ec));
-        ec->open(now, callbackCookie);
-        
-        return true;
+        return connectHelper(now, address,
+                             /*p2pCookie:*/NULL, /*p2pCookieLength:*/0,
+                             /*sharedSecret:*/NULL, /*sharedSecretLength:*/0,
+                             callbackCookie, err);
+    }
+    
+    // SockDelegate::connectionOpened will be called on the cookie iff this function returns true.
+    bool connectP2P(EmiTimeInterval now, const Address& address,
+                    const uint8_t *p2pCookie, size_t p2pCookieLength,
+                    const uint8_t *sharedSecret, size_t sharedSecretLength,
+                    const ConnectionOpenedCallbackCookie& callbackCookie, Error& err) {
+        return connectHelper(now, address,
+                             p2pCookie, p2pCookieLength,
+                             sharedSecret, sharedSecretLength,
+                             callbackCookie, err);
     }
     
     void sendDatagram(EC *conn, const uint8_t *data, size_t size) {
@@ -455,7 +473,7 @@ public:
         SocketHandle *socket = NULL;
         
         if (conn->isInitiator()) {
-            typename EmiClientSocketMap::iterator cur = _clientSockets.find(conn->getInboundPort());
+            EmiClientSocketMapIter cur = _clientSockets.find(conn->getInboundPort());
             socket = _clientSockets.end() == cur ? NULL : (*cur).second.socket;
         }
         else {
@@ -472,7 +490,7 @@ public:
         const Address& address = conn->getAddress();
         uint16_t inboundPort = conn->getInboundPort();
         
-        typename EmiClientSocketMap::iterator cur = _clientSockets.find(inboundPort);
+        EmiClientSocketMapIter cur = _clientSockets.find(inboundPort);
         if (_clientSockets.end() != cur) {
             EmiClientSocket& cs((*cur).second);
             cs.addresses.erase(EmiClientSocketKey(address));
