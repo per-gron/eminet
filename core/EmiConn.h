@@ -312,6 +312,12 @@ public:
     }
     
     // Delegates to EmiLogicalConnection
+    void gotPrx() {
+        if (_conn) {
+            _conn->gotPrx();
+        }
+    }
+    // Delegates to EmiLogicalConnection
     void gotRst() {
         if (_conn) {
             _conn->gotRst();

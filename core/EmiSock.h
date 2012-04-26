@@ -301,12 +301,29 @@ public:
         else {
             EmiMessageHeader::EmiParseMessageBlock block =
             ^ bool (const EmiMessageHeader& header, size_t dataOffset) {
+                bool prxFlag  = header.flags & EMI_PRX_FLAG;
                 bool synFlag  = header.flags & EMI_SYN_FLAG;
                 bool rstFlag  = header.flags & EMI_RST_FLAG;
                 bool ackFlag  = header.flags & EMI_ACK_FLAG;
                 bool sackFlag = header.flags & EMI_SACK_FLAG;
                 
-                if (synFlag && !rstFlag) {
+                if (prxFlag) {
+                    // This is some kind of proxy/P2P connection message
+                    
+                    if (!synFlag && !rstFlag && !ackFlag) {
+                        if (!conn) {
+                            err = "Got PRX message but has no open connection for that address";
+                            return false;
+                        }
+                        
+                        conn->gotPrx();
+                    }
+                    else {
+                        err = "Invalid message flags";
+                        return false;
+                    }
+                }
+                else if (synFlag && !rstFlag) {
                     // This is an initiate connection message
                     
                     if (!config.acceptConnections) {

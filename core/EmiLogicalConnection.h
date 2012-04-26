@@ -170,6 +170,18 @@ public:
         _closing = false;
     }
     
+    void gotPrx() {
+        if (EMI_CONNECTION_TYPE_P2P != _conn.getType()) {
+            // This type of message should only be sent in a P2P connection.
+            // This isn't one, so we just ignore it.
+            return;
+        }
+        
+        // This is a SYN with cookie response. The P2P mediator has received
+        // our SYN message but has not yet received a SYN from the other
+        // peer.
+        releaseSynMsg();
+    }
     void gotRst() {
         _conn->forceClose(EMI_REASON_OTHER_HOST_CLOSED);
     }
