@@ -17,14 +17,14 @@
 // variable to it instead.
 template<class Address>
 struct EmiConnParams {
-    EmiConnParams(const Address& address_, uint16_t inboundPort_, bool initiator_) :
+    EmiConnParams(const Address& address_, uint16_t inboundPort_, EmiConnectionType type_) :
     address(address_),
     inboundPort(inboundPort_),
-    initiator(initiator_) {}
+    type(type_) {}
     
     const Address& address;
     const uint16_t inboundPort;
-    const bool initiator;
+    const EmiConnectionType type;
 };
 
 #endif

@@ -57,6 +57,12 @@ typedef enum {
     EMI_REASON_OTHER_HOST_DID_NOT_RESPOND = 4
 } EmiDisconnectReason;
 
+typedef enum {
+    EMI_CONNECTION_TYPE_SERVER,
+    EMI_CONNECTION_TYPE_CLIENT,
+    EMI_CONNECTION_TYPE_P2P
+} EmiConnectionType;
+
 typedef uint16_t EmiSequenceNumber;
 typedef uint8_t  EmiChannelQualifier;
 typedef uint16_t EmiTimestamp;

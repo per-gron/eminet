@@ -39,7 +39,7 @@ class EmiConn {
     const Address _address;
     
     ES &_emisock;
-    bool _initiator;
+    EmiConnectionType _type;
     
     ELC *_conn;
     EmiSenderBuffer<Binding> _senderBuffer;
@@ -91,7 +91,7 @@ public:
     _conn(NULL),
     _delegate(delegate),
     _emisock(socket),
-    _initiator(params.initiator),
+    _type(params.type),
     _senderBuffer(_emisock.config.senderBufferSize),
     _receiverBuffer(_emisock.config.receiverBufferSize, *this),
     _sendQueue(*this),
@@ -276,7 +276,7 @@ public:
     // The first time this methods is called, it opens the EmiConnection and returns true.
     // Subsequent times it just resends the init message and returns false.
     bool opened(EmiTimeInterval now, EmiSequenceNumber otherHostInitialSequenceNumber) {
-        ASSERT(!_initiator);
+        ASSERT(EMI_CONNECTION_TYPE_SERVER == _type);
         
         if (_conn) {
             // resendInitMessage should not fail, because it can only
@@ -293,7 +293,7 @@ public:
         }
     }
     bool open(EmiTimeInterval now, const ConnectionOpenedCallbackCookie& cookie) {
-        ASSERT(_initiator);
+        ASSERT(EMI_CONNECTION_TYPE_CLIENT == _type);
         
         if (_conn) {
             // We don't need to explicitly resend the init message here;
@@ -407,8 +407,8 @@ public:
     bool issuedConnectionWarning() const {
         return _issuedConnectionWarning;
     }
-    bool isInitiator() const {
-        return _initiator;
+    EmiConnectionType getType() const {
+        return _type;
     }
     bool isOpen() const {
         return _conn && !_conn->isOpening() && !_conn->isClosing();

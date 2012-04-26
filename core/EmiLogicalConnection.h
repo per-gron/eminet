@@ -107,16 +107,20 @@ public:
     EmiLogicalConnection(EC *connection, EmiTimeInterval now, EmiSequenceNumber sequenceNumber) :
     _closing(false), _conn(connection), _otherHostInitialSequenceNumber(sequenceNumber),
     _sendingSyn(false), _connectionOpenedCallbackCookie() {
+        ASSERT(EMI_CONNECTION_TYPE_SERVER == _conn->getType());
+        
         commonInit();
         
         // resendInitMessage should not fail, because it only fails when this
-        // host is the connection's initiator, which is not the case here.
+        // connection is not EMI_CONNECTION_TYPE_SERVER
         Error err;
         ASSERT(resendInitMessage(now, err));
     }
     EmiLogicalConnection(EC *connection, EmiTimeInterval now, const ConnectionOpenedCallbackCookie& connectionOpenedCallbackCookie) :
     _closing(false), _conn(connection), _otherHostInitialSequenceNumber(0),
     _sendingSyn(true), _connectionOpenedCallbackCookie(connectionOpenedCallbackCookie) {
+        ASSERT(EMI_CONNECTION_TYPE_SERVER != _conn->getType());
+        
         commonInit();
         
         // resendInitMessage really ought not to fail; it only fails when the
@@ -131,8 +135,8 @@ public:
     }
     
     // This method only fails when sending a SYN message, that is,
-    // _synRstCallback is set, which happens when this host is the
-    // initiator of the connection.
+    // _synRstCallback is set, which happens when this connection is
+    // not EMI_CONNECTION_TYPE_SERVER.
     bool resendInitMessage(EmiTimeInterval now, Error& err) {
         bool error = false;
         

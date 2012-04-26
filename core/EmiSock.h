@@ -172,7 +172,7 @@ private:
         // Assert that openClientSocket returned an unused port number.
         ASSERT(0 == _conns.count(key));
         
-        EC *ec(_delegate.makeConnection(ECP(address, inboundPort, /*initiator:*/true)));
+        EC *ec(_delegate.makeConnection(ECP(address, inboundPort, EMI_CONNECTION_TYPE_CLIENT)));
         _conns.insert(std::make_pair(key, ec));
         ec->open(now, callbackCookie);
         
@@ -334,7 +334,7 @@ public:
                     }
                     
                     if (!conn) {
-                        conn = _delegate.makeConnection(ECP(address, inboundPort, /*initiator:*/false));
+                        conn = _delegate.makeConnection(ECP(address, inboundPort, EMI_CONNECTION_TYPE_SERVER));
                         _conns.insert(std::make_pair(ckey, conn));
                     }
                     
@@ -473,7 +473,7 @@ public:
         
         SocketHandle *socket = NULL;
         
-        if (conn->isInitiator()) {
+        if (EMI_CONNECTION_TYPE_SERVER != conn->getType()) {
             EmiClientSocketMapIter cur = _clientSockets.find(conn->getInboundPort());
             socket = _clientSockets.end() == cur ? NULL : (*cur).second.socket;
         }
