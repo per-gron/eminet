@@ -23,7 +23,7 @@ EXPAND_SYMS
 
 Persistent<Function> EmiP2PSocket::connectionError;
 
-EmiP2PSocket::EmiP2PSocket(v8::Handle<v8::Object> jsHandle, const EmiP2PSockConfig<EmiBinding::Address>& sc) :
+EmiP2PSocket::EmiP2PSocket(v8::Handle<v8::Object> jsHandle, const EmiP2PSockConfig& sc) :
 _sock(sc, EmiP2PSockDelegate(*this)),
 _jsHandle(v8::Persistent<v8::Object>::New(jsHandle)) {}
 
@@ -84,7 +84,7 @@ Handle<Value> EmiP2PSocket::SetCallbacks(const Arguments& args) {
 Handle<Value> EmiP2PSocket::New(const Arguments& args) {
     HandleScope scope;
     
-    EmiP2PSockConfig<EmiBinding::Address> sc;
+    EmiP2PSockConfig sc;
     
     size_t numArgs = args.Length();
     if (1 != numArgs && 2 != numArgs) {

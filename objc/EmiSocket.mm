@@ -114,7 +114,11 @@
 
 - (BOOL)connectToAddress:(NSData *)address block:(EmiConnectionOpenedBlock)block error:(NSError **)errPtr {
     NSError *err = nil;
-    BOOL retVal = ((S *)_sock)->connect([NSDate timeIntervalSinceReferenceDate], address, block, err);
+    
+    sockaddr_storage ss;
+    memcpy(&ss, [address bytes], MIN([address length], sizeof(sockaddr_storage)));
+    
+    BOOL retVal = ((S *)_sock)->connect([NSDate timeIntervalSinceReferenceDate], ss, block, err);
     *errPtr = err;
     
     return retVal;
@@ -177,7 +181,8 @@ withFilterContext:(id)filterContext {
 #pragma mark - Getters
 
 - (NSData *)serverAddress {
-    return ((S *)_sock)->config.address;
+    const sockaddr_storage& ss(((S *)_sock)->config.address);
+    return [NSData dataWithBytes:&ss length:sizeof(sockaddr_storage)];
 }
 
 - (EmiTimeInterval)connectionTimeout {

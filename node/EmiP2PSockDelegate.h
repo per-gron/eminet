@@ -19,7 +19,6 @@ class EmiP2PSockDelegate {
     typedef EmiP2PSock<EmiP2PSockDelegate> EPS;
     
     typedef EmiBinding::Error   Error;
-    typedef EmiBinding::Address Address;
     
     EmiP2PSocket& _es;
 public:

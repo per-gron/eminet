@@ -24,7 +24,6 @@ class EmiSockDelegate {
     typedef EmiConn<EmiSockDelegate, EmiConnDelegate> EC;
     
     typedef EmiBinding::Error   Error;
-    typedef EmiBinding::Address Address;
     
     EmiSocket& _es;
 public:

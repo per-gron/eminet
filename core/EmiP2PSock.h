@@ -30,7 +30,6 @@ class EmiP2PSock {
     typedef typename Binding::SocketHandle     SocketHandle;
     typedef typename Binding::TemporaryData    TemporaryData;
     typedef typename Binding::Error            Error;
-    typedef typename Binding::Address          Address;
     typedef typename Binding::AddressCmp       AddressCmp;
     
     static const size_t          EMI_P2P_SERVER_SECRET_SIZE = 32;
@@ -40,12 +39,12 @@ class EmiP2PSock {
     
     typedef EmiP2PConn<P2PSockDelegate, EmiP2PSock, EMI_P2P_COOKIE_SIZE> Conn;
     
-    typedef EmiP2PSockConfig<Address>            SockConfig;
-    typedef typename Conn::ConnCookie            ConnCookie;
-    typedef std::map<Address, Conn*, AddressCmp> ConnMap;
-    typedef typename ConnMap::iterator           ConnMapIter;
-    typedef std::map<ConnCookie, Conn*>          ConnCookieMap;
-    typedef typename ConnCookieMap::iterator     ConnCookieMapIter;
+    typedef EmiP2PSockConfig                              SockConfig;
+    typedef typename Conn::ConnCookie                     ConnCookie;
+    typedef std::map<sockaddr_storage, Conn*, AddressCmp> ConnMap;
+    typedef typename ConnMap::iterator                    ConnMapIter;
+    typedef std::map<ConnCookie, Conn*>                   ConnCookieMap;
+    typedef typename ConnCookieMap::iterator              ConnCookieMapIter;
     
 private:
     // Private copy constructor and assignment operator
@@ -105,7 +104,7 @@ private:
         return false;
     }
     
-    Conn *findConn(const Address& address) {
+    Conn *findConn(const sockaddr_storage& address) {
         ConnMapIter cur = _conns.find(address);
         return _conns.end() == cur ? NULL : (*cur).second;
     }
@@ -114,7 +113,7 @@ private:
                            const uint8_t *rawData,
                            size_t len,
                            SocketHandle *sock,
-                           const Address& address,
+                           const sockaddr_storage& address,
                            const uint8_t *cookie,
                            size_t cookieLength) {
         if (!checkCookie(now, cookie, cookieLength)) {
@@ -159,7 +158,7 @@ private:
     }
     
     // conn must not be NULL
-    void gotConnectionOpenAck(const Address& address,
+    void gotConnectionOpenAck(const sockaddr_storage& address,
                               Conn *conn,
                               EmiTimeInterval now,
                               const uint8_t *rawData,
@@ -184,9 +183,9 @@ private:
         
         conn->gotTimestamp(address, now, rawData, len);
         
-        Address innerAddress(Binding::makeAddress(Binding::extractFamily(address),
-                                                  rawData+Binding::HMAC_HASH_SIZE, ipLen,
-                                                  *((uint16_t *)(rawData+Binding::HMAC_HASH_SIZE+ipLen))));
+        sockaddr_storage innerAddress(Binding::makeAddress(Binding::extractFamily(address),
+                                                           rawData+Binding::HMAC_HASH_SIZE, ipLen,
+                                                           *((uint16_t *)(rawData+Binding::HMAC_HASH_SIZE+ipLen))));
         
         conn->gotInnerAddress(address, innerAddress);
         
@@ -273,7 +272,7 @@ public:
     
     void onMessage(EmiTimeInterval now,
                    SocketHandle *sock,
-                   const Address& address,
+                   const sockaddr_storage& address,
                    const TemporaryData& data,
                    size_t offset,
                    size_t len) {

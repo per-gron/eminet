@@ -28,7 +28,7 @@ private:
     inline EmiP2PSocket(const EmiP2PSocket& other);
     inline EmiP2PSocket& operator=(const EmiP2PSocket& other);
     
-    EmiP2PSocket(v8::Handle<v8::Object> jsHandle, const EmiP2PSockConfig<EmiBinding::Address>& sc);
+    EmiP2PSocket(v8::Handle<v8::Object> jsHandle, const EmiP2PSockConfig& sc);
     virtual ~EmiP2PSocket();
     
     static v8::Handle<v8::Value> SetCallbacks(const v8::Arguments& args);

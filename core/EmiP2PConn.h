@@ -42,7 +42,6 @@ public:
     
 private:
     typedef typename P2PSockDelegate::Binding Binding;
-    typedef typename Binding::Address         Address;
     typedef typename Binding::AddressCmp      AddressCmp;
     typedef typename Binding::SocketHandle    SocketHandle;
     typedef typename Binding::TemporaryData   TemporaryData;
@@ -58,8 +57,8 @@ private:
     
     SocketHandle     *_sock;
     const AddressCmp  _acmp;
-    Address           _peers[2];
-    Address           _innerEndpoints[2];
+    sockaddr_storage  _peers[2];
+    sockaddr_storage  _innerEndpoints[2];
     EmiConnTime       _times[2];
     bool              _waitingForPrxAck[2];
     
@@ -73,7 +72,7 @@ private:
     Timer                 *_rateLimitTimer;
     
     // Returns -1 on error
-    int addressIndex(const Address& address) const {
+    int addressIndex(const sockaddr_storage& address) const {
         if (0 == _acmp(_peers[0], address)) {
             return 0;
         }
@@ -86,13 +85,13 @@ private:
     }
     
     // Returns NULL on error
-    const Address* otherAddress(const Address& address) const {
+    const sockaddr_storage* otherAddress(const sockaddr_storage& address) const {
         int idx = addressIndex(address);
         if (-1 == idx) {
             return NULL;
         }
         
-        const Address *addr(&_peers[idx]);
+        const sockaddr_storage *addr(&_peers[idx]);
         
         // Return NULL if the address is a nil address
         if (EmiBinding::isNilAddress(*addr)) {
@@ -102,7 +101,7 @@ private:
         return addr;
     }
     
-    void sendData(const Address& address,
+    void sendData(const sockaddr_storage& address,
                   const TemporaryData& data,
                   size_t offset,
                   size_t len) {
@@ -148,7 +147,7 @@ public:
     EmiP2PConn(Delegate& delegate,
                const ConnCookie &cookie_,
                SocketHandle *sock,
-               const Address& firstPeer,
+               const sockaddr_storage& firstPeer,
                EmiTimeInterval connectionTimeout,
                size_t rateLimit) :
     cookie(cookie_),
@@ -193,7 +192,7 @@ public:
         }
     }
     
-    void gotPacket(const Address& address) {
+    void gotPacket(const sockaddr_storage& address) {
         int idx(addressIndex(address));
         ASSERT(-1 != idx);
         
@@ -201,11 +200,11 @@ public:
     }
     
     void forwardPacket(EmiTimeInterval now,
-                       const Address& address,
+                       const sockaddr_storage& address,
                        const TemporaryData& data,
                        size_t offset,
                        size_t len) {
-        const Address *otherAddr = otherAddress(address);
+        const sockaddr_storage *otherAddr = otherAddress(address);
         if (!otherAddr) {
             return;
         }
@@ -213,7 +212,7 @@ public:
         sendData(*otherAddr, data, offset, len);
     }
     
-    void gotOtherAddress(const Address& address) {
+    void gotOtherAddress(const sockaddr_storage& address) {
         _peers[1] = address;
         
         _waitingForPrxAck[0] = true;
@@ -226,10 +225,10 @@ public:
         _rtoTimer1.updateRtoTimeout();
     }
     
-    const Address& getFirstAddress() const { return _peers[0]; }
-    const Address& getOtherAddress() const { return _peers[0]; }
+    const sockaddr_storage& getFirstAddress() const { return _peers[0]; }
+    const sockaddr_storage& getOtherAddress() const { return _peers[0]; }
     
-    void gotTimestamp(const Address& address, EmiTimeInterval now, const uint8_t *data, size_t len) {
+    void gotTimestamp(const sockaddr_storage& address, EmiTimeInterval now, const uint8_t *data, size_t len) {
         int idx(addressIndex(address));
         if (-1 != idx) {
             // Since these P2P connections don't have a proper heartbeat frequency,
@@ -238,7 +237,7 @@ public:
         }
     }
     
-    void sendPrx(const Address& address) {
+    void sendPrx(const sockaddr_storage& address) {
         EmiMessage<Binding>::writeControlPacket(EMI_PRX_FLAG, ^(uint8_t *buf, size_t size) {
             int idx(addressIndex(address));
             ASSERT(-1 != idx);
@@ -257,7 +256,7 @@ public:
         return !_waitingForPrxAck[idx];
     }
     
-    void gotInnerAddress(const Address& address, const Address& innerAddress) {
+    void gotInnerAddress(const sockaddr_storage& address, const sockaddr_storage& innerAddress) {
         int idx(addressIndex(address));
         ASSERT(-1 != idx);
         
