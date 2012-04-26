@@ -283,11 +283,11 @@ public:
         ASSERT(EMI_CONNECTION_TYPE_SERVER == _type);
         
         if (_conn) {
-            // resendInitMessage should not fail, because it can only
+            // sendInitMessage should not fail, because it can only
             // fail when it attempts to send a SYN message, but we're
             // sending a SYN-RST message here.
             Error err;
-            ASSERT(_conn->resendInitMessage(now, err));
+            ASSERT(_conn->sendInitMessage(now, err));
             
             return false;
         }
@@ -431,6 +431,10 @@ public:
     
     inline ES &getEmiSock() {
         return _emisock;
+    }
+    
+    inline const EmiP2PData &getP2PData() const {
+        return _p2p;
     }
 };
 

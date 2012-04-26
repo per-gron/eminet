@@ -41,9 +41,7 @@ public:
         return EmiError(domain, code);
     }
     
-    static v8::Persistent<v8::Object> makePersistentData(const v8::Local<v8::Object>& data,
-                                                         size_t offset,
-                                                         size_t length);
+    static v8::Persistent<v8::Object> makePersistentData(const uint8_t *data, size_t length);
     inline static void releasePersistentData(v8::Persistent<v8::Object> buf) {
         buf.Dispose();
     }

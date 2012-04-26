@@ -69,14 +69,13 @@ uint16_t EmiBinding::extractPort(const Address& address) {
     return EmiNodeUtil::extractPort(address);
 }
 
-Persistent<Object> EmiBinding::makePersistentData(const Local<Object>& data,
-                                                  size_t offset,
-                                                  size_t length) {
+Persistent<Object> EmiBinding::makePersistentData(const uint8_t *data, size_t length) {
     HandleScope scope;
     
+    // TODO It would probably be better to use the slab allocator here
+    
     // Copy the buffer
-    node::Buffer *buf(node::Buffer::New(node::Buffer::Data(data)+offset,
-                                        length));
+    node::Buffer *buf(node::Buffer::New((char *)data, length));
     
     // Make a new persistent handle (do not just reuse the persistent buf->handle_ handle)
     return Persistent<Object>::New(buf->handle_);

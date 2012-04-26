@@ -111,10 +111,10 @@ public:
         
         commonInit();
         
-        // resendInitMessage should not fail, because it only fails when this
+        // sendInitMessage should not fail, because it only fails when this
         // connection is not EMI_CONNECTION_TYPE_SERVER
         Error err;
-        ASSERT(resendInitMessage(now, err));
+        ASSERT(sendInitMessage(now, err));
     }
     EmiLogicalConnection(EC *connection, EmiTimeInterval now, const ConnectionOpenedCallbackCookie& connectionOpenedCallbackCookie) :
     _closing(false), _conn(connection), _otherHostInitialSequenceNumber(0),
@@ -123,11 +123,11 @@ public:
         
         commonInit();
         
-        // resendInitMessage really ought not to fail; it only fails when the
+        // sendInitMessage really ought not to fail; it only fails when the
         // sender buffer is full, but this init message should be the first
         // message on the whole connection.
         Error err;
-        ASSERT(resendInitMessage(now, err));
+        ASSERT(sendInitMessage(now, err));
     }
     virtual ~EmiLogicalConnection() {
         // Just to be sure, since these ivars are __unsafe_unretained
@@ -137,13 +137,15 @@ public:
     // This method only fails when sending a SYN message, that is,
     // _synRstCallback is set, which happens when this connection is
     // not EMI_CONNECTION_TYPE_SERVER.
-    bool resendInitMessage(EmiTimeInterval now, Error& err) {
+    bool sendInitMessage(EmiTimeInterval now, Error& err) {
         bool error = false;
         
         releaseSynMsg();
         
         EM *msg = _sendingSyn ?
-            EM::makeSynMessage(_initialSequenceNumber) :
+            EM::makeSynMessage(_initialSequenceNumber,
+                               _conn->getP2PData().p2pCookie,
+                               _conn->getP2PData().p2pCookieLength) :
             EM::makeSynRstMessage(_initialSequenceNumber);
         
         if (_sendingSyn) {

@@ -39,8 +39,15 @@ private:
     }
     
     // The caller is responsible for releasing the returned object
-    static EmiMessage *makeSynAndOrRstMessage(EmiFlags flags, EmiSequenceNumber sequenceNumber) {
-        EmiMessage *msg = new EmiMessage;
+    static EmiMessage *makeSynAndOrRstMessage(EmiFlags flags, EmiSequenceNumber sequenceNumber,
+                                              const uint8_t *data, size_t dataLen) {
+        EmiMessage *msg;
+        if (data) {
+            msg = new EmiMessage(Binding::makePersistentData(data, dataLen));
+        }
+        else {
+            msg = new EmiMessage;
+        }
         msg->priority = EMI_PRIORITY_HIGH;
         msg->channelQualifier = -1; // Special SYN/RST message channel. SenderBuffer requires this to be an integer
         msg->sequenceNumber = sequenceNumber;
@@ -51,18 +58,18 @@ private:
 public:
     
     // The caller is responsible for releasing the returned object
-    static EmiMessage *makeSynMessage(EmiSequenceNumber sequenceNumber) {
-        return makeSynAndOrRstMessage(EMI_SYN_FLAG, sequenceNumber);
+    static EmiMessage *makeSynMessage(EmiSequenceNumber sequenceNumber, const uint8_t *data, size_t dataLen) {
+        return makeSynAndOrRstMessage(EMI_SYN_FLAG, sequenceNumber, data, dataLen);
     }
     
     // The caller is responsible for releasing the returned object
     static EmiMessage *makeSynRstMessage(EmiSequenceNumber sequenceNumber) {
-        return makeSynAndOrRstMessage(EMI_SYN_FLAG | EMI_RST_FLAG, sequenceNumber);
+        return makeSynAndOrRstMessage(EMI_SYN_FLAG | EMI_RST_FLAG, sequenceNumber, /*data:*/NULL, /*dataLen:*/0);
     }
     
     // The caller is responsible for releasing the returned object
     static EmiMessage *makeRstMessage(EmiSequenceNumber sequenceNumber) {
-        return makeSynAndOrRstMessage(EMI_RST_FLAG, sequenceNumber);
+        return makeSynAndOrRstMessage(EMI_RST_FLAG, sequenceNumber, /*data:*/NULL, /*dataLen:*/0);
     }
     
     // The caller is responsible for releasing the returned object

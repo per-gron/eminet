@@ -30,7 +30,7 @@ public:
     public:
         Entry(const EmiMessageHeader& header_, const TemporaryData &data_, size_t offset, size_t length) :
         header(header_),
-        data(Binding::makePersistentData(data_, offset, length)) {}
+        data(Binding::makePersistentData(Binding::extractData(data_)+offset, length)) {}
         Entry() {}
         ~Entry() {
             Binding::releasePersistentData(data);
