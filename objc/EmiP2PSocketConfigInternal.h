@@ -10,7 +10,7 @@
 
 #include "EmiP2PSockConfig.h"
 
-typedef EmiP2PSockConfig<NSData *> EmiP2PSocketConfigSC;
+typedef EmiP2PSockConfig EmiP2PSocketConfigSC;
 
 @interface EmiP2PSocketConfig()
 
