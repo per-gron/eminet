@@ -20,8 +20,10 @@ void EmiSockDelegate::closeSocket(EmiSockDelegate::ES& sock, GCDAsyncUdpSocket *
     [socket close];
 }
 
-GCDAsyncUdpSocket *EmiSockDelegate::openSocket(uint16_t port, __strong NSError*& err) {
+GCDAsyncUdpSocket *EmiSockDelegate::openSocket(NSData *address, uint16_t port, __strong NSError*& err) {
     GCDAsyncUdpSocket *socket = [[GCDAsyncUdpSocket alloc] initWithDelegate:_socket delegateQueue:dispatch_get_current_queue()];
+    
+    // TODO Use the address parameter
     
     if (![socket bindToPort:port error:&err]) {
         return nil;

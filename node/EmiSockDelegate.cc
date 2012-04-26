@@ -52,10 +52,10 @@ void EmiSockDelegate::closeSocket(EmiSockDelegate::ES& sock, uv_udp_t *socket) {
     EmiNodeUtil::closeSocket(socket);
 }
 
-uv_udp_t *EmiSockDelegate::openSocket(uint16_t port, Error& error) {
+uv_udp_t *EmiSockDelegate::openSocket(const Address& address, uint16_t port, Error& error) {
     ES& sock(_es._sock);
     
-    uv_udp_t *ret(EmiNodeUtil::openSocket(sock.config.address, port,
+    uv_udp_t *ret(EmiNodeUtil::openSocket(address, port,
                                           recv_cb, &sock.getDelegate()._es,
                                           error));
     

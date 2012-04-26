@@ -242,7 +242,7 @@ public:
     
     bool desuspend(Error& err) {
         if (!_socket) {
-            _socket = _delegate.openSocket(config.port, err);
+            _socket = _delegate.openSocket(config.address, config.port, err);
             if (!_socket) return false;
         }
         

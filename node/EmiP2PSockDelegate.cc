@@ -53,10 +53,10 @@ void EmiP2PSockDelegate::closeSocket(EmiP2PSockDelegate::EPS& sock, uv_udp_t *so
     EmiNodeUtil::closeSocket(socket);
 }
 
-uv_udp_t *EmiP2PSockDelegate::openSocket(uint16_t port, Error& error) {
+uv_udp_t *EmiP2PSockDelegate::openSocket(const Address& address, uint16_t port, Error& error) {
     EPS& sock(_es._sock);
     
-    uv_udp_t *ret(EmiNodeUtil::openSocket(sock.config.address, port,
+    uv_udp_t *ret(EmiNodeUtil::openSocket(address, port,
                                           recv_cb, &sock.getDelegate()._es,
                                           error));
     

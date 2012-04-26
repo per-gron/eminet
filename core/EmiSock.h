@@ -76,7 +76,7 @@ class EmiSock {
         
         bool open(Error& err) {
             if (!socket) {
-                socket = emiSock._delegate.openSocket(port, err);
+                socket = emiSock._delegate.openSocket(emiSock.config.address, port, err);
                 if (0 == port) {
                     port = SockDelegate::extractLocalPort(socket);
                 }
@@ -252,7 +252,7 @@ public:
     bool desuspend(Error& err) {
         if (!isOpen()) {
             if (config.acceptConnections || !_conns.empty()) {
-                _serverSocket = _delegate.openSocket(config.port, err);
+                _serverSocket = _delegate.openSocket(config.address, config.port, err);
                 if (!_serverSocket) return false;
             }
             
