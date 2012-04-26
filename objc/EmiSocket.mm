@@ -82,7 +82,7 @@
 }
 
 - (BOOL)startWithConfig:(EmiSocketConfig *)config error:(NSError **)errPtr {
-    EmiSockConfig<NSData *> *sc = [config sockConfig];
+    EmiSockConfig *sc = [config sockConfig];
     
     _sock = new S(*sc, EmiSockDelegate(self));
     
@@ -135,8 +135,11 @@
    didReceiveData:(NSData *)data
       fromAddress:(NSData *)address
 withFilterContext:(id)filterContext {
+    sockaddr_storage ss;
+    memcpy(&ss, [data bytes], MIN([data length], sizeof(ss)));
+    
     ((S *)_sock)->onMessage([NSDate timeIntervalSinceReferenceDate],
-                            sock, address,
+                            sock, ss,
                             data, /*offset:*/0, [data length]);
 }
 

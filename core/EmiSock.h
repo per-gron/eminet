@@ -188,9 +188,9 @@ private:
 
     
 public:
-    const EmiSockConfig<sockaddr_storage>  config;
+    const EmiSockConfig  config;
     
-    EmiSock(const EmiSockConfig<sockaddr_storage>& config_, const SockDelegate& delegate) :
+    EmiSock(const EmiSockConfig& config_, const SockDelegate& delegate) :
     config(config_), _delegate(delegate), _serverSocket(NULL) {}
     
     virtual ~EmiSock() {

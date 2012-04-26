@@ -11,7 +11,6 @@
 
 #include "EmiTypes.h"
 
-template<class Address>
 class EmiSockConfig {
 public:
     EmiSockConfig() :
@@ -36,7 +35,7 @@ public:
     size_t senderBufferSize;
     bool acceptConnections;
     uint16_t port;
-    Address address;
+    sockaddr_storage address;
     float fabricatedPacketDropRate;
 };
 

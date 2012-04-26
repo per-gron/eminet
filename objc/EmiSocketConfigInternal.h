@@ -10,7 +10,7 @@
 
 #include "EmiSockConfig.h"
 
-typedef EmiSockConfig<NSData *> EmiSocketConfigSC;
+typedef EmiSockConfig EmiSocketConfigSC;
 
 @interface EmiSocketConfig()
 

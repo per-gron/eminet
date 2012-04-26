@@ -35,7 +35,7 @@ Persistent<Function> EmiSocket::connectionRegained;
 Persistent<Function> EmiSocket::connectionDisconnect;
 Persistent<Function> EmiSocket::connectionError;
 
-EmiSocket::EmiSocket(v8::Handle<v8::Object> jsHandle, const EmiSockConfig<EmiBinding::Address>& sc) :
+EmiSocket::EmiSocket(v8::Handle<v8::Object> jsHandle, const EmiSockConfig& sc) :
 _sock(sc, EmiSockDelegate(*this)),
 _jsHandle(v8::Persistent<v8::Object>::New(jsHandle)) {}
 
@@ -108,7 +108,7 @@ Handle<Value> EmiSocket::SetCallbacks(const Arguments& args) {
 Handle<Value> EmiSocket::New(const Arguments& args) {
     HandleScope scope;
     
-    EmiSockConfig<EmiBinding::Address> sc;
+    EmiSockConfig sc;
     
     size_t numArgs = args.Length();
     if (1 != numArgs && 2 != numArgs) {
