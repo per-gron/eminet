@@ -11,6 +11,8 @@
 
 #include "EmiTypes.h"
 
+#include <netinet/in.h>
+
 class EmiSockConfig {
 public:
     EmiSockConfig() :

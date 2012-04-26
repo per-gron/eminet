@@ -13,6 +13,7 @@
 #include "EmiSendQueue.h"
 #include "EmiSockConfig.h"
 #include "EmiConnParams.h"
+#include "EmiAddressCmp.h"
 
 #include <map>
 #include <set>
@@ -26,16 +27,15 @@ class EmiSock {
     typedef typename SockDelegate::Binding     Binding;
     typedef typename Binding::Error            Error;
     typedef typename Binding::TemporaryData    TemporaryData;
-    typedef typename Binding::AddressCmp       AddressCmp;
     typedef typename Binding::SocketHandle     SocketHandle;
     typedef typename SockDelegate::ConnectionOpenedCallbackCookie  ConnectionOpenedCallbackCookie;
     
     class EmiConnectionKey {
-        const AddressCmp _cmp;
+        const EmiAddressCmp _cmp;
     public:
         EmiConnectionKey(const sockaddr_storage& address_, uint16_t inboundPort_) :
         address(address_), inboundPort(inboundPort_), _cmp() {}
-        EmiConnectionKey(const sockaddr_storage& address_, uint16_t inboundPort_, const AddressCmp& cmp) :
+        EmiConnectionKey(const sockaddr_storage& address_, uint16_t inboundPort_, const EmiAddressCmp& cmp) :
         address(address_), inboundPort(inboundPort_), _cmp(cmp) {}
         
         sockaddr_storage address;
@@ -51,11 +51,11 @@ class EmiSock {
     };
     
     struct EmiClientSocketKey {
-        const AddressCmp _cmp;
+        const EmiAddressCmp _cmp;
     public:
         EmiClientSocketKey(const sockaddr_storage& address_) :
         address(address_), _cmp() {}
-        EmiClientSocketKey(const sockaddr_storage& address_, const AddressCmp& cmp) :
+        EmiClientSocketKey(const sockaddr_storage& address_, const EmiAddressCmp& cmp) :
         address(address_), _cmp(cmp) {}
         
         sockaddr_storage address;

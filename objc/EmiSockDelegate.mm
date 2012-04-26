@@ -20,7 +20,7 @@ void EmiSockDelegate::closeSocket(EmiSockDelegate::ES& sock, GCDAsyncUdpSocket *
     [socket close];
 }
 
-GCDAsyncUdpSocket *EmiSockDelegate::openSocket(NSData *address, uint16_t port, __strong NSError*& err) {
+GCDAsyncUdpSocket *EmiSockDelegate::openSocket(const sockaddr_storage& address, uint16_t port, __strong NSError*& err) {
     GCDAsyncUdpSocket *socket = [[GCDAsyncUdpSocket alloc] initWithDelegate:_socket delegateQueue:dispatch_get_current_queue()];
     
     // TODO Use the address parameter
@@ -45,11 +45,11 @@ EC *EmiSockDelegate::makeConnection(const EmiConnParams& params) {
                                           params:&params].conn;
 }
 
-void EmiSockDelegate::sendData(GCDAsyncUdpSocket *socket, NSData *address, const uint8_t *data, size_t size) {
+void EmiSockDelegate::sendData(GCDAsyncUdpSocket *socket, const sockaddr_storage& address, const uint8_t *data, size_t size) {
     // TODO This copies the packet data. We might want to redesign
     // this part of the code so that this is not required.
     [socket sendData:[NSData dataWithBytes:data length:size]
-           toAddress:address
+           toAddress:[NSData dataWithBytes:&address length:sizeof(sockaddr_storage)]
          withTimeout:-1 tag:0];
 }
 

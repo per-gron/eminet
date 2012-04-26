@@ -7,6 +7,7 @@
 #include "EmiConnection.h"
 
 #include <node.h>
+#include <netinet/in.h>
 
 using namespace v8;
 

@@ -14,6 +14,7 @@
 #include "EmiP2PConn.h"
 #include "EmiMessageHeader.h"
 #include "EmiMessage.h"
+#include "EmiAddressCmp.h"
 
 #include <algorithm>
 #include <cmath>
@@ -30,7 +31,6 @@ class EmiP2PSock {
     typedef typename Binding::SocketHandle     SocketHandle;
     typedef typename Binding::TemporaryData    TemporaryData;
     typedef typename Binding::Error            Error;
-    typedef typename Binding::AddressCmp       AddressCmp;
     
     static const size_t          EMI_P2P_SERVER_SECRET_SIZE = 32;
     static const size_t          EMI_P2P_SHARED_SECRET_SIZE = 32;
@@ -39,12 +39,12 @@ class EmiP2PSock {
     
     typedef EmiP2PConn<P2PSockDelegate, EmiP2PSock, EMI_P2P_COOKIE_SIZE> Conn;
     
-    typedef EmiP2PSockConfig                              SockConfig;
-    typedef typename Conn::ConnCookie                     ConnCookie;
-    typedef std::map<sockaddr_storage, Conn*, AddressCmp> ConnMap;
-    typedef typename ConnMap::iterator                    ConnMapIter;
-    typedef std::map<ConnCookie, Conn*>                   ConnCookieMap;
-    typedef typename ConnCookieMap::iterator              ConnCookieMapIter;
+    typedef EmiP2PSockConfig                                 SockConfig;
+    typedef typename Conn::ConnCookie                        ConnCookie;
+    typedef std::map<sockaddr_storage, Conn*, EmiAddressCmp> ConnMap;
+    typedef typename ConnMap::iterator                       ConnMapIter;
+    typedef std::map<ConnCookie, Conn*>                      ConnCookieMap;
+    typedef typename ConnCookieMap::iterator                 ConnCookieMapIter;
     
 private:
     // Private copy constructor and assignment operator

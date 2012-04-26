@@ -14,6 +14,8 @@
 #include "EmiTypes.h"
 #import <Foundation/Foundation.h>
 
+struct sockaddr_storage;
+
 @class EmiSocket;
 @class EmiConnection;
 @class GCDAsyncUdpSocket;
@@ -39,12 +41,12 @@ public:
     EmiSockDelegate(EmiSocket *socket);
     
     static void closeSocket(ES& sock, GCDAsyncUdpSocket *socket);
-    GCDAsyncUdpSocket *openSocket(NSData *address, uint16_t port, __strong NSError*& err);
+    GCDAsyncUdpSocket *openSocket(const sockaddr_storage& address, uint16_t port, __strong NSError*& err);
     static uint16_t extractLocalPort(GCDAsyncUdpSocket *socket);
     
     EC *makeConnection(const EmiConnParams& params);
     
-    void sendData(GCDAsyncUdpSocket *socket, NSData *address, const uint8_t *data, size_t size);
+    void sendData(GCDAsyncUdpSocket *socket, const sockaddr_storage& address, const uint8_t *data, size_t size);
     void gotConnection(EC& conn);
     
     static void connectionOpened(ConnectionOpenedCallbackCookie& cookie, bool error, EmiDisconnectReason reason, EC& ec);

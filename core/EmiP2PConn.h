@@ -14,6 +14,7 @@
 #include "EmiConnTime.h"
 #include "EmiMessage.h"
 #include "EmiRtoTimer.h"
+#include "EmiAddressCmp.h"
 
 template<class P2PSockDelegate, class Delegate, int EMI_P2P_COOKIE_SIZE>
 class EmiP2PConn {
@@ -42,7 +43,6 @@ public:
     
 private:
     typedef typename P2PSockDelegate::Binding Binding;
-    typedef typename Binding::AddressCmp      AddressCmp;
     typedef typename Binding::SocketHandle    SocketHandle;
     typedef typename Binding::TemporaryData   TemporaryData;
     typedef typename Binding::Timer           Timer;
@@ -55,12 +55,12 @@ private:
     
     Delegate& _delegate;
     
-    SocketHandle     *_sock;
-    const AddressCmp  _acmp;
-    sockaddr_storage  _peers[2];
-    sockaddr_storage  _innerEndpoints[2];
-    EmiConnTime       _times[2];
-    bool              _waitingForPrxAck[2];
+    SocketHandle        *_sock;
+    const EmiAddressCmp  _acmp;
+    sockaddr_storage     _peers[2];
+    sockaddr_storage     _innerEndpoints[2];
+    EmiConnTime          _times[2];
+    bool                 _waitingForPrxAck[2];
     
     const size_t     _rateLimit;
     size_t           _bytesSentSinceRateLimitTimeout;
@@ -153,7 +153,7 @@ public:
     cookie(cookie_),
     _delegate(delegate),
     _sock(sock),
-    _acmp(AddressCmp()),
+    _acmp(EmiAddressCmp()),
     _times(),
     _connectionTimeout(connectionTimeout),
     _rateLimit(rateLimit),

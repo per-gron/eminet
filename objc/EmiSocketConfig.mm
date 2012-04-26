@@ -28,11 +28,14 @@ typedef EmiSocketConfigSC SC;
 }
 
 - (NSData *)serverAddress {
-    return ((SC *)_sc)->address;
+    const sockaddr_storage& ss(((SC *)_sc)->address);
+    return [NSData dataWithBytes:&ss length:sizeof(sockaddr_storage)];
 }
 
 - (void)setServerAddress:(NSData *)serverAddress {
-    ((SC *)_sc)->address = serverAddress;
+    sockaddr_storage ss;
+    memcpy(&ss, [serverAddress bytes], MIN([serverAddress length], sizeof(sockaddr_storage)));
+    ((SC *)_sc)->address = ss;
 }
 
 - (EmiTimeInterval)connectionTimeout {
