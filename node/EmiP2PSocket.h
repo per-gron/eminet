@@ -2,7 +2,6 @@
 #ifndef emilir_EmiP2PSocket_h
 #define emilir_EmiP2PSocket_h
 
-#include "EmiAddressCmp.h"
 #include "EmiP2PSockDelegate.h"
 
 #include "../core/EmiP2PSock.h"

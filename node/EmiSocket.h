@@ -5,7 +5,6 @@
 #include "EmiBinding.h"
 #include "EmiSockDelegate.h"
 #include "EmiConnDelegate.h"
-#include "EmiAddressCmp.h"
 
 #include "../core/EmiSock.h"
 #include "../core/EmiConn.h"

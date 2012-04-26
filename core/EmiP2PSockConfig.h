@@ -11,7 +11,8 @@
 
 #include "EmiTypes.h"
 
-template<class Address>
+#include <netinet/in.h>
+
 class EmiP2PSockConfig {
 public:
     EmiP2PSockConfig() :
@@ -28,7 +29,7 @@ public:
     // given second.
     size_t rateLimit;
     uint16_t port;
-    Address address;
+    sockaddr_storage address;
     float fabricatedPacketDropRate;
 };
 

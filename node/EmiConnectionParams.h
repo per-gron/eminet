@@ -4,7 +4,6 @@
 
 #include "EmiBinding.h"
 #include "EmiConnDelegate.h"
-#include "EmiAddressCmp.h"
 
 #include "../core/EmiConn.h"
 #include <node.h>

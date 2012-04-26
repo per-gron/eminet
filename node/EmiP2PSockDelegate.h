@@ -29,10 +29,10 @@ public:
     EmiP2PSockDelegate(EmiP2PSocket& es);
     
     static void closeSocket(EPS& sock, uv_udp_t *socket);
-    uv_udp_t *openSocket(const Address& address, uint16_t port, Error& err);
+    uv_udp_t *openSocket(const sockaddr_storage& address, uint16_t port, Error& err);
     
     static void sendData(uv_udp_t *socket,
-                         const Address& address,
+                         const sockaddr_storage& address,
                          const uint8_t *data,
                          size_t size);
 };
