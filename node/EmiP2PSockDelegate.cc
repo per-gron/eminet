@@ -56,11 +56,11 @@ void EmiP2PSockDelegate::closeSocket(EmiP2PSockDelegate::EPS& sock, uv_udp_t *so
 uv_udp_t *EmiP2PSockDelegate::openSocket(uint16_t port, Error& error) {
     EPS& sock(_es._sock);
     
-    uv_udp_t *ret(EmiNodeUtil::openSocket(sock.config.address, port, recv_cb, error));
+    uv_udp_t *ret(EmiNodeUtil::openSocket(sock.config.address, port,
+                                          recv_cb, &sock.getDelegate()._es,
+                                          error));
     
     if (ret) {
-        ret->data = &sock.getDelegate()._es;
-        
         // This prevents V8's GC to reclaim the EmiSocket while UDP sockets are open
         sock.getDelegate()._es.Ref();
     }

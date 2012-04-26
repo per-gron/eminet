@@ -55,11 +55,11 @@ void EmiSockDelegate::closeSocket(EmiSockDelegate::ES& sock, uv_udp_t *socket) {
 uv_udp_t *EmiSockDelegate::openSocket(uint16_t port, Error& error) {
     ES& sock(_es._sock);
     
-    uv_udp_t *ret(EmiNodeUtil::openSocket(sock.config.address, port, recv_cb, error));
+    uv_udp_t *ret(EmiNodeUtil::openSocket(sock.config.address, port,
+                                          recv_cb, &sock.getDelegate()._es,
+                                          error));
     
     if (ret) {
-        ret->data = &sock.getDelegate()._es;
-        
         // This prevents V8's GC to reclaim the EmiSocket while UDP sockets are open
         sock.getDelegate()._es.Ref();
     }

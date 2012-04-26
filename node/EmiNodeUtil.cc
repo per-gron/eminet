@@ -181,6 +181,7 @@ void EmiNodeUtil::closeSocket(uv_udp_t *socket) {
 uv_udp_t *EmiNodeUtil::openSocket(const sockaddr_storage& address,
                                   uint16_t port,
                                   EmiNodeUtilRecvCb *recvCb,
+                                  void *data,
                                   EmiError& error) {
     int err;
     uv_udp_t *socket = (uv_udp_t *)malloc(sizeof(uv_udp_t)+sizeof(EmiNodeUtilRecvCb));
@@ -221,6 +222,8 @@ uv_udp_t *EmiNodeUtil::openSocket(const sockaddr_storage& address,
     if (0 != err) {
         goto error;
     }
+    
+    socket->data = data;
     
     return socket;
     

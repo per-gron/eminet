@@ -104,6 +104,7 @@ public:
     static uv_udp_t *openSocket(const sockaddr_storage& address,
                                 uint16_t port,
                                 EmiNodeUtilRecvCb *recvCb,
+                                void *data,
                                 EmiError& error);
     static void sendData(uv_udp_t *socket,
                          const sockaddr_storage& address,
