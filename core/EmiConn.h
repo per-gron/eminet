@@ -311,24 +311,18 @@ public:
         }
     }
     
-    // Delegates to EmiLogicalConnection
-    void gotPrx() {
-        if (_conn) {
-            _conn->gotPrx();
-        }
+    // Methods that delegate to EmiLogicalConnetion
+#define X(msg)                  \
+    void got##msg() {           \
+        if (_conn) {            \
+            _conn->got##msg();  \
+        }                       \
     }
-    // Delegates to EmiLogicalConnection
-    void gotRst() {
-        if (_conn) {
-            _conn->gotRst();
-        }
-    }
-    // Delegates to EmiLogicalConnection
-    void gotSynRstAck() {
-        if (_conn) {
-            _conn->gotSynRstAck();
-        }
-    }
+    X(Prx);
+    X(Rst);
+    X(SynRstAck);
+    X(PrxRstAck);
+#undef X
     // Delegates to EmiLogicalConnection
     bool gotSynRst(EmiSequenceNumber otherHostInitialSequenceNumber) {
         return _conn && _conn->gotSynRst(otherHostInitialSequenceNumber);

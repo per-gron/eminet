@@ -171,7 +171,7 @@ public:
     }
     
     void gotPrx() {
-        if (EMI_CONNECTION_TYPE_P2P != _conn.getType()) {
+        if (EMI_CONNECTION_TYPE_P2P != _conn->getType()) {
             // This type of message should only be sent in a P2P connection.
             // This isn't one, so we just ignore it.
             return;
@@ -199,6 +199,9 @@ public:
         _conn->forceClose(isClosing() ?
                           EMI_REASON_THIS_HOST_CLOSED :
                           EMI_REASON_OTHER_HOST_CLOSED);
+    }
+    void gotPrxRstAck() {
+        // TODO
     }
     // Returns false if the connection not in the opening state (that's an error)
     bool gotSynRst(EmiSequenceNumber otherHostInitialSequenceNumber) {

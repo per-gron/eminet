@@ -301,6 +301,24 @@ public:
         else {
             EmiMessageHeader::EmiParseMessageBlock block =
             ^ bool (const EmiMessageHeader& header, size_t dataOffset) {
+                size_t actualDataOffset = dataOffset+EMI_TIMESTAMP_LENGTH+offset;
+                
+#define ENSURE_CONN(msg)                                            \
+                do {                                                \
+                    if (!conn) {                                    \
+                        err = "Got "msg" message but has no "       \
+                              "open connection for that address";   \
+                        return false;                               \
+                    }                                               \
+                } while (0)
+#define ENSURE(check, errStr)                   \
+                do {                            \
+                    if (!(check)) {             \
+                        err = errStr;           \
+                        return false;           \
+                    }                           \
+                } while (0)
+                
                 bool prxFlag  = header.flags & EMI_PRX_FLAG;
                 bool synFlag  = header.flags & EMI_SYN_FLAG;
                 bool rstFlag  = header.flags & EMI_RST_FLAG;
@@ -311,12 +329,29 @@ public:
                     // This is some kind of proxy/P2P connection message
                     
                     if (!synFlag && !rstFlag && !ackFlag) {
-                        if (!conn) {
-                            err = "Got PRX message but has no open connection for that address";
-                            return false;
-                        }
+                        ENSURE_CONN("PRX");
                         
                         conn->gotPrx();
+                    }
+                    if (synFlag && rstFlag && ackFlag) {
+                        ENSURE_CONN("PRX-RST-SYN-ACK");
+                        
+                        // TODO conn->gotPrxRstSynAck();
+                    }
+                    if (!synFlag && rstFlag && ackFlag) {
+                        ENSURE_CONN("PRX-RST-ACK");
+                        
+                        conn->gotPrxRstAck();
+                    }
+                    if (synFlag && !rstFlag && !ackFlag) {
+                        ENSURE_CONN("PRX-SYN");
+                        
+                        // TODO conn->gotPrxSyn();
+                    }
+                    if (synFlag && !rstFlag && ackFlag) {
+                        ENSURE_CONN("PRX-SYN-ACK");
+                        
+                        // TODO conn->gotPrxSynAck();
                     }
                     else {
                         err = "Invalid message flags";
@@ -326,22 +361,13 @@ public:
                 else if (synFlag && !rstFlag) {
                     // This is an initiate connection message
                     
-                    if (!config.acceptConnections) {
-                        err = "Got SYN but this socket doesn't accept incoming connections";
-                        return false;
-                    }
-                    if (0 != header.length) {
-                        err = "Got SYN message with message length != 0";
-                        return false;
-                    }
-                    if (ackFlag) {
-                        err = "Got SYN message with ACK flag";
-                        return false;
-                    }
-                    if (sackFlag) {
-                        err = "Got SYN message with SACK flag";
-                        return false;
-                    }
+                    ENSURE(config.acceptConnections,
+                           "Got SYN but this socket doesn't \
+                           accept incoming connections");
+                    ENSURE(0 == header.length,
+                           "Got SYN message with message length != 0");
+                    ENSURE(!ackFlag, "Got SYN message with ACK flag");
+                    ENSURE(!sackFlag, "Got SYN message with SACK flag");
                     
                     if (conn && conn->isOpen() && conn->getOtherHostInitialSequenceNumber() != header.sequenceNumber) {
                         // The connection is already open, and we get a SYN message with a
@@ -367,18 +393,13 @@ public:
                     if (ackFlag) {
                         // This is a close connection ack message
                         
-                        if (sackFlag) {
-                            err = "Got SYN-RST-ACK message with SACK flag";
-                            return false;
-                        }
-                        if (!conn) {
-                            err = "Got SYN-RST-ACK message but has no open \
-                            connection for that address. Ignoring the \
-                            packet. (This is not really an error \
-                            condition, it is part of normal operation \
-                            of the protocol.)";
-                            return false;
-                        }
+                        ENSURE(!sackFlag, "Got SYN-RST-ACK message with SACK flag");
+                        ENSURE(conn,
+                               "Got SYN-RST-ACK message but has no open \
+                                connection for that address. Ignoring the \
+                                packet. (This is not really an error \
+                                condition, it is part of normal operation \
+                                of the protocol.)");
                         
                         // With this packet type, we do not invoke gotTimestamp:
                         // on the connection object, because the timestamps might be bogus
@@ -390,18 +411,9 @@ public:
                     else {
                         // This is a connection initiated message
                         
-                        if (sackFlag) {
-                            err = "Got SYN-RST message with SACK flag";
-                            return false;
-                        }
-                        if (!conn) {
-                            err = "Got SYN-RST message but has no open connection for that address";
-                            return false;
-                        }
-                        if (!conn->isOpening()) {
-                            err = "Got SYN-RST message for open connection";
-                            return false;
-                        }
+                        ENSURE(!sackFlag, "Got SYN-RST message with SACK flag");
+                        ENSURE_CONN("SYN-RST");
+                        ENSURE(conn->isOpening(), "Got SYN-RST message for open connection");
                         
                         conn->gotTimestamp(now, rawData, len);
                         if (!conn->gotSynRst(header.sequenceNumber)) {
@@ -413,14 +425,8 @@ public:
                 else if (!synFlag && rstFlag) {
                     // This is a close connection message
                     
-                    if (ackFlag) {
-                        err = "Got RST message with ACK flag";
-                        return false;
-                    }
-                    if (sackFlag) {
-                        err = "Got RST message with SACK flag";
-                        return false;
-                    }
+                    ENSURE(!ackFlag, "Got RST message with ACK flag");
+                    ENSURE(!sackFlag, "Got RST message with SACK flag");
                     
                     if (conn) {
                         conn->gotTimestamp(now, rawData, len);
@@ -434,14 +440,10 @@ public:
                 }
                 else if (!synFlag && !rstFlag) {
                     // This is a data message
-                    
-                    if (!conn) {
-                        err = "Got data message but has no open connection for that address";
-                        return false;
-                    }
+                    ENSURE_CONN("data");
                     
                     conn->gotTimestamp(now, rawData, len);
-                    conn->gotMessage(header, data, dataOffset+EMI_TIMESTAMP_LENGTH+offset, /*dontFlush:*/false);
+                    conn->gotMessage(header, data, actualDataOffset, /*dontFlush:*/false);
                 }
                 else {
                     err = "Invalid message flags";
