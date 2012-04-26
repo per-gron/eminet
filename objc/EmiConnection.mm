@@ -50,7 +50,8 @@
 }
 
 - (NSData *)address {
-    return ((EC *)_ec)->getAddress();
+    const sockaddr_storage& ss(((EC *)_ec)->getAddress());
+    return [NSData dataWithBytes:&ss length:sizeof(sockaddr_storage)];
 }
 
 - (uint16_t)inboundPort {

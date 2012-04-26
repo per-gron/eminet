@@ -26,7 +26,6 @@ class EmiConn {
     typedef typename Binding::Error          Error;
     typedef typename Binding::PersistentData PersistentData;
     typedef typename Binding::TemporaryData  TemporaryData;
-    typedef typename Binding::Address        Address;
     typedef typename Binding::Timer          Timer;
     
     typedef typename SockDelegate::ConnectionOpenedCallbackCookie ConnectionOpenedCallbackCookie;
@@ -37,7 +36,7 @@ class EmiConn {
     typedef EmiReceiverBuffer<SockDelegate, EmiConn> ERB;
     
     const uint16_t _inboundPort;
-    const Address _address;
+    const sockaddr_storage _address;
     
     ES &_emisock;
     
@@ -404,7 +403,7 @@ public:
         return _inboundPort;
     }
     
-    const Address& getAddress() const {
+    const sockaddr_storage& getAddress() const {
         return _address;
     }
     

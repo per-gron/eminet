@@ -17,6 +17,7 @@
 #include <map>
 #include <set>
 #include <cstdlib>
+#include <netinet/in.h>
 
 static const uint64_t ARC4RANDOM_MAX = 0x100000000;
 
@@ -25,7 +26,6 @@ class EmiSock {
     typedef typename SockDelegate::Binding     Binding;
     typedef typename Binding::Error            Error;
     typedef typename Binding::TemporaryData    TemporaryData;
-    typedef typename Binding::Address          Address;
     typedef typename Binding::AddressCmp       AddressCmp;
     typedef typename Binding::SocketHandle     SocketHandle;
     typedef typename SockDelegate::ConnectionOpenedCallbackCookie  ConnectionOpenedCallbackCookie;
@@ -33,12 +33,12 @@ class EmiSock {
     class EmiConnectionKey {
         const AddressCmp _cmp;
     public:
-        EmiConnectionKey(const Address& address_, uint16_t inboundPort_) :
+        EmiConnectionKey(const sockaddr_storage& address_, uint16_t inboundPort_) :
         address(address_), inboundPort(inboundPort_), _cmp() {}
-        EmiConnectionKey(const Address& address_, uint16_t inboundPort_, const AddressCmp& cmp) :
+        EmiConnectionKey(const sockaddr_storage& address_, uint16_t inboundPort_, const AddressCmp& cmp) :
         address(address_), inboundPort(inboundPort_), _cmp(cmp) {}
         
-        Address address;
+        sockaddr_storage address;
         uint16_t inboundPort;
         
         inline bool operator<(const EmiConnectionKey& rhs) const {
@@ -53,12 +53,12 @@ class EmiSock {
     struct EmiClientSocketKey {
         const AddressCmp _cmp;
     public:
-        EmiClientSocketKey(const Address& address_) :
+        EmiClientSocketKey(const sockaddr_storage& address_) :
         address(address_), _cmp() {}
-        EmiClientSocketKey(const Address& address_, const AddressCmp& cmp) :
+        EmiClientSocketKey(const sockaddr_storage& address_, const AddressCmp& cmp) :
         address(address_), _cmp(cmp) {}
         
-        Address address;
+        sockaddr_storage address;
         
         inline bool operator<(const EmiClientSocketKey& rhs) const {
             return 0 > _cmp(address, rhs.address);
@@ -110,7 +110,7 @@ private:
     EmiClientSocketMap    _clientSockets;
     SockDelegate          _delegate;
     
-    int32_t findFreeClientPort(const Address& address) {
+    int32_t findFreeClientPort(const sockaddr_storage& address) {
         EmiClientSocketKey key(address);
         
         EmiClientSocketMapIter iter = _clientSockets.begin();
@@ -126,7 +126,7 @@ private:
         return -1;
     }
     
-    uint16_t openClientSocket(const Address& address, Error& err) {
+    uint16_t openClientSocket(const sockaddr_storage& address, Error& err) {
         // Ensure that the datagram sockets are open
         if (!desuspend(err)) {
             return 0;
@@ -163,7 +163,7 @@ private:
     }
     
     // SockDelegate::connectionOpened will be called on the cookie iff this function returns true.
-    bool connectHelper(EmiTimeInterval now, const Address& address,
+    bool connectHelper(EmiTimeInterval now, const sockaddr_storage& address,
                        const uint8_t *p2pCookie, size_t p2pCookieLength,
                        const uint8_t *sharedSecret, size_t sharedSecretLength,
                        const ConnectionOpenedCallbackCookie& callbackCookie, Error& err) {
@@ -188,9 +188,9 @@ private:
 
     
 public:
-    const EmiSockConfig<Address>  config;
+    const EmiSockConfig<sockaddr_storage>  config;
     
-    EmiSock(const EmiSockConfig<Address>& config_, const SockDelegate& delegate) :
+    EmiSock(const EmiSockConfig<sockaddr_storage>& config_, const SockDelegate& delegate) :
     config(config_), _delegate(delegate), _serverSocket(NULL) {}
     
     virtual ~EmiSock() {
@@ -271,7 +271,7 @@ public:
     
     void onMessage(EmiTimeInterval now,
                    SocketHandle *sock,
-                   const Address& address,
+                   const sockaddr_storage& address,
                    const TemporaryData& data,
                    size_t offset,
                    size_t len) {
@@ -472,7 +472,7 @@ public:
     }
     
     // SockDelegate::connectionOpened will be called on the cookie iff this function returns true.
-    bool connect(EmiTimeInterval now, const Address& address, const ConnectionOpenedCallbackCookie& callbackCookie, Error& err) {
+    bool connect(EmiTimeInterval now, const sockaddr_storage& address, const ConnectionOpenedCallbackCookie& callbackCookie, Error& err) {
         return connectHelper(now, address,
                              /*p2pCookie:*/NULL, /*p2pCookieLength:*/0,
                              /*sharedSecret:*/NULL, /*sharedSecretLength:*/0,
@@ -480,7 +480,7 @@ public:
     }
     
     // SockDelegate::connectionOpened will be called on the cookie iff this function returns true.
-    bool connectP2P(EmiTimeInterval now, const Address& address,
+    bool connectP2P(EmiTimeInterval now, const sockaddr_storage& address,
                     const uint8_t *p2pCookie, size_t p2pCookieLength,
                     const uint8_t *sharedSecret, size_t sharedSecretLength,
                     const ConnectionOpenedCallbackCookie& callbackCookie, Error& err) {
@@ -514,7 +514,7 @@ public:
     }
     
     void deregisterConnection(EC *conn) {
-        const Address& address = conn->getAddress();
+        const sockaddr_storage& address = conn->getAddress();
         uint16_t inboundPort = conn->getInboundPort();
         
         EmiClientSocketMapIter cur = _clientSockets.find(inboundPort);
