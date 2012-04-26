@@ -66,8 +66,8 @@ class EmiSock {
     };
     
     struct EmiClientSocket {
-        EmiClientSocket(EmiSock& emiSock_, uint16_t port_, SocketHandle *socket_) :
-        emiSock(emiSock_), port(port_), socket(socket_) {}
+        EmiClientSocket(EmiSock& emiSock_, uint16_t port_) :
+        emiSock(emiSock_), port(port_), socket(NULL) {}
         
         EmiSock& emiSock;
         uint16_t port;
@@ -77,6 +77,9 @@ class EmiSock {
         bool open(Error& err) {
             if (!socket) {
                 socket = emiSock._delegate.openSocket(port, err);
+                if (0 == port) {
+                    port = SockDelegate::extractLocalPort(socket);
+                }
             }
             
             return !!socket;
@@ -131,13 +134,15 @@ private:
         
         int32_t inboundPort = findFreeClientPort(address);
         if (-1 == inboundPort) {
-            SocketHandle *socket = _delegate.openSocket(0, err);
-            if (!socket) {
+            EmiClientSocket ecs(*this, 0);
+            
+            Error err;
+            if (!ecs.open(err)) {
                 return 0;
             }
-            inboundPort = SockDelegate::extractLocalPort(socket);
+            inboundPort = ecs.port;
             
-            _clientSockets.insert(typename EmiClientSocketMap::value_type(inboundPort, EmiClientSocket(*this, inboundPort, socket)));
+            _clientSockets.insert(typename EmiClientSocketMap::value_type(inboundPort, ecs));
         }
         
         (*(_clientSockets.find(inboundPort))).second.addresses.insert(EmiClientSocketKey(address));

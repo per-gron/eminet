@@ -74,6 +74,10 @@ class EmiError;
     } while (0)
 
 class EmiNodeUtil {
+private:
+    // Private default constructor; this class only has static
+    // methods and is not intended to have any instances.
+    inline EmiNodeUtil();
 public:
     typedef void (EmiNodeUtilRecvCb)(uv_udp_t *socket,
                                      const struct sockaddr_storage& addr,
