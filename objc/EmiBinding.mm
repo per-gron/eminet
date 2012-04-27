@@ -12,6 +12,7 @@
 
 #include <Security/Security.h>
 #include <CommonCrypto/CommonHMAC.h>
+#include <arpa/inet.h>
 
 void EmiBinding::hmacHash(const uint8_t *key, size_t keyLength,
                           const uint8_t *data, size_t dataLength,
@@ -80,4 +81,44 @@ void EmiBinding::descheduleTimer(Timer *timer) {
 
 bool EmiBinding::timerIsActive(Timer *timer) {
     return timer->timer && [timer->timer isValid];
+}
+
+bool EmiBinding::getNetworkInterfaces(NetworkInterfaces& ni, Error& err) {
+    int ret = getifaddrs(&ni.first);
+    if (-1 == ret) {
+        err = makeError("com.emilir.eminet.networkifaces", 0);
+        return false;
+    }
+    
+    ni.second = ni.first;
+    return true;
+}
+
+bool EmiBinding::nextNetworkInterface(NetworkInterfaces& ni, const char*& name, struct sockaddr_storage& addr) {
+    ifaddrs *ifa = ni.second;
+    if (!ifa) {
+        return false;
+    }
+    
+    ni.second = ifa->ifa_next;
+    
+    int family = ifa->ifa_addr->sa_family;
+    if (AF_INET == family) {
+        memcpy(&addr, ifa->ifa_addr, sizeof(sockaddr));
+    }
+    else if (AF_INET6 == family) {
+        memcpy(&addr, ifa->ifa_addr, sizeof(sockaddr_storage));
+    }
+    else {
+        // Some other address family that we don't support or care about. Continue the search.
+        return nextNetworkInterface(ni, name, addr);
+    }
+    
+    name = ifa->ifa_name;
+    
+    return true;
+}
+
+void EmiBinding::freeNetworkInterfaces(const NetworkInterfaces& ni) {
+    freeifaddrs(ni.first);
 }

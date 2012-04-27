@@ -35,7 +35,7 @@ class EmiSenderBuffer {
                 if (acq < bcq) return true;
                 else if (acq > bcq) return false;
                 else {
-                    return emiCyclicDifference16Signed(a->sequenceNumber, b->sequenceNumber) < 0;
+                    return EmiNetUtil::cyclicDifference16Signed(a->sequenceNumber, b->sequenceNumber) < 0;
                 }
             }
         }
@@ -49,7 +49,7 @@ class EmiSenderBuffer {
             if (acq < bcq) return true;
             else if (acq > bcq) return false;
             else {
-                return emiCyclicDifference16Signed(a->sequenceNumber, b->sequenceNumber) < 0;
+                return EmiNetUtil::cyclicDifference16Signed(a->sequenceNumber, b->sequenceNumber) < 0;
             }
         }
     };

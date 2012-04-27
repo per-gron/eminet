@@ -179,7 +179,6 @@ void EmiNodeUtil::closeSocket(uv_udp_t *socket) {
 }
 
 uv_udp_t *EmiNodeUtil::openSocket(const sockaddr_storage& address,
-                                  uint16_t port,
                                   EmiNodeUtilRecvCb *recvCb,
                                   void *data,
                                   EmiError& error) {
@@ -193,8 +192,7 @@ uv_udp_t *EmiNodeUtil::openSocket(const sockaddr_storage& address,
     }
     
     if (AF_INET == address.ss_family) {
-        struct sockaddr_in addr(*((struct sockaddr_in *)&address));
-        addr.sin_port = htons(port);
+        struct sockaddr_in& addr(*((struct sockaddr_in *)&address));
         
         char buf[100];
         uv_ip4_name(&addr, buf, sizeof(buf));
@@ -205,8 +203,7 @@ uv_udp_t *EmiNodeUtil::openSocket(const sockaddr_storage& address,
         }
     }
     else if (AF_INET6 == address.ss_family) {
-        struct sockaddr_in6 addr6(*((struct sockaddr_in6 *)&address));
-        addr6.sin6_port = htons(port);
+        struct sockaddr_in6& addr6(*((struct sockaddr_in6 *)&address));
         
         err = uv_udp_bind6(socket, addr6, /*flags:*/0);
         if (0 != err) {

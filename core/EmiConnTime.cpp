@@ -38,7 +38,7 @@ void EmiConnTime::gotTimestamp(float heartbeatFrequency, EmiTimeInterval now, co
     // Update the largest received time if it was updated more than a heartbeat interval ago or
     // if timestamp is bigger than this._largestReceivedTime.
     if (now - _gotLargestReceivedTimeAt > 1/heartbeatFrequency ||
-        emiCyclicDifference16Signed(timestamp, _largestReceivedTime) >= 0) {
+        EmiNetUtil::cyclicDifference16Signed(timestamp, _largestReceivedTime) >= 0) {
         _largestReceivedTime = timestamp;
         _gotLargestReceivedTimeAt = now;
     }
@@ -51,7 +51,7 @@ void EmiConnTime::gotTimestamp(float heartbeatFrequency, EmiTimeInterval now, co
     
     // See http://www.ietf.org/rfc/rfc2988.txt section 2
     EmiTimestamp currentTimestamp = floor(getCurrentTime(now)*1000);
-    EmiTimeInterval rtt = ((EmiTimeInterval) (emiCyclicDifference16(currentTimestamp, myTimestamp) - responseDelay))/1000.0;
+    EmiTimeInterval rtt = ((EmiTimeInterval) (EmiNetUtil::cyclicDifference16(currentTimestamp, myTimestamp) - responseDelay))/1000.0;
     if (-1 == _srtt || -1 == _rttvar) {
         _srtt = rtt;
         _rttvar = rtt/2;

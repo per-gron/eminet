@@ -241,7 +241,9 @@ public:
     
     bool desuspend(Error& err) {
         if (!_socket) {
-            _socket = _delegate.openSocket(config.address, config.port, err);
+            sockaddr_storage ss(config.address);
+            EmiNetUtil::addrSetPort(ss, config.port);
+            _socket = _delegate.openSocket(ss, err);
             if (!_socket) return false;
         }
         

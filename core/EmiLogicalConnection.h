@@ -84,10 +84,10 @@ private:
         EmiSequenceNumber expectedSequenceNumber = (end == cur ? _otherHostInitialSequenceNumber : (*cur).second);
         
         if (updateExpectedSequenceNumber) {
-            _otherHostSequenceMemo[header.channelQualifier] = emiCyclicMax16(expectedSequenceNumber, header.sequenceNumber+1);
+            _otherHostSequenceMemo[header.channelQualifier] = EmiNetUtil::cyclicMax16(expectedSequenceNumber, header.sequenceNumber+1);
         }
         
-        return emiCyclicDifference16Signed(expectedSequenceNumber, header.sequenceNumber);
+        return EmiNetUtil::cyclicDifference16Signed(expectedSequenceNumber, header.sequenceNumber);
     }
     
     EmiSequenceNumber sequenceMemoForChannelQualifier(EmiChannelQualifier cq) {

@@ -14,6 +14,8 @@
 #include "EmiSockConfig.h"
 #include "EmiConnParams.h"
 #include "EmiAddressCmp.h"
+#include "EmiUdpSocket.h"
+#include "EmiNetUtil.h"
 
 #include <map>
 #include <set>
@@ -76,7 +78,10 @@ class EmiSock {
         
         bool open(Error& err) {
             if (!socket) {
-                socket = emiSock._delegate.openSocket(emiSock.config.address, port, err);
+                sockaddr_storage ss(emiSock.config.address);
+                EmiNetUtil::addrSetPort(ss, port);
+                socket = emiSock._delegate.openSocket(ss, err);
+                
                 if (0 == port) {
                     port = SockDelegate::extractLocalPort(socket);
                 }
@@ -252,7 +257,9 @@ public:
     bool desuspend(Error& err) {
         if (!isOpen()) {
             if (config.acceptConnections || !_conns.empty()) {
-                _serverSocket = _delegate.openSocket(config.address, config.port, err);
+                sockaddr_storage ss(config.address);
+                EmiNetUtil::addrSetPort(ss, config.port);
+                _serverSocket = _delegate.openSocket(ss, err);
                 if (!_serverSocket) return false;
             }
             

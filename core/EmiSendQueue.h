@@ -210,7 +210,7 @@ public:
             _acks[channelQualifier] = sequenceNumber;
         }
         else {
-            _acks[channelQualifier] = emiCyclicMax16((*ackCur).second, sequenceNumber);
+            _acks[channelQualifier] = EmiNetUtil::cyclicMax16((*ackCur).second, sequenceNumber);
         }
         
         return !_acks.empty();

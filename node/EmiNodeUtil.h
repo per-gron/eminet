@@ -106,7 +106,6 @@ public:
     
     static void closeSocket(uv_udp_t *socket);
     static uv_udp_t *openSocket(const sockaddr_storage& address,
-                                uint16_t port,
                                 EmiNodeUtilRecvCb *recvCb,
                                 void *data,
                                 EmiError& error);

@@ -11,6 +11,8 @@
 
 #include "EmiTypes.h"
 #import <Foundation/Foundation.h>
+#include <utility>
+#include <ifaddrs.h>
 
 class EmiAddressCmp;
 @class GCDAsyncUdpSocket;
@@ -100,6 +102,11 @@ public:
     static void scheduleTimer(Timer *timer, TimerCb *timerCb, void *data, EmiTimeInterval interval, bool repeating);
     static void descheduleTimer(Timer *timer);
     static bool timerIsActive(Timer *timer);
+    
+    typedef std::pair<ifaddrs*, ifaddrs*> NetworkInterfaces;
+    static bool getNetworkInterfaces(NetworkInterfaces& ni, Error& err);
+    static bool nextNetworkInterface(NetworkInterfaces& ni, const char*& name, struct sockaddr_storage& addr);
+    static void freeNetworkInterfaces(const NetworkInterfaces& ni);
 };
 
 #endif

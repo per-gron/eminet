@@ -41,7 +41,7 @@ public:
     EmiSockDelegate(EmiSocket *socket);
     
     static void closeSocket(ES& sock, GCDAsyncUdpSocket *socket);
-    GCDAsyncUdpSocket *openSocket(const sockaddr_storage& address, uint16_t port, __strong NSError*& err);
+    GCDAsyncUdpSocket *openSocket(const sockaddr_storage& address, __strong NSError*& err);
     static uint16_t extractLocalPort(GCDAsyncUdpSocket *socket);
     
     EC *makeConnection(const EmiConnParams& params);

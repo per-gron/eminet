@@ -50,7 +50,7 @@ protected:
             if (acq < bcq) return true;
             else if (acq > bcq) return false;
             else {
-                return emiCyclicDifference16Signed(a->header.sequenceNumber, b->header.sequenceNumber) < 0;
+                return EmiNetUtil::cyclicDifference16Signed(a->header.sequenceNumber, b->header.sequenceNumber) < 0;
             }
         }
     };
