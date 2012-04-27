@@ -45,7 +45,15 @@ private:
         const char *ifName;
         sockaddr_storage ifAddr;
         while (Binding::nextNetworkInterface(ni, ifName, ifAddr)) {
+            SocketHandle *handle = SockDelegate::openSocket(address, err);
+            if (!handle) {
+                return false;
+            }
             
+            _sockets.push_back(std::make_pair(address, handle));
+            
+            // TODO
+            printf("?! %s\n", ifName);
         }
         Binding::freeNetworkInterfaces(ni);
     }
@@ -83,7 +91,17 @@ public:
     void sendData(const sockaddr_storage& address,
                   const uint8_t *data,
                   size_t size) {
-        // TODO
+        SocketVectorIter iter(_sockets.begin());
+        SocketVectorIter  end(_sockets.end());
+        
+        while (iter != end) {
+            AddrAndSocket& as(*iter);
+            if (as.second) {
+                SockDelegate::sendData(as.second, address, data, size);
+            }
+            
+            ++iter;
+        }
     }
     
 };
