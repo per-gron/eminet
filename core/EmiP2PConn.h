@@ -288,10 +288,10 @@ public:
         // All IP addresses we deal with here are in network byte order
         
         // These port numbers are in network byte order
-        uint16_t myOuterPort    = Binding::extractPort(_peers[idx]);
-        uint16_t otherOuterPort = Binding::extractPort(_peers[otherIdx]);
-        uint16_t myInnerPort    = Binding::extractPort(_innerEndpoints[idx]);
-        uint16_t otherInnerPort = Binding::extractPort(_innerEndpoints[otherIdx]);
+        uint16_t myOuterPort    = EmiNetUtil::addrPortN(_peers[idx]);
+        uint16_t otherOuterPort = EmiNetUtil::addrPortN(_peers[otherIdx]);
+        uint16_t myInnerPort    = EmiNetUtil::addrPortN(_innerEndpoints[idx]);
+        uint16_t otherInnerPort = EmiNetUtil::addrPortN(_innerEndpoints[otherIdx]);
         
         /// Save the endpoint pairs in buf
         {

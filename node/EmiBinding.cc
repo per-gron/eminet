@@ -2,6 +2,7 @@
 
 #include "EmiBinding.h"
 
+#include "../core/EmiNetUtil.h"
 #include "EmiNodeUtil.h"
 #include "EmiConnection.h"
 
@@ -12,11 +13,11 @@
 using namespace v8;
 
 void EmiBinding::fillNilAddress(int family, Address& address) {
-    EmiNodeUtil::anyIp(/*port:*/0, family, &address);
+    EmiNetUtil::anyAddr(/*port:*/0, family, &address);
 }
 
 bool EmiBinding::isNilAddress(const Address& address) {
-    return 0 != ntohs(EmiNodeUtil::extractPort(address));
+    return 0 != ntohs(EmiNetUtil::addrPortN(address));
 }
 
 EmiBinding::Address EmiBinding::makeAddress(int family, const uint8_t *ip, size_t ipLen, uint16_t port) {
@@ -63,10 +64,6 @@ size_t EmiBinding::extractIp(const Address& address, uint8_t *buf, size_t bufSiz
         ASSERT(0 && "unexpected address family");
         abort();
     }
-}
-
-uint16_t EmiBinding::extractPort(const Address& address) {
-    return EmiNodeUtil::extractPort(address);
 }
 
 Persistent<Object> EmiBinding::makePersistentData(const uint8_t *data, size_t length) {

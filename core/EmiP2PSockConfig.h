@@ -10,6 +10,7 @@
 #define roshambo_EmiP2PSockConfig_h
 
 #include "EmiTypes.h"
+#include "EmiNetUtil.h"
 
 #include <netinet/in.h>
 
@@ -19,8 +20,9 @@ public:
     connectionTimeout(EMI_DEFAULT_CONNECTION_TIMEOUT),
     rateLimit(0),
     port(0),
-    address(),
-    fabricatedPacketDropRate(0) {}
+    fabricatedPacketDropRate(0) {
+        EmiNetUtil::anyAddr(0, AF_INET, &address);
+    }
     
     EmiTimeInterval connectionTimeout;
     // The approximate maximum number of bytes that will be allowed

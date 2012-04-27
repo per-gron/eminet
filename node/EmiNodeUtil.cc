@@ -75,32 +75,6 @@ void EmiNodeUtil::parseIp(const char* host,
     }
 }
 
-void EmiNodeUtil::anyIp(uint16_t port,
-                        int family,
-                        sockaddr_storage *out) {
-    if (AF_INET6 == family) {
-        struct sockaddr_in6& addr6(*((struct sockaddr_in6 *)out));
-        addr6.sin6_len       = sizeof(struct sockaddr_in6);
-        addr6.sin6_family    = AF_INET6;
-        addr6.sin6_port      = htons(port);
-        addr6.sin6_flowinfo  = 0;
-        addr6.sin6_addr      = in6addr_any;
-        addr6.sin6_scope_id  = 0;
-    }
-    else if (AF_INET == family) {
-		struct sockaddr_in& addr(*((struct sockaddr_in *)out));
-		addr.sin_len         = sizeof(struct sockaddr_in);
-		addr.sin_family      = AF_INET;
-		addr.sin_port        = htons(port);
-		addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-		memset(&(addr.sin_zero), 0, sizeof(addr.sin_zero));
-    }
-    else {
-        ASSERT(0 && "unexpected address family");
-        abort();
-    }
-}
-
 void EmiNodeUtil::makeAddress(int family, const uint8_t *ip, size_t ipLen, uint16_t port, sockaddr_storage *out) {
     if (AF_INET6 == family) {
         ASSERT(16 == ipLen);
@@ -122,21 +96,6 @@ void EmiNodeUtil::makeAddress(int family, const uint8_t *ip, size_t ipLen, uint1
 		addr.sin_port        = port;
 		addr.sin_addr.s_addr = *((uint32_t *)ip);
 		memset(&(addr.sin_zero), 0, sizeof(addr.sin_zero));
-    }
-    else {
-        ASSERT(0 && "unexpected address family");
-        abort();
-    }
-}
-
-uint16_t EmiNodeUtil::extractPort(const sockaddr_storage& address) {
-    if (AF_INET6 == address.ss_family) {
-        const struct sockaddr_in6& addr6(*((const struct sockaddr_in6 *)&address));
-        return addr6.sin6_port;
-    }
-    else if (AF_INET == address.ss_family) {
-		const struct sockaddr_in& addr(*((const struct sockaddr_in *)&address));
-        return addr.sin_port;
     }
     else {
         ASSERT(0 && "unexpected address family");

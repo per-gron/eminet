@@ -82,7 +82,7 @@ class EmiSock {
                 EmiNetUtil::addrSetPort(ss, port);
                 socket = emiSock._delegate.openSocket(ss, err);
                 
-                if (0 == port) {
+                if (socket && 0 == port) {
                     port = SockDelegate::extractLocalPort(socket);
                 }
             }
@@ -141,7 +141,6 @@ private:
         if (-1 == inboundPort) {
             EmiClientSocket ecs(*this, 0);
             
-            Error err;
             if (!ecs.open(err)) {
                 return 0;
             }

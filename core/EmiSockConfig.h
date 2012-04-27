@@ -10,6 +10,7 @@
 #define roshambo_EmiSockConfig_h
 
 #include "EmiTypes.h"
+#include "EmiNetUtil.h"
 
 #include <netinet/in.h>
 
@@ -25,8 +26,9 @@ public:
     senderBufferSize(EMI_DEFAULT_SENDER_BUFFER_SIZE),
     acceptConnections(false),
     port(0),
-    address(),
-    fabricatedPacketDropRate(0) {}
+    fabricatedPacketDropRate(0) {
+        EmiNetUtil::anyAddr(0, AF_INET, &address);
+    }
     
     size_t mtu;
     float heartbeatFrequency;

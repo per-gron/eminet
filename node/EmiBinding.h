@@ -34,8 +34,6 @@ public:
     static size_t ipLength(const Address& address);
     // Saves the IP address in buf, in network byte order. Returns the length of the IP address.
     static size_t extractIp(const Address& address, uint8_t *buf, size_t bufSize);
-    // Returns the port number in network byte order
-    static uint16_t extractPort(const Address& address);
     
     inline static EmiError makeError(const char *domain, int32_t code) {
         return EmiError(domain, code);

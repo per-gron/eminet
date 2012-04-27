@@ -24,7 +24,7 @@ GCDAsyncUdpSocket *EmiSockDelegate::openSocket(const sockaddr_storage& address, 
     GCDAsyncUdpSocket *socket = [[GCDAsyncUdpSocket alloc] initWithDelegate:_socket delegateQueue:dispatch_get_current_queue()];
     
     if (![socket bindToAddress:[NSData dataWithBytes:&address
-                                              length:sizeof(sockaddr_storage)]
+                                              length:EmiNetUtil::addrSize(address)]
                          error:&err]) {
         return nil;
     }

@@ -51,7 +51,7 @@
 
 - (NSData *)address {
     const sockaddr_storage& ss(((EC *)_ec)->getAddress());
-    return [NSData dataWithBytes:&ss length:sizeof(sockaddr_storage)];
+    return [NSData dataWithBytes:&ss length:EmiNetUtil::addrSize(ss)];
 }
 
 - (uint16_t)inboundPort {

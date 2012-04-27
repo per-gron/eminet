@@ -182,7 +182,7 @@ withFilterContext:(id)filterContext {
 
 - (NSData *)serverAddress {
     const sockaddr_storage& ss(((S *)_sock)->config.address);
-    return [NSData dataWithBytes:&ss length:sizeof(sockaddr_storage)];
+    return [NSData dataWithBytes:&ss length:EmiNetUtil::addrSize(ss)];
 }
 
 - (EmiTimeInterval)connectionTimeout {
