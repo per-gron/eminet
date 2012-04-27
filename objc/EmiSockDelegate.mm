@@ -16,7 +16,7 @@
 
 EmiSockDelegate::EmiSockDelegate(EmiSocket *socket) : _socket(socket) {}
 
-void EmiSockDelegate::closeSocket(EmiSockDelegate::ES& sock, GCDAsyncUdpSocket *socket) {
+void EmiSockDelegate::closeSocket(EmiSockDelegate& sock, GCDAsyncUdpSocket *socket) {
     [socket close];
 }
 

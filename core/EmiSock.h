@@ -68,22 +68,24 @@ class EmiSock {
     };
     
     struct EmiClientSocket {
+        typedef EmiUdpSocket<SockDelegate> EUS;
+        
         EmiClientSocket(EmiSock& emiSock_, uint16_t port_) :
         emiSock(emiSock_), port(port_), socket(NULL) {}
         
         EmiSock& emiSock;
         uint16_t port;
-        SocketHandle *socket;
+        EUS *socket;
         std::set<EmiClientSocketKey> addresses;
         
         bool open(Error& err) {
             if (!socket) {
                 sockaddr_storage ss(emiSock.config.address);
                 EmiNetUtil::addrSetPort(ss, port);
-                socket = emiSock._delegate.openSocket(ss, err);
+                socket = EUS::open(emiSock._delegate, ss, err);
                 
                 if (socket && 0 == port) {
-                    port = SockDelegate::extractLocalPort(socket);
+                    port = socket->getLocalPort();
                 }
             }
             
@@ -91,7 +93,7 @@ class EmiSock {
         }
         
         void close() {
-            SockDelegate::closeSocket(emiSock, socket);
+            delete socket;
             socket = NULL;
         }
     };
@@ -240,7 +242,7 @@ public:
     void suspend() {
         if (isOpen()) {
             if (_serverSocket) {
-                SockDelegate::closeSocket(*this, _serverSocket);
+                SockDelegate::closeSocket(_delegate, _serverSocket);
                 _serverSocket = NULL;
             }
             
@@ -503,19 +505,20 @@ public:
             return;
         }
         
-        SocketHandle *socket = NULL;
-        
         if (EMI_CONNECTION_TYPE_SERVER != conn->getType()) {
             EmiClientSocketMapIter cur = _clientSockets.find(conn->getInboundPort());
-            socket = _clientSockets.end() == cur ? NULL : (*cur).second.socket;
+            EmiUdpSocket<SockDelegate> *socket = _clientSockets.end() == cur ? NULL : (*cur).second.socket;
+            
+            // I'm not 100% sure that socket will never be NULL
+            if (socket) {
+                socket->sendData(conn->getAddress(), data, size);
+            }
         }
         else {
-            socket = _serverSocket;
-        }
-        
-        // I'm not 100% sure that socket will never be null
-        if (socket) {
-            _delegate.sendData(socket, conn->getAddress(), data, size);
+            // I'm not 100% sure that socket will never be NULL
+            if (_serverSocket) {
+                _delegate.sendData(_serverSocket, conn->getAddress(), data, size);
+            }
         }
     }
     

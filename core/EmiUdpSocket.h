@@ -31,9 +31,12 @@ private:
     typedef std::vector<AddrAndSocket>                 SocketVector;
     typedef typename SocketVector::iterator            SocketVectorIter;
     
-    SocketVector _sockets;
+    SockDelegate& _delegate;
+    SocketVector  _sockets;
+    uint16_t      _localPort;
     
-    EmiUdpSocket() : _sockets() {}
+    EmiUdpSocket(SockDelegate& delegate) :
+    _delegate(delegate), _sockets(), _localPort(0) {}
     
     bool init(const sockaddr_storage& address, Error& err) {
         NetworkInterfaces ni;
@@ -45,17 +48,27 @@ private:
         const char *ifName;
         sockaddr_storage ifAddr;
         while (Binding::nextNetworkInterface(ni, ifName, ifAddr)) {
-            SocketHandle *handle = SockDelegate::openSocket(address, err);
+            if (ifAddr.ss_family != address.ss_family) {
+                continue;
+            }
+            
+            EmiNetUtil::addrSetPort(ifAddr, _localPort);
+            
+            SocketHandle *handle = _delegate.openSocket(address, err);
             if (!handle) {
                 return false;
             }
             
             _sockets.push_back(std::make_pair(address, handle));
             
-            // TODO
-            printf("?! %s\n", ifName);
+            if (0 == _localPort) {
+                _localPort = SockDelegate::extractLocalPort(handle);
+                ASSERT(0 != _localPort);
+            }
         }
         Binding::freeNetworkInterfaces(ni);
+        
+        return true;
     }
     
 public:
@@ -67,15 +80,15 @@ public:
         while (iter != end) {
             AddrAndSocket& as(*iter);
             if (as.second) {
-                Binding::closeSocket(as.second);
+                SockDelegate::closeSocket(_delegate, as.second);
             }
             
             ++iter;
         }
     }
     
-    static EmiUdpSocket *open(const sockaddr_storage& address, Error& err) {
-        EmiUdpSocket *sock = new EmiUdpSocket();
+    static EmiUdpSocket *open(SockDelegate& delegate, const sockaddr_storage& address, Error& err) {
+        EmiUdpSocket *sock = new EmiUdpSocket(delegate);
         
         if (!sock->init(address, err)) {
             goto error;
@@ -97,11 +110,15 @@ public:
         while (iter != end) {
             AddrAndSocket& as(*iter);
             if (as.second) {
-                SockDelegate::sendData(as.second, address, data, size);
+                _delegate.sendData(as.second, address, data, size);
             }
             
             ++iter;
         }
+    }
+    
+    inline uint16_t getLocalPort() const {
+        return _localPort;
     }
     
 };

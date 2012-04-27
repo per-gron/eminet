@@ -132,3 +132,99 @@ void EmiBinding::descheduleTimer(Timer *timer) {
 bool EmiBinding::timerIsActive(Timer *timer) {
     return uv_is_active((uv_handle_t *)timer);
 }
+
+// TODO Begin to use this code once stable node has libuv with uv_interface_address_t
+#if NODES_LIBV_HAS_UV_INTERFACE_ADDRESS_T
+
+bool EmiBinding::getNetworkInterfaces(NetworkInterfaces& ni, Error& err) {
+    uv_err_t ret = uv_interface_addresses(&ni.first, &ni.second.first);
+    if (0 != ret.code) {
+        err = makeError("com.emilir.eminet.networkifaces", 0);
+        return false;
+    }
+    
+    ni.second.second = 0;
+    
+    return true;
+}
+
+bool EmiBinding::nextNetworkInterface(NetworkInterfaces& ni, const char*& name, struct sockaddr_storage& addr) {
+    if (/*interface iterator index*/ni.second.second >= /*interface count*/ni.second.first) {
+        return false;
+    }
+    
+    uv_interface_addresses& addr(ni.first[ni.second.second]);
+    
+    ni.second.second += 1;
+    
+    if (addr.is_internal) {
+        // This is a loopback interface. Continue the search.
+        return nextNetworkInterface(ni, name, addr);
+    }
+    
+    int family = ((sockaddr *)&addr.address)->sa_family;
+    if (AF_INET == family) {
+        memcpy(&addr, addr.address.address4, sizeof(sockaddr_in));
+    }
+    else if (AF_INET6 == family) {
+        memcpy(&addr, addr.address.address6, sizeof(sockaddr_in6));
+    }
+    else {
+        ASSERT(0 && "unexpected address family");
+        abort();
+    }
+    
+    name = ifa->ifa_name;
+    
+    return true;
+}
+
+void EmiBinding::freeNetworkInterfaces(const NetworkInterfaces& ni) {
+    freeifaddrs(ni.first);
+}
+
+#else // ... until then, use less platform independent code
+
+bool EmiBinding::getNetworkInterfaces(NetworkInterfaces& ni, Error& err) {
+    int ret = getifaddrs(&ni.first);
+    if (-1 == ret) {
+        err = makeError("com.emilir.eminet.networkifaces", 0);
+        return false;
+    }
+    
+    ni.second = ni.first;
+    return true;
+}
+
+bool EmiBinding::nextNetworkInterface(NetworkInterfaces& ni, const char*& name, struct sockaddr_storage& addr) {
+    ifaddrs *ifa = ni.second;
+    if (!ifa) {
+        return false;
+    }
+    
+    ni.second = ifa->ifa_next;
+    
+    bool loopback = !!(ifa->ifa_flags & IFF_LOOPBACK);
+    
+    int family = ifa->ifa_addr->sa_family;
+    if (!loopback && AF_INET == family) {
+        memcpy(&addr, ifa->ifa_addr, sizeof(sockaddr));
+    }
+    else if (!loopback && AF_INET6 == family) {
+        memcpy(&addr, ifa->ifa_addr, sizeof(sockaddr_storage));
+    }
+    else {
+        // Some other address family that we don't support or care about. Continue the search.
+        return nextNetworkInterface(ni, name, addr);
+    }
+    
+    name = ifa->ifa_name;
+    
+    return true;
+}
+
+void EmiBinding::freeNetworkInterfaces(const NetworkInterfaces& ni) {
+    freeifaddrs(ni.first);
+}
+
+#endif

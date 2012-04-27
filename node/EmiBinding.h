@@ -9,6 +9,13 @@
 #include <node_buffer.h>
 #include <uv.h>
 
+#define NODES_LIBV_HAS_UV_INTERFACE_ADDRESS_T 0
+
+#if !NODES_LIBV_HAS_UV_INTERFACE_ADDRESS_T
+#include <ifaddrs.h>
+#include <net/if.h>
+#endif
+
 class EmiAddressCmp;
 
 class EmiBinding {
@@ -65,6 +72,19 @@ public:
     static void scheduleTimer(Timer *timer, TimerCb *timerCb, void *data, EmiTimeInterval interval, bool repeating);
     static void descheduleTimer(Timer *timer);
     static bool timerIsActive(Timer *timer);
+    
+    // TODO Begin to use this code once stable node has libuv with uv_interface_address_t
+#if NODES_LIBV_HAS_UV_INTERFACE_ADDRESS_T
+    typedef std::pair<uv_interface_address_t*, std::pair</*count*/int, /*idx*/int> > NetworkInterfaces;
+    static bool getNetworkInterfaces(NetworkInterfaces& ni, Error& err);
+    static bool nextNetworkInterface(NetworkInterfaces& ni, const char*& name, struct sockaddr_storage& addr);
+    static void freeNetworkInterfaces(const NetworkInterfaces& ni);
+#else // ... until then, use less platform independent code
+    typedef std::pair<ifaddrs*, ifaddrs*> NetworkInterfaces;
+    static bool getNetworkInterfaces(NetworkInterfaces& ni, Error& err);
+    static bool nextNetworkInterface(NetworkInterfaces& ni, const char*& name, struct sockaddr_storage& addr);
+    static void freeNetworkInterfaces(const NetworkInterfaces& ni);
+#endif
 };
 
 #endif

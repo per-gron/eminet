@@ -33,7 +33,7 @@ public:
     
     EmiSockDelegate(EmiSocket& es);
     
-    static void closeSocket(ES& sock, uv_udp_t *socket);
+    static void closeSocket(EmiSockDelegate& sock, uv_udp_t *socket);
     uv_udp_t *openSocket(const sockaddr_storage& address, Error& err);
     static uint16_t extractLocalPort(uv_udp_t *socket);
     

@@ -41,14 +41,14 @@ static void recv_cb(uv_udp_t *socket,
 
 EmiSockDelegate::EmiSockDelegate(EmiSocket& es) : _es(es) {}
 
-void EmiSockDelegate::closeSocket(EmiSockDelegate::ES& sock, uv_udp_t *socket) {
+void EmiSockDelegate::closeSocket(EmiSockDelegate& delegate, uv_udp_t *socket) {
     // This allows V8's GC to reclaim the EmiSocket when no UDP sockets are open
     //
     // TODO Perhaps I should do this on the next uv tick, since this might dealloc
     // the whole socket, which will probably not end up well.
     //
     // TODO What happens when this method is actually called from _es's destructor?
-    sock.getDelegate()._es.Unref();
+    delegate._es.Unref();
     
     EmiNodeUtil::closeSocket(socket);
 }

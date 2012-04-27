@@ -13,6 +13,7 @@
 #include <Security/Security.h>
 #include <CommonCrypto/CommonHMAC.h>
 #include <arpa/inet.h>
+#include <net/if.h>
 
 void EmiBinding::hmacHash(const uint8_t *key, size_t keyLength,
                           const uint8_t *data, size_t dataLength,
@@ -102,11 +103,13 @@ bool EmiBinding::nextNetworkInterface(NetworkInterfaces& ni, const char*& name, 
     
     ni.second = ifa->ifa_next;
     
+    bool loopback = !!(ifa->ifa_flags & IFF_LOOPBACK);
+    
     int family = ifa->ifa_addr->sa_family;
-    if (AF_INET == family) {
+    if (!loopback && AF_INET == family) {
         memcpy(&addr, ifa->ifa_addr, sizeof(sockaddr));
     }
-    else if (AF_INET6 == family) {
+    else if (!loopback && AF_INET6 == family) {
         memcpy(&addr, ifa->ifa_addr, sizeof(sockaddr_storage));
     }
     else {

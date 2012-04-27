@@ -40,7 +40,7 @@ public:
     
     EmiSockDelegate(EmiSocket *socket);
     
-    static void closeSocket(ES& sock, GCDAsyncUdpSocket *socket);
+    static void closeSocket(EmiSockDelegate& sock, GCDAsyncUdpSocket *socket);
     GCDAsyncUdpSocket *openSocket(const sockaddr_storage& address, __strong NSError*& err);
     static uint16_t extractLocalPort(GCDAsyncUdpSocket *socket);
     
