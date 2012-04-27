@@ -11,7 +11,6 @@
 
 #include <netinet/in.h>
 #include <vector>
-#include <utility>
 
 // The purpose of this class is to encapsulate opening one UDP socket
 // per network interface, to be able to tell which the receiver address
@@ -27,8 +26,7 @@ private:
     typedef typename Binding::NetworkInterfaces        NetworkInterfaces;
     typedef typename Binding::Error                    Error;
     typedef typename Binding::SocketHandle             SocketHandle;
-    typedef std::pair<sockaddr_storage, SocketHandle*> AddrAndSocket;
-    typedef std::vector<AddrAndSocket>                 SocketVector;
+    typedef std::vector<SocketHandle*>                 SocketVector;
     typedef typename SocketVector::iterator            SocketVectorIter;
     
     SockDelegate& _delegate;
@@ -59,7 +57,7 @@ private:
                 return false;
             }
             
-            _sockets.push_back(std::make_pair(address, handle));
+            _sockets.push_back(handle);
             
             if (0 == _localPort) {
                 _localPort = SockDelegate::extractLocalPort(handle);
@@ -78,9 +76,9 @@ public:
         SocketVectorIter  end(_sockets.end());
         
         while (iter != end) {
-            AddrAndSocket& as(*iter);
-            if (as.second) {
-                SockDelegate::closeSocket(_delegate, as.second);
+            SocketHandle* sh(*iter);
+            if (sh) {
+                SockDelegate::closeSocket(_delegate, sh);
             }
             
             ++iter;
@@ -108,9 +106,9 @@ public:
         SocketVectorIter  end(_sockets.end());
         
         while (iter != end) {
-            AddrAndSocket& as(*iter);
-            if (as.second) {
-                _delegate.sendData(as.second, address, data, size);
+            SocketHandle* sh(*iter);
+            if (sh) {
+                _delegate.sendData(sh, address, data, size);
             }
             
             ++iter;
