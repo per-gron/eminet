@@ -431,7 +431,7 @@ public:
                         ENSURE(conn->isOpening(), "Got SYN-RST message for open connection");
                         
                         conn->gotTimestamp(now, rawData, len);
-                        if (!conn->gotSynRst(header.sequenceNumber)) {
+                        if (!conn->gotSynRst(inboundAddr, header.sequenceNumber)) {
                             err = "Failed to process SYN-RST message";
                             return false;
                         }

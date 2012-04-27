@@ -323,8 +323,9 @@ public:
     X(PrxRstAck);
 #undef X
     // Delegates to EmiLogicalConnection
-    bool gotSynRst(EmiSequenceNumber otherHostInitialSequenceNumber) {
-        return _conn && _conn->gotSynRst(otherHostInitialSequenceNumber);
+    bool gotSynRst(const sockaddr_storage& inboundAddr,
+                   EmiSequenceNumber otherHostInitialSequenceNumber) {
+        return _conn && _conn->gotSynRst(inboundAddr, otherHostInitialSequenceNumber);
     }
     // Delegates to EmiLogicalConnection
     bool gotMessage(const EmiMessageHeader& header, const TemporaryData& data, size_t offset, bool dontFlush) {

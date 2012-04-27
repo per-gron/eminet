@@ -43,7 +43,14 @@ class EmiLogicalConnection {
     EmiLogicalConnectionMemo _otherHostSequenceMemo;
     EmiLogicalConnectionMemo _reliableSequencedBuffer;
     
-    int32_t _synMsgSn; // -1 when it has no value
+    // This contains the sequence number of these messages before
+    // they have been acknowledged (then this var is set back to
+    // -1): SYN, PRX-ACK, PRX-SYN.
+    //
+    // Because connections only ever wait for one of these messages
+    // we get away with only using one instance variable for all of
+    // them.
+    int32_t _reliableHandshakeMsgSn; // -1 when it has no value
     
 private:
     // Private copy constructor and assignment operator
@@ -65,10 +72,10 @@ private:
             SockDelegate::connectionOpened(_connectionOpenedCallbackCookie, error, reason, *_conn);
         }
     }
-    void releaseSynMsg() {
-        if (-1 != _synMsgSn) {
-            _conn->deregisterReliableMessages(-1, _synMsgSn);
-            _synMsgSn = -1;
+    void releaseReliableHandshakeMsg() {
+        if (-1 != _reliableHandshakeMsgSn) {
+            _conn->deregisterReliableMessages(-1, _reliableHandshakeMsgSn);
+            _reliableHandshakeMsgSn = -1;
         }
     }
     
@@ -99,7 +106,7 @@ private:
     void commonInit() {
         _initialSequenceNumber = EmiLogicalConnection::generateSequenceNumber();
         
-        _synMsgSn = -1;
+        _reliableHandshakeMsgSn = -1;
     }
     
 public:
@@ -140,7 +147,7 @@ public:
     bool sendInitMessage(EmiTimeInterval now, Error& err) {
         bool error = false;
         
-        releaseSynMsg();
+        releaseReliableHandshakeMsg();
         
         EM *msg = _sendingSyn ?
             EM::makeSynMessage(_initialSequenceNumber,
@@ -149,7 +156,7 @@ public:
             EM::makeSynRstMessage(_initialSequenceNumber);
         
         if (_sendingSyn) {
-            _synMsgSn = msg->sequenceNumber;
+            _reliableHandshakeMsgSn = msg->sequenceNumber;
         }
         
         if (!_conn->enqueueMessage(now, msg, /*reliable:*/_sendingSyn, err)) {
@@ -180,7 +187,7 @@ public:
         // This is a SYN with cookie response. The P2P mediator has received
         // our SYN message but has not yet received a SYN from the other
         // peer.
-        releaseSynMsg();
+        releaseReliableHandshakeMsg();
     }
     void gotRst() {
         _conn->forceClose(EMI_REASON_OTHER_HOST_CLOSED);
@@ -204,15 +211,20 @@ public:
         // TODO
     }
     // Returns false if the connection not in the opening state (that's an error)
-    bool gotSynRst(EmiSequenceNumber otherHostInitialSequenceNumber) {
+    bool gotSynRst(const sockaddr_storage& inboundAddr,
+                   EmiSequenceNumber otherHostInitialSequenceNumber) {
         if (!isOpening()) {
             return false;
         }
         
-        releaseSynMsg();
+        releaseReliableHandshakeMsg();
         _otherHostInitialSequenceNumber = otherHostInitialSequenceNumber;
         
         invokeSynRstCallback(false, EMI_REASON_NO_ERROR);
+        
+        if (_conn && EMI_CONNECTION_TYPE_P2P == _conn->getType()) {
+            // TODO Send reliable PRX-SYN message
+        }
         
         return true;
     }
@@ -326,7 +338,7 @@ public:
         
         if (isOpening()) {
             // If the connection is not yet open, cancel the opening process
-            releaseSynMsg();
+            releaseReliableHandshakeMsg();
             invokeSynRstCallback(true, EMI_REASON_THIS_HOST_CLOSED);
         }
         
