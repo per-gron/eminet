@@ -29,7 +29,7 @@ typedef EmiP2PSocketConfigSC SC;
 
 - (NSData *)serverAddress {
     const sockaddr_storage& ss(((SC *)_sc)->address);
-    return [NSData dataWithBytes:&ss length:sizeof(sockaddr_storage)];
+    return [NSData dataWithBytes:&ss length:EmiNetUtil::addrSize(ss)];
 }
 
 - (void)setServerAddress:(NSData *)serverAddress {

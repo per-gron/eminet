@@ -48,8 +48,8 @@ EC *EmiSockDelegate::makeConnection(const EmiConnParams& params) {
 void EmiSockDelegate::sendData(GCDAsyncUdpSocket *socket, const sockaddr_storage& address, const uint8_t *data, size_t size) {
     // TODO This copies the packet data. We might want to redesign
     // this part of the code so that this is not required.
-    [socket sendData:[NSData dataWithBytes:data length:size]
-           toAddress:[NSData dataWithBytes:&address length:sizeof(sockaddr_storage)]
+    [socket sendData:[NSData dataWithBytes:data     length:size]
+           toAddress:[NSData dataWithBytes:&address length:EmiNetUtil::addrSize(address)]
          withTimeout:-1 tag:0];
 }
 
