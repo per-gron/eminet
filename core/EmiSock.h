@@ -289,7 +289,9 @@ public:
         
         __block const char *err = NULL;
         
-        uint16_t inboundPort(SockDelegate::extractLocalPort(sock));
+        sockaddr_storage inboundAddr;
+        SockDelegate::extractLocalAddress(sock, inboundAddr);
+        uint16_t inboundPort(EmiNetUtil::addrPortH(inboundAddr));
         
         const uint8_t *rawData(Binding::extractData(data)+offset);
         

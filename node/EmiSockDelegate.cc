@@ -68,24 +68,9 @@ uv_udp_t *EmiSockDelegate::openSocket(const sockaddr_storage& address, Error& er
     return ret;
 }
 
-uint16_t EmiSockDelegate::extractLocalPort(uv_udp_t *socket) {
-    struct sockaddr_storage address;
-    int len(sizeof(address));
-    
+void EmiSockDelegate::extractLocalAddress(uv_udp_t *socket, sockaddr_storage& address) {
+    int len(sizeof(sockaddr_storage));
     uv_udp_getsockname(socket, (struct sockaddr *)&address, &len);
-    
-    if (AF_INET == address.ss_family) {
-        sockaddr_in *addr = (sockaddr_in *)&address;
-        return addr->sin_port;
-    }
-    else if (AF_INET6 == address.ss_family) {
-        sockaddr_in6 *addr = (sockaddr_in6 *)&address;
-        return addr->sin6_port;
-    }
-    else {
-        ASSERT(0 && "unexpected address family");
-        abort();
-    }
 }
 
 EmiSockDelegate::EC *EmiSockDelegate::makeConnection(const EmiConnParams& params) {

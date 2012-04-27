@@ -60,7 +60,9 @@ private:
             _sockets.push_back(handle);
             
             if (0 == _localPort) {
-                _localPort = SockDelegate::extractLocalPort(handle);
+                sockaddr_storage localAddr;
+                SockDelegate::extractLocalAddress(handle, localAddr);
+                _localPort = EmiNetUtil::addrPortH(localAddr);
                 ASSERT(0 != _localPort);
             }
         }

@@ -36,8 +36,9 @@ GCDAsyncUdpSocket *EmiSockDelegate::openSocket(const sockaddr_storage& address, 
     return socket;
 }
 
-uint16_t EmiSockDelegate::extractLocalPort(GCDAsyncUdpSocket *socket) {
-    return [socket localPort];
+void EmiSockDelegate::extractLocalAddress(GCDAsyncUdpSocket *socket, sockaddr_storage& address) {
+    NSData *a = [socket localAddress];
+    memcpy(&address, [a bytes], MIN([a length], sizeof(sockaddr_storage)));
 }
 
 EC *EmiSockDelegate::makeConnection(const EmiConnParams& params) {

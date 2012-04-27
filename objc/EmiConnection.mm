@@ -10,6 +10,7 @@
 
 #include "EmiConnDelegate.h"
 #import "EmiSocketInternal.h"
+#import "GCDAsyncUdpSocket.h"
 
 @implementation EmiConnection
 

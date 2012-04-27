@@ -104,6 +104,10 @@ public:
             abort();
         }
     }
+    // Returns the port number in host byte order
+    inline static uint16_t addrPortH(const sockaddr_storage& address) {
+        return ntohs(addrPortN(address));
+    }
     inline static size_t addrSize(const sockaddr_storage& address) {
         if (AF_INET == address.ss_family) {
             return sizeof(sockaddr_in);

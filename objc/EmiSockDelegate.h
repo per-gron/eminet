@@ -42,7 +42,7 @@ public:
     
     static void closeSocket(EmiSockDelegate& sock, GCDAsyncUdpSocket *socket);
     GCDAsyncUdpSocket *openSocket(const sockaddr_storage& address, __strong NSError*& err);
-    static uint16_t extractLocalPort(GCDAsyncUdpSocket *socket);
+    static void extractLocalAddress(GCDAsyncUdpSocket *socket, sockaddr_storage& address);
     
     EC *makeConnection(const EmiConnParams& params);
     
