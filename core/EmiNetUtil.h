@@ -81,7 +81,7 @@ public:
             addr.sin_len         = sizeof(struct sockaddr_in);
             addr.sin_family      = AF_INET;
             addr.sin_port        = htons(port);
-            addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+            addr.sin_addr.s_addr = htonl(INADDR_ANY);
             memset(&(addr.sin_zero), 0, sizeof(addr.sin_zero));
         }
         else {

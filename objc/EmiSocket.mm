@@ -140,7 +140,7 @@
       fromAddress:(NSData *)address
 withFilterContext:(id)filterContext {
     sockaddr_storage ss;
-    memcpy(&ss, [data bytes], MIN([data length], sizeof(ss)));
+    memcpy(&ss, [address bytes], MIN([address length], sizeof(ss)));
     
     ((S *)_sock)->onMessage([NSDate timeIntervalSinceReferenceDate],
                             sock, ss,
