@@ -32,6 +32,7 @@ class EmiConn {
     typedef EmiSock<SockDelegate, ConnDelegate>      ES;
     typedef EmiReceiverBuffer<SockDelegate, EmiConn> ERB;
     typedef EmiSendQueue<SockDelegate, ConnDelegate> ESQ;
+    typedef EmiConnTimers<Binding, EmiConn>          ECT;
     typedef EmiLogicalConnection<SockDelegate, ConnDelegate, ERB> ELC;
     
     const uint16_t         _inboundPort;
@@ -51,7 +52,7 @@ class EmiConn {
     ESQ _sendQueue;
     EmiConnTime _time;
     
-    EmiConnTimers<Binding, EmiConn> _timers;
+    ECT _timers;
     
     ConnDelegate _delegate;
         
@@ -195,10 +196,6 @@ public:
             _conn = new ELC(this, _receiverBuffer, now, cookie);
             return true;
         }
-    }
-    
-    inline void resetConnectionTimeout() {
-        _timers.resetConnectionTimeout();
     }
     
     inline void resetHeartbeatTimeout() {

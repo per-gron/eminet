@@ -42,10 +42,6 @@
     return ((EC *)_ec)->issuedConnectionWarning();
 }
 
-- (void)_resetConnectionTimeout {
-    ((EC *)_ec)->resetConnectionTimeout();
-}
-
 - (EmiSocket *)emiSocket {
     return _emiSocket;
 }
