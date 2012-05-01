@@ -9,6 +9,7 @@
 #include "EmiSockDelegate.h"
 
 #include "EmiBinding.h"
+#include "EmiNetUtil.h"
 #import "EmiSocketInternal.h"
 #import "EmiConnectionInternal.h"
 
@@ -38,7 +39,14 @@ GCDAsyncUdpSocket *EmiSockDelegate::openSocket(const sockaddr_storage& address, 
 
 void EmiSockDelegate::extractLocalAddress(GCDAsyncUdpSocket *socket, sockaddr_storage& address) {
     NSData *a = [socket localAddress];
-    memcpy(&address, [a bytes], MIN([a length], sizeof(sockaddr_storage)));
+    // If there is no address, a can have length 0.
+    // To ensure that we don't return garbage, begin
+    // with filling out address with something that is
+    // at least valid.
+    EmiNetUtil::anyAddr(0, AF_INET, &address);
+    if (a) {
+        memcpy(&address, [a bytes], MIN([a length], sizeof(sockaddr_storage)));
+    }
 }
 
 EC *EmiSockDelegate::makeConnection(const EmiConnParams& params) {
