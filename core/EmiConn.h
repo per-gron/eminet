@@ -30,6 +30,7 @@ class EmiConn {
     typedef typename SockDelegate::ConnectionOpenedCallbackCookie ConnectionOpenedCallbackCookie;
     
     typedef EmiSock<SockDelegate, ConnDelegate>      ES;
+    typedef EmiMessage<Binding>                      EM;
     typedef EmiReceiverBuffer<SockDelegate, EmiConn> ERB;
     typedef EmiSendQueue<SockDelegate, ConnDelegate> ESQ;
     typedef EmiConnTimers<Binding, EmiConn>          ECT;
@@ -69,17 +70,28 @@ private:
         }
     }
     
+    bool enqueueCloseMessageIfEmptySenderBuffer(EmiTimeInterval now, Error& err) {
+        if (!_senderBuffer.empty()) {
+            // We did not fail, so return true
+            return true;
+        }
+        
+        return _conn->enqueueCloseMessage(now, err);
+    }
+    
 public:
     
     // Invoked by EmiReceiverBuffer
-    inline void gotReceiverBufferMessage(typename ERB::Entry *entry) {
+    inline void gotReceiverBufferMessage(EmiTimeInterval now, typename ERB::Entry *entry) {
         if (!_conn) return;
         
         // gotMessage should only return false if the message arrived out of order or
         // some other similar error occured, but that should not happen because this
         // callback should only be called by the receiver buffer for messages that are
         // exactly in order.
-        ASSERT(_conn->gotMessage(entry->header, Binding::castToTemporary(entry->data), 0, /*dontFlush:*/true));
+        ASSERT(_conn->gotMessage(now, entry->header,
+                                 Binding::castToTemporary(entry->data), /*offset:*/0,
+                                 /*dontFlush:*/true));
     }
     
     EmiConn(const ConnDelegate& delegate, ES& socket, const EmiConnParams& params) :
@@ -141,11 +153,21 @@ public:
     }
     
     // Delegates to EmiSenderBuffer
-    void deregisterReliableMessages(int32_t channelQualifier, EmiSequenceNumber sequenceNumber) {
+    void deregisterReliableMessages(EmiTimeInterval now, int32_t channelQualifier, EmiSequenceNumber sequenceNumber) {
         _senderBuffer.deregisterReliableMessages(channelQualifier, sequenceNumber);
         
         // This will clear the rto timeout if the sender buffer is empty
         _timers.updateRtoTimeout();
+        
+        if (_conn->isClosing()) {
+            Error err;
+            if (!enqueueCloseMessageIfEmptySenderBuffer(now, err)) {
+                // We failed to enqueue the close connection message.
+                // I can't think of any reasonable thing to do here but
+                // to force close.
+                forceClose();
+            }
+        }
     }
     
     // Returns false if the sender buffer didn't have space for the message.
@@ -236,24 +258,32 @@ public:
             _conn->got##msg();  \
         }                       \
     }
-    X(Prx);
     X(Rst);
     X(SynRstAck);
     X(PrxRstAck);
 #undef X
-    // Delegates to EmiLogicalConnection
-    bool gotSynRst(const sockaddr_storage& inboundAddr,
-                   EmiSequenceNumber otherHostInitialSequenceNumber) {
-        _localAddress = inboundAddr;
-        return _conn && _conn->gotSynRst(inboundAddr, otherHostInitialSequenceNumber);
+    void gotPrx(EmiTimeInterval now) {
+        if (_conn) {
+            _conn->gotPrx(now);
+        }
     }
     // Delegates to EmiLogicalConnection
-    bool gotMessage(const EmiMessageHeader& header, const TemporaryData& data, size_t offset, bool dontFlush) {
+    bool gotSynRst(EmiTimeInterval now,
+                   const sockaddr_storage& inboundAddr,
+                   EmiSequenceNumber otherHostInitialSequenceNumber) {
+        _localAddress = inboundAddr;
+        return _conn && _conn->gotSynRst(now, inboundAddr, otherHostInitialSequenceNumber);
+    }
+    // Delegates to EmiLogicalConnection
+    bool gotMessage(EmiTimeInterval now,
+                    const EmiMessageHeader& header,
+                    const TemporaryData& data, size_t offset,
+                    bool dontFlush) {
         if (!_conn) {
             return false;
         }
         else {
-            return _conn->gotMessage(header, data, offset, dontFlush);
+            return _conn->gotMessage(now, header, data, offset, dontFlush);
         }
     }
     
@@ -268,7 +298,15 @@ public:
     
     bool close(EmiTimeInterval now, Error& err) {
         if (_conn) {
-            return _conn->close(now, err);
+            if (!_conn->initiateCloseProcess(now, err)) {
+                return false;
+            }
+            
+            if (!enqueueCloseMessageIfEmptySenderBuffer(now, err)) {
+                return false;
+            }
+            
+            return true;
         }
         else {
             // We're already closed

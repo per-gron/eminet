@@ -74,9 +74,9 @@ private:
             SockDelegate::connectionOpened(_connectionOpenedCallbackCookie, error, reason, *_conn);
         }
     }
-    void releaseReliableHandshakeMsg() {
+    void releaseReliableHandshakeMsg(EmiTimeInterval now) {
         if (-1 != _reliableHandshakeMsgSn) {
-            _conn->deregisterReliableMessages(-1, _reliableHandshakeMsgSn);
+            _conn->deregisterReliableMessages(now, -1, _reliableHandshakeMsgSn);
             _reliableHandshakeMsgSn = -1;
         }
     }
@@ -159,7 +159,7 @@ public:
     bool sendInitMessage(EmiTimeInterval now, Error& err) {
         bool error = false;
         
-        releaseReliableHandshakeMsg();
+        releaseReliableHandshakeMsg(now);
         
         EM *msg = _sendingSyn ?
             EM::makeSynMessage(_initialSequenceNumber,
@@ -189,7 +189,7 @@ public:
         _closing = false;
     }
     
-    void gotPrx() {
+    void gotPrx(EmiTimeInterval now) {
         if (EMI_CONNECTION_TYPE_P2P != _conn->getType()) {
             // This type of message should only be sent in a P2P connection.
             // This isn't one, so we just ignore it.
@@ -199,7 +199,7 @@ public:
         // This is a SYN with cookie response. The P2P mediator has received
         // our SYN message but has not yet received a SYN from the other
         // peer.
-        releaseReliableHandshakeMsg();
+        releaseReliableHandshakeMsg(now);
     }
     void gotRst() {
         _conn->forceClose(EMI_REASON_OTHER_HOST_CLOSED);
@@ -223,13 +223,14 @@ public:
         // TODO
     }
     // Returns false if the connection not in the opening state (that's an error)
-    bool gotSynRst(const sockaddr_storage& inboundAddr,
+    bool gotSynRst(EmiTimeInterval now,
+                   const sockaddr_storage& inboundAddr,
                    EmiSequenceNumber otherHostInitialSequenceNumber) {
         if (!isOpening()) {
             return false;
         }
         
-        releaseReliableHandshakeMsg();
+        releaseReliableHandshakeMsg(now);
         _otherHostInitialSequenceNumber = otherHostInitialSequenceNumber;
         
         invokeSynRstCallback(false, EMI_REASON_NO_ERROR);
@@ -243,7 +244,10 @@ public:
     
     // Returns true if the packet was processed successfully, false otherwise.
 #define EMI_GOT_INVALID_PACKET(err) do { /* NSLog(err); */ return false; } while (1)
-    bool gotMessage(const EmiMessageHeader& header, const TemporaryData &data, size_t offset, bool dontFlush) {
+    bool gotMessage(EmiTimeInterval now,
+                    const EmiMessageHeader& header,
+                    const TemporaryData &data, size_t offset,
+                    bool dontFlush) {
         EmiChannelQualifier channelQualifier = header.channelQualifier;
         EmiChannelType channelType = EMI_CHANNEL_QUALIFIER_TYPE(channelQualifier);
         
@@ -274,7 +278,7 @@ public:
                 EmiLogicalConnectionMemo::iterator cur = _reliableSequencedBuffer.find(channelQualifier);
                 if (_reliableSequencedBuffer.end() != cur &&
                     (*cur).second == header.ack) {
-                    _conn->deregisterReliableMessages(channelQualifier, header.ack);
+                    _conn->deregisterReliableMessages(now, channelQualifier, header.ack);
                     _reliableSequencedBuffer.erase(channelQualifier);
                 }
             }
@@ -303,7 +307,7 @@ public:
             }
             
             if (header.flags & EMI_ACK_FLAG) {
-                _conn->deregisterReliableMessages(channelQualifier, header.ack);
+                _conn->deregisterReliableMessages(now, channelQualifier, header.ack);
             }
             
             if (hasSequenceNumber && 0 != seqDiff) {
@@ -325,7 +329,7 @@ public:
                 
                 // The connection might have been closed in the message event handler
                 if (_conn && !dontFlush && hasSequenceNumber) {
-                    _receiverBuffer.flushBuffer(channelQualifier, header.sequenceNumber);
+                    _receiverBuffer.flushBuffer(now, channelQualifier, header.sequenceNumber);
                 }
             }
         }
@@ -337,19 +341,17 @@ public:
     }
 #undef EMI_GOT_INVALID_PACKET
     
-    bool close(EmiTimeInterval now, Error& err) {
+    bool initiateCloseProcess(EmiTimeInterval now, Error& err) {
         if (_closing || !_conn) {
             // We're already closing or closed; no need to initiate a new close process
             err = Binding::makeError("com.emilir.eminet.closed", 0);
             return false;
         }
         
-        bool error = false;
-        
         _closing = true;
         
         // If we're currently performing a handshake, cancel that.
-        releaseReliableHandshakeMsg();
+        releaseReliableHandshakeMsg(now);
         
         if (isOpening()) {
             // If the connection is not yet open, invoke the connection
@@ -357,6 +359,12 @@ public:
             // this class promises to invoke the synRstCallback.
             invokeSynRstCallback(true, EMI_REASON_THIS_HOST_CLOSED);
         }
+        
+        return true;
+    }
+    
+    bool enqueueCloseMessage(EmiTimeInterval now, Error& err) {
+        bool error(false);
         
         // Send an RST (connection close) message
         EM *msg = EM::makeRstMessage(_initialSequenceNumber);
@@ -367,6 +375,7 @@ public:
         
         return !error;
     }
+    
     // Returns false if the sender buffer was full and the message couldn't be sent
     bool send(const PersistentData& data, EmiTimeInterval now, EmiChannelQualifier channelQualifier, EmiPriority priority, Error& err) {
         bool error = false;
@@ -400,7 +409,7 @@ public:
         if (EMI_CHANNEL_TYPE_RELIABLE_SEQUENCED == channelType) {
             EmiLogicalConnectionMemo::iterator cur = _reliableSequencedBuffer.find(channelQualifier);
             if (_reliableSequencedBuffer.end() != cur) {
-                _conn->deregisterReliableMessages(channelQualifier, prevSeqMemo);
+                _conn->deregisterReliableMessages(now, channelQualifier, prevSeqMemo);
             }
             _reliableSequencedBuffer[channelQualifier] = msg->sequenceNumber;
         }

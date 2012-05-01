@@ -346,7 +346,7 @@ public:
                     if (!synFlag && !rstFlag && !ackFlag) {
                         ENSURE_CONN("PRX");
                         
-                        conn->gotPrx();
+                        conn->gotPrx(now);
                     }
                     if (synFlag && rstFlag && ackFlag) {
                         ENSURE_CONN("PRX-RST-SYN-ACK");
@@ -422,6 +422,7 @@ public:
                         // and thus the data required to send proper timestamps)
                         
                         conn->gotSynRstAck();
+                        conn = NULL;
                     }
                     else {
                         // This is a connection initiated message
@@ -431,7 +432,7 @@ public:
                         ENSURE(conn->isOpening(), "Got SYN-RST message for open connection");
                         
                         conn->gotTimestamp(now, rawData, len);
-                        if (!conn->gotSynRst(inboundAddr, header.sequenceNumber)) {
+                        if (!conn->gotSynRst(now, inboundAddr, header.sequenceNumber)) {
                             err = "Failed to process SYN-RST message";
                             return false;
                         }
@@ -446,6 +447,7 @@ public:
                     if (conn) {
                         conn->gotTimestamp(now, rawData, len);
                         conn->gotRst();
+                        conn = NULL;
                     }
                     
                     // Regardless of whether we still have a connection up, respond with a SYN-RST-ACK message
@@ -458,7 +460,7 @@ public:
                     ENSURE_CONN("data");
                     
                     conn->gotTimestamp(now, rawData, len);
-                    conn->gotMessage(header, data, actualDataOffset, /*dontFlush:*/false);
+                    conn->gotMessage(now, header, data, actualDataOffset, /*dontFlush:*/false);
                 }
                 else {
                     err = "Invalid message flags";

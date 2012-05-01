@@ -117,7 +117,7 @@ public:
     void bufferMessage(const EmiMessageHeader& header, const TemporaryData& buf, size_t offset, size_t length) {
         insert(new Entry(header, buf, offset, length));
     }
-    void flushBuffer(EmiChannelQualifier channelQualifier, EmiSequenceNumber sequenceNumber) {
+    void flushBuffer(EmiTimeInterval now, EmiChannelQualifier channelQualifier, EmiSequenceNumber sequenceNumber) {
         if (_tree.empty()) return;
         
         Entry mockEntry;
@@ -141,7 +141,7 @@ public:
             toBeRemoved.push_back(entry);
             
             if (entry->header.sequenceNumber == expectedSequenceNumber) {
-                _receiver.gotReceiverBufferMessage(entry);
+                _receiver.gotReceiverBufferMessage(now, entry);
                 expectedSequenceNumber++;
             }
             
