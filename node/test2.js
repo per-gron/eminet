@@ -18,7 +18,7 @@ es2.on('connection', function(socket) {
     console.log("                               Server got message", buf.toString());
   });
   
-  es2.connect(socket.getAddress(), 2312, function(err, socket) {
+  es2.connect(socket.getRemoteAddress(), 2312, function(err, socket) {
     if (err) {
       console.log("ERR:", err);
       return;

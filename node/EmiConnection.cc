@@ -5,6 +5,8 @@
 #include "EmiNodeUtil.h"
 #include "EmiConnectionParams.h"
 
+#include "../core/EmiNetUtil.h"
+
 #include <node.h>
 
 using namespace v8;
@@ -48,8 +50,10 @@ void EmiConnection::Init(Handle<Object> target) {
     X(HasIssuedConnectionWarning, "hasIssuedConnectionWarning");
     X(GetSocket,                  "getSocket");
     X(GetAddressType,             "getAddressType");
-    X(GetPort,                    "getPort");
-    X(GetAddress,                 "getAddress");
+    X(GetLocalPort,               "getLocalPort");
+    X(GetLocalAddress,            "getLocalAddress");
+    X(GetRemotePort,              "getRemotePort");
+    X(GetRemoteAddress,           "getRemoteAddress");
     X(GetInboundPort,             "getInboundPort");
     X(IsOpen,                     "isOpen");
     X(IsOpening,                  "isOpening");
@@ -229,7 +233,10 @@ Handle<Value> EmiConnection::GetAddressType(const Arguments& args) {
     
     const char *type;
     
-    const struct sockaddr_storage& addr(ec->_conn.getAddress());
+    // We use getRemoteAddress, because it is valid even before we
+    // have received the first packet from the other host, unlike
+    // getLocalAddress.
+    const struct sockaddr_storage& addr(ec->_conn.getRemoteAddress());
     if (AF_INET == addr.ss_family) {
         type = "udp4";
     }
@@ -243,47 +250,43 @@ Handle<Value> EmiConnection::GetAddressType(const Arguments& args) {
     return scope.Close(String::New(type));
 }
 
-Handle<Value> EmiConnection::GetPort(const Arguments& args) {
+Handle<Value> EmiConnection::GetLocalPort(const Arguments& args) {
     HandleScope scope;
     
     ENSURE_ZERO_ARGS(args);
     UNWRAP(EmiConnection, ec, args);
     
-    uint16_t port;
-    
-    const struct sockaddr_storage& addr(ec->_conn.getAddress());
-    if (AF_INET == addr.ss_family) {
-        port = ((struct sockaddr_in *)&addr)->sin_port;
-    }
-    else if (AF_INET6 == addr.ss_family) {
-        port = ((struct sockaddr_in6 *)&addr)->sin6_port;
-    }
-    else {
-        ASSERT(0 && "unexpected address family");
-    }
-    
-    return scope.Close(Number::New(port));
+    return scope.Close(Number::New(EmiNetUtil::addrPortH(ec->_conn.getLocalAddress())));
 }
 
-Handle<Value> EmiConnection::GetAddress(const Arguments& args) {
+Handle<Value> EmiConnection::GetLocalAddress(const Arguments& args) {
     HandleScope scope;
     
     ENSURE_ZERO_ARGS(args);
     UNWRAP(EmiConnection, ec, args);
     
     char buf[256];
+    EmiNodeUtil::ipName(buf, sizeof(buf), ec->_conn.getLocalAddress());
+    return scope.Close(String::New(buf));
+}
+
+Handle<Value> EmiConnection::GetRemotePort(const Arguments& args) {
+    HandleScope scope;
     
-    const struct sockaddr_storage& addr(ec->_conn.getAddress());
-    if (AF_INET == addr.ss_family) {
-        uv_ip4_name((struct sockaddr_in *)&addr, buf, sizeof(buf));
-    }
-    else if (AF_INET6 == addr.ss_family) {
-        uv_ip6_name((struct sockaddr_in6 *)&addr, buf, sizeof(buf));
-    }
-    else {
-        ASSERT(0 && "unexpected address family");
-    }
+    ENSURE_ZERO_ARGS(args);
+    UNWRAP(EmiConnection, ec, args);
     
+    return scope.Close(Number::New(EmiNetUtil::addrPortH(ec->_conn.getRemoteAddress())));
+}
+
+Handle<Value> EmiConnection::GetRemoteAddress(const Arguments& args) {
+    HandleScope scope;
+    
+    ENSURE_ZERO_ARGS(args);
+    UNWRAP(EmiConnection, ec, args);
+    
+    char buf[256];
+    EmiNodeUtil::ipName(buf, sizeof(buf), ec->_conn.getRemoteAddress());
     return scope.Close(String::New(buf));
 }
 

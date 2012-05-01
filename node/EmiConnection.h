@@ -56,8 +56,10 @@ private:
     static v8::Handle<v8::Value> HasIssuedConnectionWarning(const v8::Arguments& args);
     static v8::Handle<v8::Value> GetSocket(const v8::Arguments& args);
     static v8::Handle<v8::Value> GetAddressType(const v8::Arguments& args);
-    static v8::Handle<v8::Value> GetPort(const v8::Arguments& args);
-    static v8::Handle<v8::Value> GetAddress(const v8::Arguments& args);
+    static v8::Handle<v8::Value> GetLocalPort(const v8::Arguments& args);
+    static v8::Handle<v8::Value> GetLocalAddress(const v8::Arguments& args);
+    static v8::Handle<v8::Value> GetRemotePort(const v8::Arguments& args);
+    static v8::Handle<v8::Value> GetRemoteAddress(const v8::Arguments& args);
     static v8::Handle<v8::Value> GetInboundPort(const v8::Arguments& args);
     static v8::Handle<v8::Value> IsOpen(const v8::Arguments& args);
     static v8::Handle<v8::Value> IsOpening(const v8::Arguments& args);

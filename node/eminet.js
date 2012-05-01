@@ -127,7 +127,8 @@ Util.inherits(EmiConnection, Events.EventEmitter);
 [
   'close', 'forceClose', 'closeOrForceClose', 'flush', 'send',
   'hasIssuedConnectionWarning', 'getSocket', 'getAddressType',
-  'getPort', 'getAddress', 'getInboundPort', 'isOpen', 'isOpening'
+  'getLocalPort', 'getLocaAddress', 'getRemoteAddress',
+  'getRemotePort', 'getInboundPort', 'isOpen', 'isOpening'
 ].forEach(function(name) {
   EmiConnection.prototype[name] = function() {
     return this._handle[name].apply(this._handle, arguments);

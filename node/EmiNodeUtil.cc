@@ -103,6 +103,18 @@ void EmiNodeUtil::makeAddress(int family, const uint8_t *ip, size_t ipLen, uint1
     }
 }
 
+void EmiNodeUtil::ipName(char *buf, size_t bufLen, const sockaddr_storage& addr) {
+    if (AF_INET == addr.ss_family) {
+        uv_ip4_name((struct sockaddr_in *)&addr, buf, bufLen);
+    }
+    else if (AF_INET6 == addr.ss_family) {
+        uv_ip6_name((struct sockaddr_in6 *)&addr, buf, bufLen);
+    }
+    else {
+        ASSERT(0 && "unexpected address family");
+    }
+}
+
 bool EmiNodeUtil::parseAddressFamily(const char* typeStr, int *family) {
     if (0 == strcmp(typeStr, "udp4")) {
         *family = AF_INET;
