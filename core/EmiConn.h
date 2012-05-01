@@ -30,10 +30,10 @@ class EmiConn {
     
     typedef typename SockDelegate::ConnectionOpenedCallbackCookie ConnectionOpenedCallbackCookie;
     
-    typedef EmiSock<SockDelegate, ConnDelegate> ES;
-    typedef EmiLogicalConnection<SockDelegate, ConnDelegate> ELC;
-    typedef EmiSendQueue<SockDelegate, ConnDelegate> ESQ;
+    typedef EmiSock<SockDelegate, ConnDelegate>      ES;
     typedef EmiReceiverBuffer<SockDelegate, EmiConn> ERB;
+    typedef EmiSendQueue<SockDelegate, ConnDelegate> ESQ;
+    typedef EmiLogicalConnection<SockDelegate, ConnDelegate, ERB> ELC;
     
     const uint16_t         _inboundPort;
     // This gets set when we receive the first packet from the other host.
@@ -256,14 +256,6 @@ public:
         return _senderBuffer.empty();
     }
     
-    /// Delegates to EmiReceiverBuffer
-    void bufferMessage(const EmiMessageHeader& header, const TemporaryData& buf, size_t offset, size_t length) {
-        _receiverBuffer.bufferMessage(header, buf, offset, length);
-    }
-    void flushBuffer(EmiChannelQualifier channelQualifier, EmiSequenceNumber sequenceNumber) {
-        _receiverBuffer.flushBuffer(channelQualifier, sequenceNumber);
-    }
-    
     // Returns false if the sender buffer didn't have space for the message.
     // Failing only happens for reliable mesages.
     bool enqueueMessage(EmiTimeInterval now, EmiMessage<Binding> *msg, bool reliable, Error& err) {
@@ -295,7 +287,7 @@ public:
             return false;
         }
         else {
-            _conn = new ELC(this, now, otherHostInitialSequenceNumber);
+            _conn = new ELC(this, _receiverBuffer, now, otherHostInitialSequenceNumber);
             return true;
         }
     }
@@ -309,7 +301,7 @@ public:
             return false;
         }
         else {
-            _conn = new ELC(this, now, cookie);
+            _conn = new ELC(this, _receiverBuffer, now, cookie);
             return true;
         }
     }

@@ -21,7 +21,7 @@ class EmiConn;
 
 typedef std::map<EmiChannelQualifier, EmiSequenceNumber> EmiLogicalConnectionMemo;
 
-template<class SockDelegate, class ConnDelegate>
+template<class SockDelegate, class ConnDelegate, class ReceiverBuffer>
 class EmiLogicalConnection {
     typedef typename SockDelegate::Binding   Binding;
     typedef typename Binding::Error          Error;
@@ -30,6 +30,8 @@ class EmiLogicalConnection {
     typedef typename SockDelegate::ConnectionOpenedCallbackCookie ConnectionOpenedCallbackCookie;
     typedef EmiMessage<Binding>                 EM;
     typedef EmiConn<SockDelegate, ConnDelegate> EC;
+    
+    ReceiverBuffer &_receiverBuffer;
     
     bool _closing;
     EC *_conn;
@@ -111,8 +113,13 @@ private:
     
 public:
     
-    EmiLogicalConnection(EC *connection, EmiTimeInterval now, EmiSequenceNumber sequenceNumber) :
-    _closing(false), _conn(connection), _otherHostInitialSequenceNumber(sequenceNumber),
+    EmiLogicalConnection(EC *connection, 
+                         ReceiverBuffer& receiverBuffer,
+                         EmiTimeInterval now,
+                         EmiSequenceNumber sequenceNumber) :
+    _receiverBuffer(receiverBuffer),
+    _closing(false), _conn(connection),
+    _otherHostInitialSequenceNumber(sequenceNumber),
     _sendingSyn(false), _connectionOpenedCallbackCookie() {
         ASSERT(EMI_CONNECTION_TYPE_SERVER == _conn->getType());
         
@@ -123,8 +130,13 @@ public:
         Error err;
         ASSERT(sendInitMessage(now, err));
     }
-    EmiLogicalConnection(EC *connection, EmiTimeInterval now, const ConnectionOpenedCallbackCookie& connectionOpenedCallbackCookie) :
-    _closing(false), _conn(connection), _otherHostInitialSequenceNumber(0),
+    EmiLogicalConnection(EC *connection,
+                         ReceiverBuffer& receiverBuffer,
+                         EmiTimeInterval now,
+                         const ConnectionOpenedCallbackCookie& connectionOpenedCallbackCookie) :
+    _receiverBuffer(receiverBuffer),
+    _closing(false), _conn(connection),
+    _otherHostInitialSequenceNumber(0),
     _sendingSyn(true), _connectionOpenedCallbackCookie(connectionOpenedCallbackCookie) {
         ASSERT(EMI_CONNECTION_TYPE_SERVER != _conn->getType());
         
@@ -297,7 +309,7 @@ public:
             if (hasSequenceNumber && 0 != seqDiff) {
                 if (seqDiff < 0) {
                     // This message is newer than what we were expecting; save it in the input buffer
-                    _conn->bufferMessage(header, data, offset, header.length);
+                    _receiverBuffer.bufferMessage(header, data, offset, header.length);
                 }
                 
                 return false;
@@ -313,7 +325,7 @@ public:
                 
                 // The connection might have been closed in the message event handler
                 if (_conn && !dontFlush && hasSequenceNumber) {
-                    _conn->flushBuffer(channelQualifier, header.sequenceNumber);
+                    _receiverBuffer.flushBuffer(channelQualifier, header.sequenceNumber);
                 }
             }
         }
@@ -336,9 +348,13 @@ public:
         
         _closing = true;
         
+        // If we're currently performing a handshake, cancel that.
+        releaseReliableHandshakeMsg();
+        
         if (isOpening()) {
-            // If the connection is not yet open, cancel the opening process
-            releaseReliableHandshakeMsg();
+            // If the connection is not yet open, invoke the connection
+            // callback with an error code. This is necessary because
+            // this class promises to invoke the synRstCallback.
             invokeSynRstCallback(true, EMI_REASON_THIS_HOST_CLOSED);
         }
         
