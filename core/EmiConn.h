@@ -17,7 +17,6 @@
 #include "EmiLogicalConnection.h"
 #include "EmiMessage.h"
 #include "EmiConnTime.h"
-#include "EmiRtoTimer.h"
 #include "EmiP2PData.h"
 #include "EmiConnTimers.h"
 
@@ -148,10 +147,6 @@ public:
         _timers.updateRtoTimeout();
     }
     
-    bool senderBufferIsEmpty() const {
-        return _senderBuffer.empty();
-    }
-    
     // Returns false if the sender buffer didn't have space for the message.
     // Failing only happens for reliable mesages.
     bool enqueueMessage(EmiTimeInterval now, EmiMessage<Binding> *msg, bool reliable, Error& err) {
@@ -211,13 +206,13 @@ public:
     }
     
     // Methods that EmiConnTimers invoke
-    void connectionTimeout() {
+    inline void connectionTimeout() {
         forceClose(EMI_REASON_CONNECTION_TIMED_OUT);
     }
-    void connectionLost() {
+    inline void connectionLost() {
         _delegate.emiConnLost();
     }
-    void connectionRegained() {
+    inline void connectionRegained() {
         _delegate.emiConnLost();
     }
     void rtoTimeout(EmiTimeInterval now, EmiTimeInterval rtoWhenRtoTimerWasScheduled) {
@@ -230,8 +225,11 @@ public:
             ASSERT(enqueueMessage(now, msg, /*reliable:*/false, err));
         });
     }
-    void enqueueHeartbeat() {
+    inline void enqueueHeartbeat() {
         _sendQueue.enqueueHeartbeat();
+    }
+    inline bool senderBufferIsEmpty() const {
+        return _senderBuffer.empty();
     }
     
     // Methods that delegate to EmiLogicalConnetion

@@ -24,7 +24,10 @@ class EmiConnTimers {
     Timer           *_heartbeatTimer;
     Timer           *_connectionTimer;
     EmiTimeInterval  _warningTimeoutWhenWarningTimerWasScheduled;
-    EmiRtoTimer<Binding, EmiConnTimers> _rtoTimer;
+    
+    EmiConnTime&     _time;
+    Timer           *_rtoTimer;
+    EmiTimeInterval  _rtoWhenRtoTimerWasScheduled;
     
     bool _issuedConnectionWarning;
 
@@ -74,17 +77,29 @@ private:
         }
         timers->resetHeartbeatTimeout();
     }
+    
+    static void rtoTimeoutCallback(EmiTimeInterval now, Timer *timer, void *data) {
+        EmiConnTimers *ect = (EmiConnTimers *)data;
+        
+        ect->_delegate.rtoTimeout(now, ect->_rtoWhenRtoTimerWasScheduled);
+        
+        ect->_time.onRtoTimeout();
+        
+        ect->updateRtoTimeout();
+    }
 
 public:
-    EmiConnTimers(Delegate& delegate, EmiConnTime& connTime) :
+    EmiConnTimers(Delegate& delegate, EmiConnTime& time) :
     _delegate(delegate),
     _sentDataSinceLastHeartbeat(false),
     _tickTimer(Binding::makeTimer()),
     _heartbeatTimer(Binding::makeTimer()),
-    _rtoTimer(connTime, *this),
     _connectionTimer(Binding::makeTimer()),
     _warningTimeoutWhenWarningTimerWasScheduled(0),
-    _issuedConnectionWarning(false) {
+    _issuedConnectionWarning(false),
+    _time(time),
+    _rtoTimer(Binding::makeTimer()),
+    _rtoWhenRtoTimerWasScheduled(0) {
         resetConnectionTimeout();
     }
     
@@ -92,6 +107,7 @@ public:
         Binding::freeTimer(_tickTimer);
         Binding::freeTimer(_heartbeatTimer);
         Binding::freeTimer(_connectionTimer);
+        Binding::freeTimer(_rtoTimer);
     }
     
     
@@ -139,21 +155,27 @@ public:
     }
     
     void updateRtoTimeout() {
-        _rtoTimer.updateRtoTimeout();
+        if (!_delegate.senderBufferIsEmpty()) {
+            if (!Binding::timerIsActive(_rtoTimer)) {
+                
+                // this._rto will likely change before the timeout fires. When
+                // the timeout fires we want the value of _rto at the time
+                // the timeout was set, not when it fires. That's why we store
+                // rto here.
+                _rtoWhenRtoTimerWasScheduled = _time.getRto();
+                Binding::scheduleTimer(_rtoTimer, rtoTimeoutCallback,
+                                       this, _rtoWhenRtoTimerWasScheduled,
+                                       /*repeating:*/false);
+            }
+        }
+        else {
+            // The queue is empty. Clear the timer
+            Binding::descheduleTimer(_rtoTimer);
+        }
     }
     
     inline bool issuedConnectionWarning() const {
         return _issuedConnectionWarning;
-    }
-    
-    
-    
-    inline bool senderBufferIsEmpty(EmiRtoTimer<Binding, EmiConnTimers>& ert) const {
-        return _delegate.senderBufferIsEmpty();
-    }
-    
-    void rtoTimeout(EmiTimeInterval now, EmiTimeInterval rtoWhenRtoTimerWasScheduled) {
-        _delegate.rtoTimeout(now, rtoWhenRtoTimerWasScheduled);
     }
 };
 
