@@ -35,8 +35,11 @@ class EmiConn {
     typedef EmiSendQueue<SockDelegate, ConnDelegate> ESQ;
     typedef EmiReceiverBuffer<SockDelegate, EmiConn> ERB;
     
-    const uint16_t _inboundPort;
-    const sockaddr_storage _address;
+    const uint16_t         _inboundPort;
+    // This gets set when we receive the first packet from the other host.
+    // Before that, it is an address with port 0
+    sockaddr_storage       _localAddress;
+    const sockaddr_storage _remoteAddress;
     
     ES &_emisock;
     
@@ -89,7 +92,7 @@ public:
     
     EmiConn(const ConnDelegate& delegate, ES& socket, const EmiConnParams& params) :
     _inboundPort(params.inboundPort),
-    _address(params.address),
+    _remoteAddress(params.address),
     _conn(NULL),
     _delegate(delegate),
     _emisock(socket),
@@ -106,6 +109,7 @@ public:
     _connectionTimer(Binding::makeTimer()),
     _warningTimeoutWhenWarningTimerWasScheduled(0),
     _issuedConnectionWarning(false) {
+        EmiNetUtil::anyAddr(0, AF_INET, &_localAddress);
         resetConnectionTimeout();
     }
     
@@ -325,6 +329,7 @@ public:
     // Delegates to EmiLogicalConnection
     bool gotSynRst(const sockaddr_storage& inboundAddr,
                    EmiSequenceNumber otherHostInitialSequenceNumber) {
+        _localAddress = inboundAddr;
         return _conn && _conn->gotSynRst(inboundAddr, otherHostInitialSequenceNumber);
     }
     // Delegates to EmiLogicalConnection
@@ -404,8 +409,12 @@ public:
         return _inboundPort;
     }
     
-    const sockaddr_storage& getAddress() const {
-        return _address;
+    const sockaddr_storage& getLocalAddress() const {
+        return _localAddress;
+    }
+    
+    const sockaddr_storage& getRemoteAddress() const {
+        return _remoteAddress;
     }
     
     bool issuedConnectionWarning() const {

@@ -9,8 +9,11 @@
 #ifndef roshambo_EmiUdpSocket_h
 #define roshambo_EmiUdpSocket_h
 
+#include "EmiAddressCmp.h"
+
 #include <netinet/in.h>
 #include <vector>
+#include <utility>
 
 // The purpose of this class is to encapsulate opening one UDP socket
 // per network interface, to be able to tell which the receiver address
@@ -26,7 +29,8 @@ private:
     typedef typename Binding::NetworkInterfaces        NetworkInterfaces;
     typedef typename Binding::Error                    Error;
     typedef typename Binding::SocketHandle             SocketHandle;
-    typedef std::vector<SocketHandle*>                 SocketVector;
+    typedef std::pair<sockaddr_storage, SocketHandle*> AddrSocketPair;
+    typedef std::vector<AddrSocketPair>                SocketVector;
     typedef typename SocketVector::iterator            SocketVectorIter;
     
     SockDelegate& _delegate;
@@ -57,11 +61,12 @@ private:
                 return false;
             }
             
-            _sockets.push_back(handle);
+            sockaddr_storage localAddr;
+            SockDelegate::extractLocalAddress(handle, localAddr);
+            
+            _sockets.push_back(std::make_pair(localAddr, handle));
             
             if (0 == _localPort) {
-                sockaddr_storage localAddr;
-                SockDelegate::extractLocalAddress(handle, localAddr);
                 _localPort = EmiNetUtil::addrPortH(localAddr);
                 ASSERT(0 != _localPort);
             }
@@ -78,7 +83,7 @@ public:
         SocketVectorIter  end(_sockets.end());
         
         while (iter != end) {
-            SocketHandle* sh(*iter);
+            SocketHandle* sh((*iter).second);
             if (sh) {
                 SockDelegate::closeSocket(_delegate, sh);
             }
@@ -101,16 +106,26 @@ public:
         return NULL;
     }
     
-    void sendData(const sockaddr_storage& address,
+    // To send from all sockets, specify a fromAddress with a port number of 0
+    void sendData(const sockaddr_storage& fromAddress,
+                  const sockaddr_storage& toAddress,
                   const uint8_t *data,
                   size_t size) {
+        uint16_t fromAddrPort(EmiNetUtil::addrPortH(fromAddress));
+        
         SocketVectorIter iter(_sockets.begin());
         SocketVectorIter  end(_sockets.end());
-        
         while (iter != end) {
-            SocketHandle* sh(*iter);
-            if (sh) {
-                _delegate.sendData(sh, address, data, size);
+            AddrSocketPair &asp(*iter);
+            
+            if (0 == fromAddrPort ||
+                0 == EmiAddressCmp::compare(fromAddress, asp.first)) {
+                
+                SocketHandle* sh(asp.second);
+                if (sh) {
+                    _delegate.sendData(sh, toAddress, data, size);
+                }
+                
             }
             
             ++iter;

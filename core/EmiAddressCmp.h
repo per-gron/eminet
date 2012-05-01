@@ -14,7 +14,7 @@
 
 class EmiAddressCmp {
 public:
-    inline int operator()(const struct sockaddr_storage& a, const struct sockaddr_storage& b) const {
+    inline static int compare(const struct sockaddr_storage& a, const struct sockaddr_storage& b) {
         if (a.ss_family < b.ss_family) return -1;
         else if (a.ss_family > b.ss_family) return 1;
         else {
@@ -48,6 +48,10 @@ public:
                 }
             }
         }
+    }
+    
+    inline int operator()(const struct sockaddr_storage& a, const struct sockaddr_storage& b) const {
+        return compare(a, b);
     }
 };
 

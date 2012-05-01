@@ -513,19 +513,19 @@ public:
             
             // I'm not 100% sure that socket will never be NULL
             if (socket) {
-                socket->sendData(conn->getAddress(), data, size);
+                socket->sendData(conn->getLocalAddress(), conn->getRemoteAddress(), data, size);
             }
         }
         else {
             // I'm not 100% sure that socket will never be NULL
             if (_serverSocket) {
-                _delegate.sendData(_serverSocket, conn->getAddress(), data, size);
+                _delegate.sendData(_serverSocket, conn->getRemoteAddress(), data, size);
             }
         }
     }
     
     void deregisterConnection(EC *conn) {
-        const sockaddr_storage& address = conn->getAddress();
+        const sockaddr_storage& address = conn->getRemoteAddress();
         uint16_t inboundPort = conn->getInboundPort();
         
         EmiClientSocketMapIter cur = _clientSockets.find(inboundPort);

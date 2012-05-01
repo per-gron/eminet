@@ -58,7 +58,8 @@
 @property (nonatomic, unsafe_unretained) id<EmiConnectionDelegate> delegate;
 @property (nonatomic, readonly, assign) BOOL issuedConnectionWarning;
 @property (nonatomic, readonly, unsafe_unretained) EmiSocket *emiSocket;
-@property (nonatomic, readonly, unsafe_unretained) NSData *address;
+@property (nonatomic, readonly, unsafe_unretained) NSData *localAddress;
+@property (nonatomic, readonly, unsafe_unretained) NSData *remoteAddress;
 @property (nonatomic, readonly, assign) uint16_t inboundPort;
 @property (nonatomic, readonly, assign) BOOL open;
 @property (nonatomic, readonly, assign) BOOL opening;

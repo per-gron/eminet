@@ -50,8 +50,13 @@
     return _emiSocket;
 }
 
-- (NSData *)address {
-    const sockaddr_storage& ss(((EC *)_ec)->getAddress());
+- (NSData *)localAddress {
+    const sockaddr_storage& ss(((EC *)_ec)->getLocalAddress());
+    return [NSData dataWithBytes:&ss length:EmiNetUtil::addrSize(ss)];
+}
+
+- (NSData *)remoteAddress {
+    const sockaddr_storage& ss(((EC *)_ec)->getRemoteAddress());
     return [NSData dataWithBytes:&ss length:EmiNetUtil::addrSize(ss)];
 }
 
