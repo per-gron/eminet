@@ -461,6 +461,16 @@ public:
                     
                     conn->gotTimestamp(now, rawData, len);
                     conn->gotMessage(now, header, data, actualDataOffset, /*dontFlush:*/false);
+                    
+                    // gotMessage might have invoked third-party code, which might have
+                    // forceClose-d the connection, which might have deallocated conn.
+                    // 
+                    // To be safe, re-load conn from _conns; if conn is closed, this
+                    // will set conn to NULL, which is correct, because we don't want
+                    // to give any additional data to it anyway, even if this packet
+                    // contains more messages.
+                    EmiConnectionMapIter cur = _conns.find(ckey);
+                    conn = _conns.end() == cur ? NULL : (*cur).second;
                 }
                 else {
                     err = "Invalid message flags";

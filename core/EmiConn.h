@@ -79,6 +79,12 @@ private:
         return _conn->enqueueCloseMessage(now, err);
     }
     
+    static void forceCloseTimeoutCallback(EmiTimeInterval now, typename Binding::Timer *timer, void *data) {
+        EmiConn *conn = (EmiConn *)data;
+        Binding::freeTimer(timer);
+        conn->forceClose(EMI_REASON_THIS_HOST_CLOSED);
+    }
+    
 public:
     
     // Invoked by EmiReceiverBuffer
@@ -115,7 +121,10 @@ public:
         
         deleteELC(_conn);
     }
-        
+    
+    // Note that this method might deallocate the connection
+    // object! It must not be called from within code that
+    // subsequently uses the object.
     void forceClose(EmiDisconnectReason reason) {
         _emisock.deregisterConnection(this);
         
@@ -225,6 +234,8 @@ public:
     }
     
     // Methods that EmiConnTimers invoke
+    
+    // Warning: This method might deallocate the object
     inline void connectionTimeout() {
         forceClose(EMI_REASON_CONNECTION_TIMED_OUT);
     }
@@ -258,7 +269,9 @@ public:
             _conn->got##msg();  \
         }                       \
     }
+    // Warning: This method might deallocate the object
     X(Rst);
+    // Warning: This method might deallocate the object
     X(SynRstAck);
     X(PrxRstAck);
 #undef X
@@ -322,7 +335,14 @@ public:
     // reconnecting, this host's OS might pick the same inbound port, and that
     // will confuse the remote host so the connection won't be established.
     void forceClose() {
-        forceClose(EMI_REASON_THIS_HOST_CLOSED);
+        // To ensure that we don't deallocate this object immediately (which
+        // could have happened if we invoked forceClose(EmiDisconnectReason)
+        // immediately, we schedule a timer that will invoke forceClose later
+        // on. This guarantees that we don't deallocate this object while
+        // there are references to it left on the stack.
+        typename Binding::Timer *timer(Binding::makeTimer());
+        Binding::scheduleTimer(timer, forceCloseTimeoutCallback,
+                               this, /*time:*/0, /*repeating:*/false);
     }
     
     // Delegates to EmiSendQueue

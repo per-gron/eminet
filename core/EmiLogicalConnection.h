@@ -201,9 +201,11 @@ public:
         // peer.
         releaseReliableHandshakeMsg(now);
     }
+    // Warning: This method might deallocate the object
     void gotRst() {
         _conn->forceClose(EMI_REASON_OTHER_HOST_CLOSED);
     }
+    // Warning: This method might deallocate the object
     void gotSynRstAck() {
         // Technically, the other host could just send a
         // SYN-RST-ACK (confirm connection close) message
@@ -327,7 +329,8 @@ public:
             if (0 != header.length) {
                 _conn->emitMessage(channelQualifier, data, offset, header.length);
                 
-                // The connection might have been closed in the message event handler
+                // The connection might have been closed in the message event handler,
+                // that's why we check that _conn is non-NULL.
                 if (_conn && !dontFlush && hasSequenceNumber) {
                     _receiverBuffer.flushBuffer(now, channelQualifier, header.sequenceNumber);
                 }
