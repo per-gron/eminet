@@ -19,6 +19,7 @@
 #include "EmiConnTime.h"
 #include "EmiRtoTimer.h"
 #include "EmiP2PData.h"
+#include "EmiConnTimers.h"
 
 template<class SockDelegate, class ConnDelegate>
 class EmiConn {
@@ -26,7 +27,6 @@ class EmiConn {
     typedef typename Binding::Error          Error;
     typedef typename Binding::PersistentData PersistentData;
     typedef typename Binding::TemporaryData  TemporaryData;
-    typedef typename Binding::Timer          Timer;
     
     typedef typename SockDelegate::ConnectionOpenedCallbackCookie ConnectionOpenedCallbackCookie;
     
@@ -52,18 +52,10 @@ class EmiConn {
     ESQ _sendQueue;
     EmiConnTime _time;
     
-    bool _sentDataSinceLastHeartbeat;
+    EmiConnTimers<Binding, EmiConn> _timers;
     
     ConnDelegate _delegate;
-    
-    Timer                         *_tickTimer;
-    Timer                         *_heartbeatTimer;
-    EmiRtoTimer<Binding, EmiConn>  _rtoTimer;
-    Timer                         *_connectionTimer;
-    EmiTimeInterval                _warningTimeoutWhenWarningTimerWasScheduled;
-    
-    bool _issuedConnectionWarning;
-    
+        
 private:
     // Private copy constructor and assignment operator
     inline EmiConn(const EmiConn& other);
@@ -102,112 +94,16 @@ public:
     _receiverBuffer(_emisock.config.receiverBufferSize, *this),
     _sendQueue(*this),
     _time(),
-    _sentDataSinceLastHeartbeat(false),
-    _tickTimer(Binding::makeTimer()),
-    _heartbeatTimer(Binding::makeTimer()),
-    _rtoTimer(_time, *this),
-    _connectionTimer(Binding::makeTimer()),
-    _warningTimeoutWhenWarningTimerWasScheduled(0),
-    _issuedConnectionWarning(false) {
+    _timers(*this, _time) {
         EmiNetUtil::anyAddr(0, AF_INET, &_localAddress);
-        resetConnectionTimeout();
     }
     
     virtual ~EmiConn() {
-        Binding::freeTimer(_tickTimer);
-        Binding::freeTimer(_heartbeatTimer);
-        Binding::freeTimer(_connectionTimer);
-        
         _emisock.deregisterConnection(this);
         
         deleteELC(_conn);
     }
-    
-    EmiTimeInterval timeBeforeConnectionWarning() const {
-        return 1/_emisock.config.heartbeatFrequency * _emisock.config.heartbeatsBeforeConnectionWarning;
-    }
-    
-    static void connectionTimeoutCallback(EmiTimeInterval now, Timer *timer, void *data) {
-        EmiConn *conn = (EmiConn *)data;
         
-        conn->forceClose(EMI_REASON_CONNECTION_TIMED_OUT);
-    }
-    static void connectionWarningCallback(EmiTimeInterval now, Timer *timer, void *data) {
-        EmiConn *conn = (EmiConn *)data;
-        
-        EmiTimeInterval connectionTimeout = conn->_emisock.config.connectionTimeout;
-        
-        conn->_issuedConnectionWarning = true;
-        Binding::scheduleTimer(conn->_connectionTimer, connectionTimeoutCallback, conn,
-                               connectionTimeout - conn->_warningTimeoutWhenWarningTimerWasScheduled,
-                               /*repeating:*/false);
-        
-        conn->_delegate.emiConnLost();
-    }
-    void resetConnectionTimeout() {
-        EmiTimeInterval warningTimeout = timeBeforeConnectionWarning();
-        EmiTimeInterval connectionTimeout = _emisock.config.connectionTimeout;
-        
-        if (warningTimeout < connectionTimeout) {
-            _warningTimeoutWhenWarningTimerWasScheduled = warningTimeout;
-            Binding::scheduleTimer(_connectionTimer, connectionWarningCallback,
-                                   this, warningTimeout, /*repeating:*/false);
-        }
-        else {
-            Binding::scheduleTimer(_connectionTimer, connectionTimeoutCallback,
-                                   this, connectionTimeout, /*repeating:*/false);
-        }
-        
-        if (_issuedConnectionWarning) {
-            _issuedConnectionWarning = false;
-            _delegate.emiConnRegained();
-        }
-    }
-    
-    static void tickTimeoutCallback(EmiTimeInterval now, Timer *timer, void *data) {
-        EmiConn *conn = (EmiConn *)data;
-        
-        if (conn->flush(now)) {
-            conn->resetHeartbeatTimeout();
-        }
-    }
-    void ensureTickTimeout() {
-        if (!Binding::timerIsActive(_tickTimer)) {
-            Binding::scheduleTimer(_tickTimer, tickTimeoutCallback, this, 1/_emisock.config.tickFrequency, /*repeating:*/false);
-        }
-    }
-    
-    static void heartbeatTimeoutCallback(EmiTimeInterval now, Timer *timer, void *data) {
-        EmiConn *conn = (EmiConn *)data;
-        
-        if (!conn->_sentDataSinceLastHeartbeat) {
-            conn->_sendQueue.enqueueHeartbeat();
-            conn->ensureTickTimeout();
-        }
-        conn->resetHeartbeatTimeout();
-    }
-    void resetHeartbeatTimeout() {
-        _sentDataSinceLastHeartbeat = false;
-        
-        // Don't send heartbeats until we've got a response from the remote host
-        if (!isOpening()) {
-            Binding::scheduleTimer(_heartbeatTimer, heartbeatTimeoutCallback,
-                                   this, 1/_emisock.config.heartbeatFrequency,
-                                   /*repeating:*/false);
-        }
-    }
-    
-    void rtoTimeout(EmiTimeInterval now, EmiTimeInterval rtoWhenRtoTimerWasScheduled) {
-        _senderBuffer.eachCurrentMessage(now, rtoWhenRtoTimerWasScheduled, ^(EmiMessage<Binding> *msg) {
-            Error err;
-            // Reliable is set to false, because if the message is reliable, it is
-            // already in the sender buffer and shouldn't be reinserted anyway
-            
-            // enqueueMessage can't fail because the reliable parameter is false
-            ASSERT(enqueueMessage(now, msg, /*reliable:*/false, err));
-        });
-    }
-    
     void forceClose(EmiDisconnectReason reason) {
         _emisock.deregisterConnection(this);
         
@@ -228,10 +124,10 @@ public:
     }
     
     void sentPacket() {
-        _sentDataSinceLastHeartbeat = true;
+        _timers.sentPacket();
     }
     void gotPacket() {
-        resetConnectionTimeout();
+        _timers.resetConnectionTimeout();
     }
     void gotTimestamp(EmiTimeInterval now, const uint8_t *data, size_t len) {
         _time.gotTimestamp(_emisock.config.heartbeatFrequency, now, data, len);
@@ -240,7 +136,7 @@ public:
     // Delegates to EmiSendQueue
     void enqueueAck(EmiChannelQualifier channelQualifier, EmiSequenceNumber sequenceNumber) {
         if (_sendQueue.enqueueAck(channelQualifier, sequenceNumber)) {
-            ensureTickTimeout();
+            _timers.ensureTickTimeout();
         }
     }
     
@@ -249,10 +145,10 @@ public:
         _senderBuffer.deregisterReliableMessages(channelQualifier, sequenceNumber);
         
         // This will clear the rto timeout if the sender buffer is empty
-        _rtoTimer.updateRtoTimeout();
+        _timers.updateRtoTimeout();
     }
     
-    bool senderBufferIsEmpty(EmiRtoTimer<Binding, EmiConn>& ert) const {
+    bool senderBufferIsEmpty() const {
         return _senderBuffer.empty();
     }
     
@@ -263,11 +159,11 @@ public:
             if (!_senderBuffer.registerReliableMessage(msg, err, now)) {
                 return false;
             }
-            _rtoTimer.updateRtoTimeout();
+            _timers.updateRtoTimeout();
         }
         
         _sendQueue.enqueueMessage(msg, _time, now);
-        ensureTickTimeout();
+        _timers.ensureTickTimeout();
         
         return true;
     }
@@ -304,6 +200,38 @@ public:
             _conn = new ELC(this, _receiverBuffer, now, cookie);
             return true;
         }
+    }
+    
+    inline void resetConnectionTimeout() {
+        _timers.resetConnectionTimeout();
+    }
+    
+    inline void resetHeartbeatTimeout() {
+        _timers.resetHeartbeatTimeout();
+    }
+    
+    // Methods that EmiConnTimers invoke
+    void connectionTimeout() {
+        forceClose(EMI_REASON_CONNECTION_TIMED_OUT);
+    }
+    void connectionLost() {
+        _delegate.emiConnLost();
+    }
+    void connectionRegained() {
+        _delegate.emiConnLost();
+    }
+    void rtoTimeout(EmiTimeInterval now, EmiTimeInterval rtoWhenRtoTimerWasScheduled) {
+        _senderBuffer.eachCurrentMessage(now, rtoWhenRtoTimerWasScheduled, ^(EmiMessage<Binding> *msg) {
+            Error err;
+            // Reliable is set to false, because if the message is reliable, it is
+            // already in the sender buffer and shouldn't be reinserted anyway
+            
+            // enqueueMessage can't fail because the reliable parameter is false
+            ASSERT(enqueueMessage(now, msg, /*reliable:*/false, err));
+        });
+    }
+    void enqueueHeartbeat() {
+        _sendQueue.enqueueHeartbeat();
     }
     
     // Methods that delegate to EmiLogicalConnetion
@@ -386,33 +314,33 @@ public:
         }
     }
     
-    ConnDelegate& getDelegate() {
+    inline ConnDelegate& getDelegate() {
         return _delegate;
     }
     
-    const ConnDelegate& getDelegate() const {
+    inline const ConnDelegate& getDelegate() const {
         return _delegate;
     }
-    void setDelegate(const ConnDelegate& delegate) {
+    inline void setDelegate(const ConnDelegate& delegate) {
         _delegate = delegate;
     }
     
-    uint16_t getInboundPort() const {
+    inline uint16_t getInboundPort() const {
         return _inboundPort;
     }
     
-    const sockaddr_storage& getLocalAddress() const {
+    inline const sockaddr_storage& getLocalAddress() const {
         return _localAddress;
     }
     
-    const sockaddr_storage& getRemoteAddress() const {
+    inline const sockaddr_storage& getRemoteAddress() const {
         return _remoteAddress;
     }
     
-    bool issuedConnectionWarning() const {
-        return _issuedConnectionWarning;
+    inline bool issuedConnectionWarning() const {
+        return _timers.issuedConnectionWarning();
     }
-    EmiConnectionType getType() const {
+    inline EmiConnectionType getType() const {
         return _type;
     }
     bool isOpen() const {
@@ -430,11 +358,11 @@ public:
         _emisock.sendDatagram(this, data, size);
     }
     
-    inline ES &getEmiSock() {
+    inline inline ES& getEmiSock() {
         return _emisock;
     }
     
-    inline const EmiP2PData &getP2PData() const {
+    inline inline const EmiP2PData& getP2PData() const {
         return _p2p;
     }
 };
