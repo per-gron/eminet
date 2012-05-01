@@ -366,6 +366,9 @@ public:
                     }
                 }
                 else if ((EMI_RST_FLAG | EMI_ACK_FLAG) == relevantFlags) {
+                    // TODO This type of message does not exist! I misinterpreted
+                    // the protocol spec when writing this code.
+                    
                     // This is a non-proxy connection close message.
                     if (conn) {
                         // We still have an open connection. This means that
