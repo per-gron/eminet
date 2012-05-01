@@ -378,7 +378,7 @@ public:
                     
                     ENSURE(config.acceptConnections,
                            "Got SYN but this socket doesn't \
-                           accept incoming connections");
+                            accept incoming connections");
                     ENSURE(0 == header.length,
                            "Got SYN message with message length != 0");
                     ENSURE(!ackFlag, "Got SYN message with ACK flag");
