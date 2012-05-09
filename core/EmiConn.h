@@ -54,6 +54,7 @@ class EmiConn {
     EmiConnTime _time;
     
     ECT _timers;
+    typename Binding::Timer *_forceCloseTimer;
     
     ConnDelegate _delegate;
         
@@ -112,12 +113,17 @@ public:
     _receiverBuffer(_emisock.config.receiverBufferSize, *this),
     _sendQueue(*this),
     _time(),
-    _timers(*this, _time) {
+    _timers(*this, _time),
+    _forceCloseTimer(NULL) {
         EmiNetUtil::anyAddr(0, AF_INET, &_localAddress);
     }
     
     virtual ~EmiConn() {
         _emisock.deregisterConnection(this);
+        
+        if (_forceCloseTimer) {
+            Binding::freeTimer(_forceCloseTimer);
+        }
         
         deleteELC(_conn);
     }
@@ -340,9 +346,11 @@ public:
         // immediately, we schedule a timer that will invoke forceClose later
         // on. This guarantees that we don't deallocate this object while
         // there are references to it left on the stack.
-        typename Binding::Timer *timer(Binding::makeTimer());
-        Binding::scheduleTimer(timer, forceCloseTimeoutCallback,
-                               this, /*time:*/0, /*repeating:*/false);
+        if (!_forceCloseTimer) {
+            _forceCloseTimer = Binding::makeTimer();
+            Binding::scheduleTimer(_forceCloseTimer, forceCloseTimeoutCallback,
+                                   this, /*time:*/0, /*repeating:*/false);
+        }
     }
     
     // Delegates to EmiSendQueue
