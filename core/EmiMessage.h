@@ -168,6 +168,7 @@ public:
     
     template<int BUF_SIZE>
     static void writeControlPacketWithData(EmiFlags flags, const uint8_t *data, size_t dataLength,
+                                           EmiSequenceNumber sequenceNumber,
                                            SendSynRstAckPacketCallback callback) {
         uint8_t buf[BUF_SIZE];
         
@@ -183,7 +184,7 @@ public:
                         false, /* hasAck */
                         0, /* ack */
                         -1, /* channelQualifier */
-                        0, /* sequenceNumber */
+                        sequenceNumber,
                         data,
                         dataLength,
                         flags);
@@ -191,6 +192,17 @@ public:
         ASSERT(plen);
         
         callback(buf, tlen+plen);
+    }
+    
+    template<int BUF_SIZE>
+    static void writeControlPacketWithData(EmiFlags flags, const uint8_t *data, size_t dataLength,
+                                           SendSynRstAckPacketCallback callback) {
+        writeControlPacketWithData<BUF_SIZE>(flags, data, dataLength, 0, callback);
+    }
+    
+    static void writeControlPacket(EmiFlags flags, EmiSequenceNumber sequenceNumber, SendSynRstAckPacketCallback callback) {
+        // BUF_SIZE=96 ought to be plenty
+        writeControlPacketWithData<96>(flags, NULL, 0, sequenceNumber, callback);
     }
     
     static void writeControlPacket(EmiFlags flags, SendSynRstAckPacketCallback callback) {

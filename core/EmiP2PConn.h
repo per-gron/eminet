@@ -117,8 +117,10 @@ private:
                                   len);
     }
     
-    void sendSynAck(int addrIdx) {
-        EmiMessage<Binding>::writeControlPacket(EMI_SYN_FLAG | EMI_ACK_FLAG, ^(uint8_t *buf, size_t size) {
+    void sendSynRst(int addrIdx) {
+        EmiSequenceNumber otherHostSN = _initialSequenceNumbers[0 == addrIdx ? 1 : 0];
+        
+        EmiMessage<Binding>::writeControlPacket(EMI_SYN_FLAG | EMI_RST_FLAG, otherHostSN, ^(uint8_t *buf, size_t size) {
             EmiMessage<Binding>::fillTimestamps(_times[addrIdx], buf, size);
             P2PSockDelegate::sendData(_sock, _peers[addrIdx], buf, size);
         });
@@ -223,8 +225,8 @@ public:
         
         _waitingForPrxAck[0] = true;
         _waitingForPrxAck[1] = true;
-        sendSynAck(0);
-        sendSynAck(1);
+        sendSynRst(0);
+        sendSynRst(1);
         
         // Make sure that we re-send the syn-ack messages on rto timeout
         _rtoTimer0.updateRtoTimeout();
@@ -264,8 +266,8 @@ public:
     }
     
     void rtoTimeout(EmiTimeInterval now, EmiTimeInterval rtoWhenRtoTimerWasScheduled) {
-        if (_waitingForPrxAck[0]) sendSynAck(0);
-        if (_waitingForPrxAck[1]) sendSynAck(1);
+        if (_waitingForPrxAck[0]) sendSynRst(0);
+        if (_waitingForPrxAck[1]) sendSynRst(1);
     }
     
     bool senderBufferIsEmpty(ERT& ert) const {
