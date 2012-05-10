@@ -353,28 +353,11 @@ public:
                 }
                 else if (EMI_RST_FLAG == relevantFlags) {
                     // This is a non-proxy connection close message.
-                    //
-                    // We don't need to be smart about this type of packet,
-                    // we can simply forward it.
-                    if (conn) {
-                        conn->gotTimestamp(address, now, rawData, len);
-                        conn->forwardPacket(now, address, data, offset, len);
-                    }
-                    else {
-                        err = "Got RST message without open conection";
-                        goto error;
-                    }
-                }
-                else if ((EMI_RST_FLAG | EMI_ACK_FLAG) == relevantFlags) {
-                    // TODO This type of message does not exist! I misinterpreted
-                    // the protocol spec when writing this code.
-                    
-                    // This is a non-proxy connection close message.
                     if (conn) {
                         // We still have an open connection. This means that
                         // we haven't yet received confirmation from the other
-                        // host that it has received the RST-ACK message, so
-                        // we forward it.
+                        // host that it has received the RST message, so we
+                        // forward it.
                         conn->gotTimestamp(address, now, rawData, len);
                         conn->forwardPacket(now, address, data, offset, len);
                     }
