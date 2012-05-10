@@ -421,7 +421,12 @@ public:
     
     // Invoked by EmiSendQueue
     void sendDatagram(const uint8_t *data, size_t size) {
-        _emisock.sendDatagram(this, data, size);
+        _emisock.sendDatagram(this, getRemoteAddress(), data, size);
+    }
+    
+    // Invoked by EmiLogicalConnection
+    void sendDatagram(const sockaddr_storage& address, const uint8_t *data, size_t size) {
+        _emisock.sendDatagram(this, address, data, size);
     }
     
     inline inline ES& getEmiSock() {

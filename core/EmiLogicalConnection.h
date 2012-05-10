@@ -121,7 +121,9 @@ private:
     
     // Invoked by EmiNatPunchthrough
     void sendPrxSynPacket(const sockaddr_storage& addr, const uint8_t *buf, size_t bufSize) {
-        // TODO
+        if (_conn) {
+            _conn->sendDatagram(addr, buf, bufSize);
+        }
     }
     
 public:

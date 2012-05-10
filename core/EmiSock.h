@@ -512,7 +512,7 @@ public:
                              callbackCookie, err);
     }
     
-    void sendDatagram(EC *conn, const uint8_t *data, size_t size) {
+    void sendDatagram(EC *conn, const sockaddr_storage& address, const uint8_t *data, size_t size) {
         conn->sentPacket();
         
         if (shouldArtificiallyDropPacket()) {
@@ -525,13 +525,13 @@ public:
             
             // I'm not 100% sure that socket will never be NULL
             if (socket) {
-                socket->sendData(conn->getLocalAddress(), conn->getRemoteAddress(), data, size);
+                socket->sendData(conn->getLocalAddress(), address, data, size);
             }
         }
         else {
             // I'm not 100% sure that socket will never be NULL
             if (_serverSocket) {
-                _delegate.sendData(_serverSocket, conn->getRemoteAddress(), data, size);
+                _delegate.sendData(_serverSocket, address, data, size);
             }
         }
     }
