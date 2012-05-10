@@ -33,12 +33,9 @@ class EmiSock {
     typedef typename SockDelegate::ConnectionOpenedCallbackCookie  ConnectionOpenedCallbackCookie;
     
     class EmiConnectionKey {
-        const EmiAddressCmp _cmp;
     public:
         EmiConnectionKey(const sockaddr_storage& address_, uint16_t inboundPort_) :
-        address(address_), inboundPort(inboundPort_), _cmp() {}
-        EmiConnectionKey(const sockaddr_storage& address_, uint16_t inboundPort_, const EmiAddressCmp& cmp) :
-        address(address_), inboundPort(inboundPort_), _cmp(cmp) {}
+        address(address_), inboundPort(inboundPort_) {}
         
         sockaddr_storage address;
         uint16_t inboundPort;
@@ -47,23 +44,20 @@ class EmiSock {
             if (inboundPort < rhs.inboundPort) return true;
             else if (inboundPort > rhs.inboundPort) return false;
             else {
-                return 0 > _cmp(address, rhs.address);
+                return 0 > EmiAddressCmp::compare(address, rhs.address);
             }
         }
     };
     
     struct EmiClientSocketKey {
-        const EmiAddressCmp _cmp;
     public:
         EmiClientSocketKey(const sockaddr_storage& address_) :
-        address(address_), _cmp() {}
-        EmiClientSocketKey(const sockaddr_storage& address_, const EmiAddressCmp& cmp) :
-        address(address_), _cmp(cmp) {}
+        address(address_) {}
         
         sockaddr_storage address;
         
         inline bool operator<(const EmiClientSocketKey& rhs) const {
-            return 0 > _cmp(address, rhs.address);
+            return 0 > EmiAddressCmp::compare(address, rhs.address);
         }
     };
     
