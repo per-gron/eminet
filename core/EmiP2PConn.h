@@ -299,24 +299,24 @@ public:
         // All IP addresses we deal with here are in network byte order
         
         // These port numbers are in network byte order
-        uint16_t myOuterPort    = EmiNetUtil::addrPortN(_peers[idx]);
-        uint16_t otherOuterPort = EmiNetUtil::addrPortN(_peers[otherIdx]);
         uint16_t myInnerPort    = EmiNetUtil::addrPortN(_innerEndpoints[idx]);
+        uint16_t myOuterPort    = EmiNetUtil::addrPortN(_peers[idx]);
         uint16_t otherInnerPort = EmiNetUtil::addrPortN(_innerEndpoints[otherIdx]);
+        uint16_t otherOuterPort = EmiNetUtil::addrPortN(_peers[otherIdx]);
         
         /// Save the endpoint pairs in buf
         {
             uint8_t *bufCur = buf;
             
-            EmiNetUtil::extractIp(_peers[idx], bufCur, sizeof(buf));          bufCur += ipLen;
-            memcpy(bufCur, &myOuterPort, portLen);                            bufCur += portLen;
             EmiNetUtil::extractIp(_innerEndpoints[idx], bufCur, sizeof(buf)); bufCur += ipLen;
             memcpy(buf+ipLen, &myInnerPort, portLen);                         bufCur += portLen;
+            EmiNetUtil::extractIp(_peers[idx], bufCur, sizeof(buf));          bufCur += ipLen;
+            memcpy(bufCur, &myOuterPort, portLen);                            bufCur += portLen;
             
-            EmiNetUtil::extractIp(_peers[otherIdx], bufCur, sizeof(buf));          bufCur += ipLen;
-            memcpy(bufCur, &otherOuterPort, portLen);                              bufCur += portLen;
             EmiNetUtil::extractIp(_innerEndpoints[otherIdx], bufCur, sizeof(buf)); bufCur += ipLen;
             memcpy(buf+ipLen, &otherInnerPort, portLen);                           bufCur += portLen;
+            EmiNetUtil::extractIp(_peers[otherIdx], bufCur, sizeof(buf));          bufCur += ipLen;
+            memcpy(bufCur, &otherOuterPort, portLen);                              bufCur += portLen;
         }
         
         

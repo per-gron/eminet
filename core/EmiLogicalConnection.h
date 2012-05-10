@@ -11,6 +11,7 @@
 
 #include "EmiMessage.h"
 #include "EmiNetUtil.h"
+#include "EmiNatPunchthrough.h"
 
 #include <map>
 
@@ -30,6 +31,7 @@ class EmiLogicalConnection {
     typedef typename SockDelegate::ConnectionOpenedCallbackCookie ConnectionOpenedCallbackCookie;
     typedef EmiMessage<Binding>                 EM;
     typedef EmiConn<SockDelegate, ConnDelegate> EC;
+    typedef EmiNatPunchthrough<Binding, EmiLogicalConnection> ENP;
     
     ReceiverBuffer &_receiverBuffer;
     
@@ -53,6 +55,8 @@ class EmiLogicalConnection {
     // we get away with only using one instance variable for all of
     // them.
     int32_t _reliableHandshakeMsgSn; // -1 when it has no value
+    
+    ENP *_natPunchthrough; // This is NULL except in the NAT punchthrough phase of P2P connections
     
 private:
     // Private copy constructor and assignment operator
@@ -109,6 +113,8 @@ private:
         _initialSequenceNumber = EmiLogicalConnection::generateSequenceNumber();
         
         _reliableHandshakeMsgSn = -1;
+        
+        _natPunchthrough = NULL;
     }
     
 public:
@@ -151,6 +157,10 @@ public:
     virtual ~EmiLogicalConnection() {
         // Just to be sure, since these ivars are __unsafe_unretained
         _conn = NULL;
+        
+        if (_natPunchthrough) {
+            delete _natPunchthrough;
+        }
     }
     
     // This method only fails when sending a SYN message, that is,
@@ -244,9 +254,9 @@ public:
             return;
         }
         
-        sockaddr_storage addrs[4];
+        sockaddr_storage addrs[2];
         
-        const uint8_t *dataPtr = data;
+        const uint8_t *dataPtr = data+endpointPairLen;
         for (int i=0; i<4; i++) {
             EmiNetUtil::makeAddress(family,
                                     dataPtr, ipLen,
@@ -257,15 +267,21 @@ public:
         }
         
         
-        /// Release reliable handshake message
+        /// Release the reliable PRX-ACK handshake message
         
         releaseReliableHandshakeMsg(now);
         
         
-        // TODO initiate NAT punch through (send reliable PRX-SYN
-        // messages to both of the other host's endpoints). I think
-        // we will need a distinct EmiRtoTimer for doing the resends
-        // with proper timing.
+        /// Initiate NAT punch through
+        
+        if (!_natPunchthrough) {
+            _natPunchthrough = new ENP(_conn->getEmiSock().config.connectionTimeout,
+                                       *this,
+                                       _conn->getP2PData(),
+                                       /*myEndpointPair:*/data, endpointPairLen,
+                                       /*peerInnerAddr:*/addrs[0],
+                                       /*peerOuterAddr:*/addrs[1]);
+        }
     }
     
     // Returns false if the connection is not in the opening state (that's an error)
