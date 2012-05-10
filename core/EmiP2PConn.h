@@ -234,7 +234,7 @@ public:
     inline const sockaddr_storage& getFirstAddress() const { return _peers[0]; }
     inline const sockaddr_storage& getOtherAddress() const { return _peers[0]; }
     
-    inline bool isInitialSequenceNumberMismatch(const sockaddr_storage& address, EmiSequenceNumber sequenceNumber) const {
+    bool isInitialSequenceNumberMismatch(const sockaddr_storage& address, EmiSequenceNumber sequenceNumber) const {
         int idx(addressIndex(address));
         
         if (-1 == idx) {

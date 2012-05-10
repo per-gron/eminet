@@ -354,7 +354,11 @@ public:
                 }
                 else if ((EMI_PRX_FLAG | EMI_ACK_FLAG) == relevantFlags) {
                     // This is a connection open ACK message.
-                    if (conn) {
+                    if (conn && conn->isInitialSequenceNumberMismatch(address, header.sequenceNumber)) {
+                        err = "Got PRX-ACK message with unexpected sequence number";
+                        goto error;
+                    }
+                    else if (conn) {
                         gotConnectionOpenAck(address, conn, now, rawData, len);
                     }
                     else {
