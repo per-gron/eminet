@@ -33,6 +33,8 @@ class EmiLogicalConnection {
     typedef EmiConn<SockDelegate, ConnDelegate> EC;
     typedef EmiNatPunchthrough<Binding, EmiLogicalConnection> ENP;
     
+    friend class EmiNatPunchthrough<Binding, EmiLogicalConnection>;
+    
     ReceiverBuffer &_receiverBuffer;
     
     bool _closing;
@@ -115,6 +117,11 @@ private:
         _reliableHandshakeMsgSn = -1;
         
         _natPunchthrough = NULL;
+    }
+    
+    // Invoked by EmiNatPunchthrough
+    void sendPrxSynPacket(const sockaddr_storage& addr, const uint8_t *buf, size_t bufSize) {
+        // TODO
     }
     
 public:
@@ -277,6 +284,7 @@ public:
         if (!_natPunchthrough) {
             _natPunchthrough = new ENP(_conn->getEmiSock().config.connectionTimeout,
                                        *this,
+                                       _initialSequenceNumber,
                                        _conn->getP2PData(),
                                        /*myEndpointPair:*/data, endpointPairLen,
                                        /*peerInnerAddr:*/addrs[0],

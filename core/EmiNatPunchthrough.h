@@ -13,6 +13,8 @@
 #include "EmiConnTime.h"
 #include "EmiRtoTimer.h"
 #include "EmiP2PData.h"
+#include "EmiMessage.h"
+#include "EmiAddressCmp.h"
 
 #include <netinet/in.h>
 
@@ -31,16 +33,41 @@ private:
     inline EmiNatPunchthrough(const EmiNatPunchthrough& other);
     inline EmiNatPunchthrough& operator=(const EmiNatPunchthrough& other);
     
-    Delegate&   _delegate;
-    const EmiP2PData& _p2p;
-    EmiConnTime _time;
-    ERT         _rtoTimer;
+    Delegate&               _delegate;
+    const EmiSequenceNumber _initialSequenceNumber;
+    const EmiP2PData&       _p2p;
+    // TODO What happens with _time once the P2P connection is established? Shouldn't this replace the EmiConn's EmiConnTime?
+    EmiConnTime             _time;
+    ERT                     _rtoTimer;
     
     uint8_t* const         _myEndpointPair;
     const size_t           _myEndpointPairLength;
     const sockaddr_storage _peerInnerAddr;
     const sockaddr_storage _peerOuterAddr;
     
+    void sendPrxSynPackets() {
+        uint8_t hashBuf[Binding::HMAC_HASH_SIZE];
+        
+        Binding::hmacHash(_p2p.sharedSecret, _p2p.sharedSecretLength,
+                          _myEndpointPair, _myEndpointPairLength,
+                          hashBuf, sizeof(hashBuf));
+        
+        /// Prepare the message headers
+        EmiFlags flags(EMI_PRX_FLAG | EMI_SYN_FLAG);
+        EmiMessage<Binding>::template writeControlPacketWithData<128>(flags, hashBuf, sizeof(hashBuf), ^(uint8_t *buf,
+                                                                                                         size_t size) {
+            /// Fill the timestamps
+            EmiMessage<Binding>::fillTimestamps(_time, buf, size);
+            
+            /// Actually send the packet(s)
+            _delegate.sendPrxSynPacket(_peerInnerAddr, buf, size);
+            
+            if (0 != EmiAddressCmp::compare(_peerInnerAddr, _peerOuterAddr)) {
+                // Only send one packet if the inner and outer endpoints are equal
+                _delegate.sendPrxSynPacket(_peerOuterAddr, buf, size);
+            }
+        });
+    }
     
     // Invoked by EmiRtoTimer, but this shouldn't happen
     // because connection warnings are disabled when _rtoTimer
@@ -55,7 +82,9 @@ private:
     
     // Invoked by EmiRtoTimer
     void rtoTimeout(EmiTimeInterval now, EmiTimeInterval rtoWhenRtoTimerWasScheduled) {
-        // TODO
+        // It seems like the PRX-SYN packets we sent got lost.
+        // Try re-sending them.
+        sendPrxSynPackets();
     }
     
     // Invoked by EmiRtoTimer
@@ -70,11 +99,13 @@ public:
     
     EmiNatPunchthrough(EmiTimeInterval connectionTimeout,
                        Delegate& delegate,
+                       EmiSequenceNumber initialSequenceNumber,
                        const EmiP2PData& p2p,
                        const uint8_t *myEndpointPair, size_t myEndpointPairLength,
                        const sockaddr_storage& peerInnerAddr,
                        const sockaddr_storage& peerOuterAddr) :
     _delegate(delegate),
+    _initialSequenceNumber(initialSequenceNumber),
     _p2p(p2p),
     _time(),
     _rtoTimer(/*disable connection warning:*/-1, connectionTimeout, _time, *this),
@@ -86,7 +117,7 @@ public:
         
         _rtoTimer.updateRtoTimeout();
         
-        // TODO Send PRX-SYN messages
+        sendPrxSynPackets();
     }
     
     virtual ~EmiNatPunchthrough() {
