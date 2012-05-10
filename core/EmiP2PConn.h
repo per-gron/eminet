@@ -165,7 +165,7 @@ public:
     _rtoTimer0(_times[0], *this),
     _rtoTimer1(_times[0], *this),
     _rateLimitTimer(rateLimit ? Binding::makeTimer() : NULL) {
-        int family = EmiBinding::extractFamily(firstPeer);
+        int family = firstPeer.ss_family;
         
         _peers[0] = firstPeer;
         EmiBinding::fillNilAddress(family, _peers[1]);
@@ -296,7 +296,7 @@ public:
         
         int otherIdx = (0 == idx) ? 1 : 0;
         
-        const size_t ipLen = Binding::ipLength(_peers[idx]);
+        const size_t ipLen = EmiNetUtil::ipLength(_peers[idx]);
         static const size_t portLen = sizeof(uint16_t);
         const size_t endpointPairLen = 2*(ipLen+portLen);
         const size_t dataLen = 2*endpointPairLen;
@@ -316,15 +316,15 @@ public:
         {
             uint8_t *bufCur = buf;
             
-            Binding::extractIp(_peers[idx], bufCur, sizeof(buf));          bufCur += ipLen;
-            memcpy(bufCur, &myOuterPort, portLen);                         bufCur += portLen;
-            Binding::extractIp(_innerEndpoints[idx], bufCur, sizeof(buf)); bufCur += ipLen;
-            memcpy(buf+ipLen, &myInnerPort, portLen);                      bufCur += portLen;
+            EmiNetUtil::extractIp(_peers[idx], bufCur, sizeof(buf));          bufCur += ipLen;
+            memcpy(bufCur, &myOuterPort, portLen);                            bufCur += portLen;
+            EmiNetUtil::extractIp(_innerEndpoints[idx], bufCur, sizeof(buf)); bufCur += ipLen;
+            memcpy(buf+ipLen, &myInnerPort, portLen);                         bufCur += portLen;
             
-            Binding::extractIp(_peers[otherIdx], bufCur, sizeof(buf));          bufCur += ipLen;
-            memcpy(bufCur, &otherOuterPort, portLen);                           bufCur += portLen;
-            Binding::extractIp(_innerEndpoints[otherIdx], bufCur, sizeof(buf)); bufCur += ipLen;
-            memcpy(buf+ipLen, &otherInnerPort, portLen);                        bufCur += portLen;
+            EmiNetUtil::extractIp(_peers[otherIdx], bufCur, sizeof(buf));          bufCur += ipLen;
+            memcpy(bufCur, &otherOuterPort, portLen);                              bufCur += portLen;
+            EmiNetUtil::extractIp(_innerEndpoints[otherIdx], bufCur, sizeof(buf)); bufCur += ipLen;
+            memcpy(buf+ipLen, &otherInnerPort, portLen);                           bufCur += portLen;
         }
         
         

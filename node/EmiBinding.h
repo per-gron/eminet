@@ -37,10 +37,6 @@ public:
     static bool isNilAddress(const Address& address);
     // The IP and port number should be in network byte order
     static Address makeAddress(int family, const uint8_t *ip, size_t ipLen, uint16_t port);
-    static int extractFamily(const Address& address);
-    static size_t ipLength(const Address& address);
-    // Saves the IP address in buf, in network byte order. Returns the length of the IP address.
-    static size_t extractIp(const Address& address, uint8_t *buf, size_t bufSize);
     
     inline static EmiError makeError(const char *domain, int32_t code) {
         return EmiError(domain, code);

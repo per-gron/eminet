@@ -73,6 +73,25 @@ public:
     }
     
     // The caller is responsible for releasing the returned object
+    static EmiMessage *makePrxAckMessage(EmiSequenceNumber sequenceNumber, const sockaddr_storage& inboundAddr) {
+        const size_t ipLen = EmiNetUtil::ipLength(inboundAddr);
+        static const size_t portLen = sizeof(uint16_t);
+        const size_t endpointLen = ipLen+portLen;
+        
+        uint8_t buf[96];
+        ASSERT(sizeof(buf) >= endpointLen);
+        
+        // The IP address and port number are in network byte order
+        
+        /// Save the endpoint in buf
+        EmiNetUtil::extractIp(inboundAddr, buf, sizeof(buf));
+        uint16_t port = EmiNetUtil::addrPortN(inboundAddr);
+        memcpy(buf+ipLen, &port, portLen);
+        
+        return makeSynAndOrRstMessage(EMI_PRX_FLAG | EMI_ACK_FLAG, sequenceNumber, buf, endpointLen);
+    }
+    
+    // The caller is responsible for releasing the returned object
     static EmiMessage *makeDataMessage(EmiChannelQualifier cq,
                                        EmiSequenceNumber sequenceNumber,
                                        const PersistentData& data,

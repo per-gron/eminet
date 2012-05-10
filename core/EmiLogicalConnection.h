@@ -201,10 +201,12 @@ public:
         // peer.
         releaseReliableHandshakeMsg(now);
     }
+    
     // Warning: This method might deallocate the object
     void gotRst() {
         _conn->forceClose(EMI_REASON_OTHER_HOST_CLOSED);
     }
+    
     // Warning: This method might deallocate the object
     void gotSynRstAck() {
         // Technically, the other host could just send a
@@ -221,10 +223,12 @@ public:
                           EMI_REASON_THIS_HOST_CLOSED :
                           EMI_REASON_OTHER_HOST_CLOSED);
     }
+    
     void gotPrxRstAck() {
         // TODO
     }
-    // Returns false if the connection not in the opening state (that's an error)
+    
+    // Returns false if the connection is not in the opening state (that's an error)
     bool gotSynRst(EmiTimeInterval now,
                    const sockaddr_storage& inboundAddr,
                    EmiSequenceNumber otherHostInitialSequenceNumber) {
@@ -238,7 +242,16 @@ public:
         invokeSynRstCallback(false, EMI_REASON_NO_ERROR);
         
         if (_conn && EMI_CONNECTION_TYPE_P2P == _conn->getType()) {
-            // TODO Send reliable PRX-SYN message
+            // Send reliable PRX-SYN message
+            
+            EM *msg = EM::makePrxAckMessage(_initialSequenceNumber, inboundAddr);
+            
+            Error err;
+            ASSERT(_conn->enqueueMessage(now, msg, /*reliable:*/_sendingSyn, err));
+            
+            _reliableHandshakeMsgSn = msg->sequenceNumber;
+            
+            msg->release();
         }
         
         return true;

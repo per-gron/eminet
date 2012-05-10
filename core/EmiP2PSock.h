@@ -173,7 +173,7 @@ private:
                               EmiTimeInterval now,
                               const uint8_t *rawData,
                               size_t len) {
-        const size_t ipLen = Binding::ipLength(address);
+        const size_t ipLen = EmiNetUtil::ipLength(address);
         static const size_t portLen = 2;
         if (len != Binding::HMAC_HASH_SIZE+ipLen+portLen) {
             // Invalid packet
@@ -193,7 +193,7 @@ private:
         
         conn->gotTimestamp(address, now, rawData, len);
         
-        sockaddr_storage innerAddress(Binding::makeAddress(Binding::extractFamily(address),
+        sockaddr_storage innerAddress(Binding::makeAddress(address.ss_family,
                                                            rawData+Binding::HMAC_HASH_SIZE, ipLen,
                                                            *((uint16_t *)(rawData+Binding::HMAC_HASH_SIZE+ipLen))));
         

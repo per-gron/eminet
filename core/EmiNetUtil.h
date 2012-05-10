@@ -64,6 +64,7 @@ public:
             abort();
         }
     }
+    
     inline static void anyAddr(uint16_t port,
                                int family,
                                sockaddr_storage *out) {
@@ -89,6 +90,7 @@ public:
             abort();
         }
     }
+    
     // Returns the port number in network byte order
     inline static uint16_t addrPortN(const sockaddr_storage& address) {
         if (AF_INET6 == address.ss_family) {
@@ -104,16 +106,55 @@ public:
             abort();
         }
     }
+    
     // Returns the port number in host byte order
     inline static uint16_t addrPortH(const sockaddr_storage& address) {
         return ntohs(addrPortN(address));
     }
+    
     inline static size_t addrSize(const sockaddr_storage& address) {
         if (AF_INET == address.ss_family) {
             return sizeof(sockaddr_in);
         }
         else if (AF_INET6 == address.ss_family) {
             return sizeof(sockaddr_in6);
+        }
+        else {
+            ASSERT(0 && "unexpected address family");
+            abort();
+        }
+    }
+    
+    inline static size_t ipLength(const sockaddr_storage& address) {
+        int family = address.ss_family;
+        if (AF_INET == family) {
+            return sizeof(in_addr);
+        }
+        else if (AF_INET6 == family) {
+            return sizeof(in6_addr);
+        }
+        else {
+            ASSERT(0 && "unexpected address family");
+            abort();
+        }
+    }
+    
+    // Saves the IP address in buf, in network byte order. Returns the length of the IP address.
+    inline static size_t extractIp(const sockaddr_storage& address, uint8_t *buf, size_t bufSize) {
+        int family = address.ss_family;
+        if (AF_INET == family) {
+            const struct sockaddr_in& addr(*((struct sockaddr_in *)&address));
+            size_t addrSize = sizeof(in_addr);
+            ASSERT(bufSize >= addrSize);
+            memcpy(buf, &addr.sin_addr, addrSize);
+            return addrSize;
+        }
+        else if (AF_INET6 == family) {
+            const struct sockaddr_in6& addr6(*((struct sockaddr_in6 *)&address));
+            size_t addrSize = sizeof(in6_addr);
+            ASSERT(bufSize >= addrSize);
+            memcpy(buf, &addr6.sin6_addr, addrSize);
+            return addrSize;
         }
         else {
             ASSERT(0 && "unexpected address family");
