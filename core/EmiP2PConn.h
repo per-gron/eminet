@@ -42,12 +42,15 @@ public:
     };
     
 private:
+    
     typedef typename P2PSockDelegate::Binding Binding;
     typedef typename Binding::SocketHandle    SocketHandle;
     typedef typename Binding::TemporaryData   TemporaryData;
     typedef typename Binding::Timer           Timer;
     
     typedef EmiRtoTimer<Binding, EmiP2PConn> ERT;
+    
+    friend class EmiRtoTimer<Binding, EmiP2PConn>;
     
     // Private copy constructor and assignment operator
     inline EmiP2PConn(const EmiP2PConn& other);
@@ -66,8 +69,6 @@ private:
     const size_t     _rateLimit;
     size_t           _bytesSentSinceRateLimitTimeout;
     
-    const EmiTimeInterval  _connectionTimeout;
-    Timer                 *_connectionTimer[2];
     ERT                    _rtoTimer0;
     ERT                    _rtoTimer1;
     Timer                 *_rateLimitTimer;
@@ -132,16 +133,16 @@ private:
         conn->_bytesSentSinceRateLimitTimeout = 0;
     }
     
+    inline void connectionLost()     { ASSERT(0 && "Internal error"); }
+    inline void connectionRegained() { ASSERT(0 && "Internal error"); }
     
-    static void connectionTimeoutCallback(EmiTimeInterval now, Timer *timer, void *data) {
-        EmiP2PConn *conn = (EmiP2PConn *)data;
-        
-        conn->_delegate.removeConnection(conn);
+    inline void connectionTimeout() {
+        _delegate.removeConnection(this);
     }
     
     void resetConnectionTimeout(int idx) {
-        Binding::scheduleTimer(_connectionTimer[idx], connectionTimeoutCallback,
-                               this, _connectionTimeout, /*repeating:*/false);
+        if (0 == idx) _rtoTimer0.resetConnectionTimeout();
+        else          _rtoTimer1.resetConnectionTimeout();
     }
     
 public:
@@ -159,11 +160,10 @@ public:
     _sock(sock),
     _acmp(EmiAddressCmp()),
     _times(),
-    _connectionTimeout(connectionTimeout),
     _rateLimit(rateLimit),
     _bytesSentSinceRateLimitTimeout(0),
-    _rtoTimer0(_times[0], *this),
-    _rtoTimer1(_times[0], *this),
+    _rtoTimer0(/*timeBeforeConnectionWarning:*/-1, connectionTimeout, _times[0], *this),
+    _rtoTimer1(/*timeBeforeConnectionWarning:*/-1, connectionTimeout, _times[1], *this),
     _rateLimitTimer(rateLimit ? Binding::makeTimer() : NULL) {
         int family = firstPeer.ss_family;
         
@@ -178,11 +178,6 @@ public:
         _waitingForPrxAck[0] = false;
         _waitingForPrxAck[1] = false;
         
-        _connectionTimer[0] = Binding::makeTimer();
-        _connectionTimer[1] = Binding::makeTimer();
-        resetConnectionTimeout(0);
-        resetConnectionTimeout(1);
-        
         if (rateLimit) {
             Binding::scheduleTimer(_rateLimitTimer, rateLimitTimeoutCallback,
                                    this, 1, /*repeating:*/true);
@@ -190,9 +185,6 @@ public:
     }
     
     virtual ~EmiP2PConn() {
-        Binding::freeTimer(_connectionTimer[0]);
-        Binding::freeTimer(_connectionTimer[1]);
-        
         // _rateLimitTimer is never created if 0 == _rateLimit
         if (_rateLimitTimer) {
             Binding::freeTimer(_rateLimitTimer);
