@@ -286,6 +286,11 @@ public:
             _conn->gotPrx(now);
         }
     }
+    void gotPrxRstSynAck(const uint8_t *data, size_t len) {
+        if (_conn) {
+            _conn->gotPrxRstSynAck(data, len);
+        }
+    }
     // Delegates to EmiLogicalConnection
     bool gotSynRst(EmiTimeInterval now,
                    const sockaddr_storage& inboundAddr,

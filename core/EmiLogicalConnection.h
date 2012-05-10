@@ -228,6 +228,17 @@ public:
         // TODO
     }
     
+    void gotPrxRstSynAck(const uint8_t *data, size_t len) {
+        // TODO parse the incoming data
+        
+        // TODO release reliable handshake message
+        
+        // TODO initiate NAT punch through (send reliable PRX-SYN
+        // messages to both of the other host's endpoints). I think
+        // we will need a distinct EmiRtoTimer for doing the resends
+        // with proper timing.
+    }
+    
     // Returns false if the connection is not in the opening state (that's an error)
     bool gotSynRst(EmiTimeInterval now,
                    const sockaddr_storage& inboundAddr,
