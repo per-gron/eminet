@@ -20,12 +20,6 @@ bool EmiBinding::isNilAddress(const Address& address) {
     return 0 != ntohs(EmiNetUtil::addrPortN(address));
 }
 
-EmiBinding::Address EmiBinding::makeAddress(int family, const uint8_t *ip, size_t ipLen, uint16_t port) {
-    Address addr;
-    EmiNodeUtil::makeAddress(family, ip, ipLen, port, &addr);
-    return addr;
-}
-
 Persistent<Object> EmiBinding::makePersistentData(const uint8_t *data, size_t length) {
     HandleScope scope;
     

@@ -35,8 +35,6 @@ public:
     // Will fill address with an address that cannot be the receiver of a packet
     static void fillNilAddress(int family, Address& address);
     static bool isNilAddress(const Address& address);
-    // The IP and port number should be in network byte order
-    static Address makeAddress(int family, const uint8_t *ip, size_t ipLen, uint16_t port);
     
     inline static EmiError makeError(const char *domain, int32_t code) {
         return EmiError(domain, code);

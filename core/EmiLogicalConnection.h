@@ -226,6 +226,8 @@ public:
     
     void gotPrxRstAck() {
         // TODO
+        
+        // TODO release reliable handshake message
     }
     
     void gotPrxRstSynAck(const uint8_t *data, size_t len) {

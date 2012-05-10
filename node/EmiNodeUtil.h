@@ -94,8 +94,6 @@ public:
                         uint16_t port,
                         int family,
                         sockaddr_storage *out);
-    // The IP and port number should be in network byte order
-    static void makeAddress(int family, const uint8_t *ip, size_t ipLen, uint16_t port, sockaddr_storage *out);
     static void ipName(char *buf, size_t bufLen, const sockaddr_storage& addr);
     
     static bool parseAddressFamily(const char* typeStr, int *family);

@@ -175,27 +175,19 @@ private:
                               size_t len) {
         const size_t ipLen = EmiNetUtil::ipLength(address);
         static const size_t portLen = 2;
-        if (len != Binding::HMAC_HASH_SIZE+ipLen+portLen) {
-            // Invalid packet
-            return;
-        }
-        
-        uint8_t hashResult[Binding::HMAC_HASH_SIZE];
-        
-        Binding::hmacHash(conn->cookie.cookie, EMI_P2P_COOKIE_SIZE,
-                          rawData+Binding::HMAC_HASH_SIZE, sizeof(ipLen+portLen),
-                          hashResult, sizeof(hashResult));
-        
-        if (0 != memcmp(hashResult, rawData, Binding::HMAC_HASH_SIZE)) {
+        if (len != ipLen+portLen) {
             // Invalid packet
             return;
         }
         
         conn->gotTimestamp(address, now, rawData, len);
         
-        sockaddr_storage innerAddress(Binding::makeAddress(address.ss_family,
-                                                           rawData+Binding::HMAC_HASH_SIZE, ipLen,
-                                                           *((uint16_t *)(rawData+Binding::HMAC_HASH_SIZE+ipLen))));
+        sockaddr_storage innerAddress;
+        
+        EmiNetUtil::makeAddress(address.ss_family,
+                                rawData, ipLen,
+                                *((uint16_t *)(rawData+ipLen)),
+                                &innerAddress);
         
         conn->gotInnerAddress(address, innerAddress);
         
