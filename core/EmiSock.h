@@ -351,7 +351,7 @@ public:
                     if (synFlag && rstFlag && ackFlag) {
                         ENSURE_CONN("PRX-RST-SYN-ACK");
                         
-                        conn->gotPrxRstSynAck(rawData+actualDataOffset, header.length);
+                        conn->gotPrxRstSynAck(now, rawData+actualDataOffset, header.length);
                     }
                     if (!synFlag && rstFlag && ackFlag) {
                         ENSURE_CONN("PRX-RST-ACK");

@@ -286,9 +286,9 @@ public:
             _conn->gotPrx(now);
         }
     }
-    void gotPrxRstSynAck(const uint8_t *data, size_t len) {
+    void gotPrxRstSynAck(EmiTimeInterval now, const uint8_t *data, size_t len) {
         if (_conn) {
-            _conn->gotPrxRstSynAck(data, len);
+            _conn->gotPrxRstSynAck(now, data, len);
         }
     }
     // Delegates to EmiLogicalConnection

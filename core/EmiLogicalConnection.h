@@ -230,10 +230,37 @@ public:
         // TODO release reliable handshake message
     }
     
-    void gotPrxRstSynAck(const uint8_t *data, size_t len) {
-        // TODO parse the incoming data
+    void gotPrxRstSynAck(EmiTimeInterval now, const uint8_t *data, size_t len) {
         
-        // TODO release reliable handshake message
+        /// Parse the incoming data
+        
+        const int family = _conn->getLocalAddress().ss_family;
+        const size_t ipLen = EmiNetUtil::ipLength(_conn->getLocalAddress());
+        static const size_t portLen = sizeof(uint16_t);
+        const size_t endpointPairLen = 2*(ipLen+portLen);
+        const size_t dataLen = 2*endpointPairLen;
+        
+        if (len != dataLen) {
+            return;
+        }
+        
+        sockaddr_storage addrs[4];
+        
+        const uint8_t *dataPtr = data;
+        for (int i=0; i<4; i++) {
+            EmiNetUtil::makeAddress(family,
+                                    dataPtr, ipLen,
+                                    *((uint16_t *)(dataPtr+ipLen)),
+                                    &addrs[i]);
+            
+            data += ipLen+portLen;
+        }
+        
+        
+        /// Release reliable handshake message
+        
+        releaseReliableHandshakeMsg(now);
+        
         
         // TODO initiate NAT punch through (send reliable PRX-SYN
         // messages to both of the other host's endpoints). I think
