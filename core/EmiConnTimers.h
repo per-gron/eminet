@@ -58,16 +58,6 @@ private:
         timers->resetHeartbeatTimeout();
     }
     
-    static void rtoTimeoutCallback(EmiTimeInterval now, Timer *timer, void *data) {
-        EmiConnTimers *ect = (EmiConnTimers *)data;
-        
-        ect->_delegate.rtoTimeout(now, ect->_rtoWhenRtoTimerWasScheduled);
-        
-        ect->_time.onRtoTimeout();
-        
-        ect->updateRtoTimeout();
-    }
-    
     // Invoked by EmiRtoTimer
     inline bool senderBufferIsEmpty(ERT&) const {
         return _delegate.senderBufferIsEmpty();
