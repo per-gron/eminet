@@ -126,6 +126,12 @@ private:
         }
     }
     
+    // Invoked by EmiNatPunchthrough
+    void natPunchthroughFailed() {
+        delete _natPunchthrough;
+        _natPunchthrough = NULL;
+    }
+    
 public:
     
     EmiLogicalConnection(EC *connection, 

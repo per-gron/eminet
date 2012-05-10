@@ -76,12 +76,12 @@ private:
     inline void connectionRegained() { ASSERT(0 && "Internal error"); }
     
     // Invoked by EmiRtoTimer
-    void connectionTimeout() {
-        // TODO
+    inline void connectionTimeout() {
+        _delegate.natPunchthroughFailed();
     }
     
     // Invoked by EmiRtoTimer
-    void rtoTimeout(EmiTimeInterval now, EmiTimeInterval rtoWhenRtoTimerWasScheduled) {
+    inline void rtoTimeout(EmiTimeInterval now, EmiTimeInterval rtoWhenRtoTimerWasScheduled) {
         // It seems like the PRX-SYN packets we sent got lost.
         // Try re-sending them.
         sendPrxSynPackets();
