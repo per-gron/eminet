@@ -61,6 +61,7 @@ private:
     sockaddr_storage     _innerEndpoints[2];
     EmiConnTime          _times[2];
     bool                 _waitingForPrxAck[2];
+    EmiSequenceNumber    _initialSequenceNumbers[2];
     
     const size_t     _rateLimit;
     size_t           _bytesSentSinceRateLimitTimeout;
@@ -145,6 +146,7 @@ public:
     ConnCookie cookie;
     
     EmiP2PConn(Delegate& delegate,
+               EmiSequenceNumber initialSequenceNumber,
                const ConnCookie &cookie_,
                SocketHandle *sock,
                const sockaddr_storage& firstPeer,
@@ -167,6 +169,9 @@ public:
         EmiBinding::fillNilAddress(family, _peers[1]);
         EmiBinding::fillNilAddress(family, _innerEndpoints[0]);
         EmiBinding::fillNilAddress(family, _innerEndpoints[1]);
+        
+        _initialSequenceNumbers[0] = initialSequenceNumber;
+        _initialSequenceNumbers[1] = 0;
         
         _waitingForPrxAck[0] = false;
         _waitingForPrxAck[1] = false;
@@ -212,8 +217,9 @@ public:
         sendData(*otherAddr, data, offset, len);
     }
     
-    void gotOtherAddress(const sockaddr_storage& address) {
+    void gotOtherAddress(const sockaddr_storage& address, EmiSequenceNumber initialSequenceNumber) {
         _peers[1] = address;
+        _initialSequenceNumbers[1] = initialSequenceNumber;
         
         _waitingForPrxAck[0] = true;
         _waitingForPrxAck[1] = true;
@@ -225,8 +231,19 @@ public:
         _rtoTimer1.updateRtoTimeout();
     }
     
-    const sockaddr_storage& getFirstAddress() const { return _peers[0]; }
-    const sockaddr_storage& getOtherAddress() const { return _peers[0]; }
+    inline const sockaddr_storage& getFirstAddress() const { return _peers[0]; }
+    inline const sockaddr_storage& getOtherAddress() const { return _peers[0]; }
+    
+    inline bool isInitialSequenceNumberMismatch(const sockaddr_storage& address, EmiSequenceNumber sequenceNumber) const {
+        int idx(addressIndex(address));
+        
+        if (-1 == idx) {
+            return true;
+        }
+        else {
+            return _initialSequenceNumbers[idx] != sequenceNumber;
+        }
+    }
     
     void gotTimestamp(const sockaddr_storage& address, EmiTimeInterval now, const uint8_t *data, size_t len) {
         int idx(addressIndex(address));

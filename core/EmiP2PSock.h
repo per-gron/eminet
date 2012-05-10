@@ -110,6 +110,7 @@ private:
     }
     
     void gotConnectionOpen(EmiTimeInterval now,
+                           EmiSequenceNumber initialSequenceNumber,
                            const uint8_t *rawData,
                            size_t len,
                            SocketHandle *sock,
@@ -122,6 +123,15 @@ private:
         }
         
         Conn *conn = findConn(address);
+        
+        if (conn && conn->isInitialSequenceNumberMismatch(address, initialSequenceNumber)) {
+            // The connection is already open, and we get a SYN message with a
+            // different initial sequence number. This probably means that the
+            // other host has forgot about the connection we have open. Drop it
+            // and continue as if conn did not exist.
+            removeConnection(conn);
+            conn = NULL;
+        }
         
         if (!conn) {
             // We did not already have a connection with this address
@@ -137,12 +147,12 @@ private:
                 // We don't need to save the cookie anymore
                 _connCookies.erase(cur);
                 
-                conn->gotOtherAddress(address);
+                conn->gotOtherAddress(address, initialSequenceNumber);
             }
             else {
                 // There was no connection open with this cookie. Open new one
                 
-                conn = new Conn(*this, cc, sock, address, config.connectionTimeout, config.rateLimit);
+                conn = new Conn(*this, initialSequenceNumber, cc, sock, address, config.connectionTimeout, config.rateLimit);
                 _connCookies.insert(std::make_pair(cc, conn));
             }
             
@@ -334,6 +344,7 @@ public:
                 if (EMI_SYN_FLAG == relevantFlags) {
                     // This is a connection open message.
                     gotConnectionOpen(now,
+                                      header.sequenceNumber,
                                       rawData,
                                       len,
                                       sock,
