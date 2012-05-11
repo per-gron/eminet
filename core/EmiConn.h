@@ -205,8 +205,10 @@ public:
     
     // The first time this methods is called, it opens the EmiConnection and returns true.
     // Subsequent times it just resends the init message and returns false.
-    bool opened(EmiTimeInterval now, EmiSequenceNumber otherHostInitialSequenceNumber) {
+    bool opened(const sockaddr_storage& inboundAddress, EmiTimeInterval now, EmiSequenceNumber otherHostInitialSequenceNumber) {
         ASSERT(EMI_CONNECTION_TYPE_SERVER == _type);
+        
+        _localAddress = inboundAddress;
         
         if (_conn) {
             // sendInitMessage should not fail, because it can only

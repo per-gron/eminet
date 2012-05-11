@@ -340,7 +340,7 @@ public:
                     
                     conn->gotTimestamp(now, rawData, len);
                     
-                    if (conn->opened(now, header.sequenceNumber)) {
+                    if (conn->opened(inboundAddress, now, header.sequenceNumber)) {
                         _delegate.gotConnection(*conn);
                     }
                 }
