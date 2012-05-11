@@ -99,7 +99,18 @@ private:
         }
         else {
             ClientConnectionMapIter cur(_clientConns.find(sock));
-            return _clientConns.end() == cur ? NULL : (*cur).second;
+            if (_clientConns.end() == cur) {
+                return NULL;
+            }
+            
+            EC *conn = (*cur).second;
+            
+            if (0 != EmiAddressCmp::compare(conn->getRemoteAddress(), remoteAddr)) {
+                // We only want to accept messages from the correct remote host.
+                return NULL;
+            }
+            
+            return conn;
         }
     }
     
