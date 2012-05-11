@@ -6,6 +6,7 @@
 #include "EmiNodeUtil.h"
 #include "EmiConnection.h"
 #include "EmiSocket.h"
+#include "EmiObjectWrap.h"
 
 #include <node.h>
 #include <openssl/rand.h>
@@ -188,7 +189,7 @@ void EmiBinding::freeNetworkInterfaces(const NetworkInterfaces& ni) {
 struct EmiBindingSockData {
     EmiBinding::EmiOnMessage *callback;
     void *userData;
-    EmiSocket *jsObj;
+    EmiObjectWrap *jsObj;
 };
 
 static void recv_cb(uv_udp_t *socket,

@@ -3,11 +3,12 @@
 #define emilir_EmiP2PSocket_h
 
 #include "EmiP2PSockDelegate.h"
+#include "EmiObjectWrap.h"
 
 #include "../core/EmiP2PSock.h"
 #include <node.h>
 
-class EmiP2PSocket : public node::ObjectWrap {
+class EmiP2PSocket : public EmiObjectWrap {
     typedef EmiP2PSock<EmiP2PSockDelegate> EPS;
     
     friend class EmiP2PSockDelegate;

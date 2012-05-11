@@ -5,12 +5,13 @@
 #include "EmiBinding.h"
 #include "EmiSockDelegate.h"
 #include "EmiConnDelegate.h"
+#include "EmiObjectWrap.h"
 
 #include "../core/EmiSock.h"
 #include "../core/EmiConn.h"
 #include <node.h>
 
-class EmiSocket : public node::ObjectWrap {
+class EmiSocket : public EmiObjectWrap {
     typedef EmiSock<EmiSockDelegate, EmiConnDelegate> ES;
     
     friend class EmiSockDelegate;
