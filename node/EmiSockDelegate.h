@@ -27,6 +27,8 @@ class EmiSockDelegate {
     typedef EmiBinding::Error   Error;
     
     EmiSocket& _es;
+    
+    friend class EmiBinding;
 public:
     
     typedef EmiBinding                 Binding;
@@ -34,16 +36,7 @@ public:
     
     EmiSockDelegate(EmiSocket& es);
     
-    static void closeSocket(EmiSockDelegate& sock, uv_udp_t *socket);
-    uv_udp_t *openSocket(const sockaddr_storage& address, Error& err);
-    static void extractLocalAddress(uv_udp_t *socket, sockaddr_storage& address);
-    
     EC *makeConnection(const EmiConnParams<EmiBinding>& params);
-    
-    static void sendData(uv_udp_t *socket,
-                         const sockaddr_storage& address,
-                         const uint8_t *data,
-                         size_t size);
     void gotConnection(EC& conn);
     
     static void connectionOpened(ConnectionOpenedCallbackCookie& cookie,

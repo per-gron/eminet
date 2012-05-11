@@ -68,7 +68,8 @@ private:
         eus->_callback(eus, eus->_userData, now, inboundAddress, remoteAddress, data, offset, len);
     }
     
-    bool init(const sockaddr_storage& address, Error& err) {
+    template<class SockDelegate>
+    bool init(SockDelegate& sockDelegate, const sockaddr_storage& address, Error& err) {
         // TODO Do something more with address than just use
         // its address family; we should probably only bind
         // address unless address is 0.0.0.0.
@@ -88,7 +89,8 @@ private:
             
             EmiNetUtil::addrSetPort(ifAddr, _localPort);
             
-            SocketHandle *handle = Binding::openSocket(onMessage, this, ifAddr, err);
+            // TODO Should we really bind to address here??
+            SocketHandle *handle = Binding::openSocket(sockDelegate, onMessage, this, address, err);
             if (!handle) {
                 return false;
             }
@@ -124,10 +126,15 @@ public:
         }
     }
     
-    static EmiUdpSocket *open(OnMessage *callback, void *userData, const sockaddr_storage& address, Error& err) {
+    template<class SockDelegate>
+    static EmiUdpSocket *open(SockDelegate& sockDelegate,
+                              OnMessage *callback,
+                              void *userData,
+                              const sockaddr_storage& address,
+                              Error& err) {
         EmiUdpSocket *sock = new EmiUdpSocket(callback, userData);
         
-        if (!sock->init(address, err)) {
+        if (!sock->init(sockDelegate, address, err)) {
             goto error;
         }
         

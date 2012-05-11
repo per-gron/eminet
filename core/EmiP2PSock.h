@@ -10,6 +10,7 @@
 #define roshambo_EmiP2PSock_h
 
 #include "EmiTypes.h"
+#include "EmiNetUtil.h"
 #include "EmiP2PSockConfig.h"
 #include "EmiP2PConn.h"
 #include "EmiMessageHeader.h"
@@ -62,7 +63,7 @@ private:
     inline bool shouldArtificiallyDropPacket() const {
         if (0 == config.fabricatedPacketDropRate) return false;
         
-        return ((float)arc4random() / ARC4RANDOM_MAX) < config.fabricatedPacketDropRate;
+        return ((float)arc4random() / EmiNetUtil::ARC4RANDOM_MAX) < config.fabricatedPacketDropRate;
     }
     
     void hashCookie(EmiTimeInterval stamp, const uint8_t *randNum,

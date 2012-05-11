@@ -5,6 +5,7 @@
 #include "../core/EmiNetUtil.h"
 #include "EmiNodeUtil.h"
 #include "EmiConnection.h"
+#include "EmiSocket.h"
 
 #include <node.h>
 #include <openssl/rand.h>
@@ -182,3 +183,89 @@ void EmiBinding::freeNetworkInterfaces(const NetworkInterfaces& ni) {
 }
 
 #endif
+
+
+struct EmiBindingSockData {
+    EmiBinding::EmiOnMessage *callback;
+    void *userData;
+    EmiSocket *jsObj;
+};
+
+static void recv_cb(uv_udp_t *socket,
+                    const struct sockaddr_storage& addr,
+                    ssize_t nread,
+                    const v8::Local<v8::Object>& slab,
+                    size_t offset) {
+    HandleScope scope;
+    
+    EmiBindingSockData *ebsd = reinterpret_cast<EmiBindingSockData *>(socket->data);
+    
+    if (nread < 0) {
+        const unsigned argc = 2;
+        Handle<Value> argv[argc] = {
+            ebsd->jsObj->handle_,
+            EmiNodeUtil::errStr(uv_last_error(uv_default_loop()))
+        };
+        EmiSocket::connectionError->Call(Context::GetCurrent()->Global(), argc, argv);
+        return;
+    }
+    if (nread > 0) {
+        ebsd->callback(socket,
+                       ebsd->userData,
+                       EmiConnection::Now(),
+                       addr,
+                       slab,
+                       offset,
+                       nread);
+    }
+}
+
+void EmiBinding::closeSocket(uv_udp_t *socket) {
+    EmiBindingSockData *ebsd = (EmiBindingSockData *)socket->data;
+    
+    // This allows V8's GC to reclaim the EmiSocket when no UDP sockets are open
+    //
+    // TODO Perhaps I should do this on the next uv tick, since this might dealloc
+    // the whole socket, which will probably not end up well.
+    //
+    // TODO What happens when this method is actually called from _es's destructor?
+    ebsd->jsObj->Unref();
+    
+    EmiNodeUtil::closeSocket(socket);
+    
+    free(ebsd);
+}
+
+uv_udp_t *EmiBinding::openSocket(EmiSockDelegate& sockDelegate,
+                                 EmiOnMessage *callback,
+                                 void *userData,
+                                 const sockaddr_storage& address,
+                                 Error& err) {
+    EmiBindingSockData *ebsd = (EmiBindingSockData *)malloc(sizeof(EmiBindingSockData));
+    ebsd->callback = callback;
+    ebsd->userData = userData;
+    ebsd->jsObj = &sockDelegate._es;
+    
+    uv_udp_t *ret(EmiNodeUtil::openSocket(address,
+                                          recv_cb, ebsd,
+                                          err));
+    
+    if (ret) {
+        // This prevents V8's GC to reclaim the EmiSocket while UDP sockets are open
+        ebsd->jsObj->Ref();
+    }
+    
+    return ret;
+}
+
+void EmiBinding::extractLocalAddress(uv_udp_t *socket, sockaddr_storage& address) {
+    int len(sizeof(sockaddr_storage));
+    uv_udp_getsockname(socket, (struct sockaddr *)&address, &len);
+}
+
+void EmiBinding::sendData(uv_udp_t *socket,
+                               const sockaddr_storage& address,
+                               const uint8_t *data,
+                               size_t size) {
+    EmiNodeUtil::sendData(socket, address, data, size);
+}

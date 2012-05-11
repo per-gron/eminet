@@ -17,10 +17,12 @@
 #endif
 
 class EmiAddressCmp;
+class EmiSockDelegate;
 
 class EmiBinding {
 private:
     inline EmiBinding();
+    
 public:
     
     typedef EmiError                   Error;
@@ -31,6 +33,14 @@ public:
     typedef v8::Persistent<v8::Object> PersistentData;
     typedef uv_timer_t                 Timer;
     typedef void (TimerCb)(EmiTimeInterval now, Timer *timer, void *data);
+    
+    typedef void (EmiOnMessage)(uv_udp_t *socket,
+                                void *userData,
+                                EmiTimeInterval now,
+                                const sockaddr_storage& address,
+                                const TemporaryData& data,
+                                size_t offset,
+                                size_t len);
     
     // Will fill address with an address that cannot be the receiver of a packet
     static void fillNilAddress(int family, Address& address);
@@ -79,6 +89,18 @@ public:
     static bool nextNetworkInterface(NetworkInterfaces& ni, const char*& name, struct sockaddr_storage& addr);
     static void freeNetworkInterfaces(const NetworkInterfaces& ni);
 #endif
+    
+    static void closeSocket(uv_udp_t *socket);
+    static uv_udp_t *openSocket(EmiSockDelegate& sockDelegate,
+                                EmiOnMessage *callback,
+                                void *userData,
+                                const sockaddr_storage& address,
+                                Error& err);
+    static void extractLocalAddress(uv_udp_t *socket, sockaddr_storage& address);
+    static void sendData(uv_udp_t *socket,
+                         const sockaddr_storage& address,
+                         const uint8_t *data,
+                         size_t size);
 };
 
 #endif

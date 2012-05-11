@@ -61,8 +61,6 @@ void EmiSocket::Init(Handle<Object> target) {
 #define X(sym, name)                                        \
   tpl->PrototypeTemplate()->Set(String::NewSymbol(name),    \
       FunctionTemplate::New(sym)->GetFunction());
-    X(Suspend,   "suspend");
-    X(Desuspend, "desuspend");
     X(Connect4,  "connect4");
     X(Connect6,  "connect6");
 #undef X
@@ -151,48 +149,19 @@ Handle<Value> EmiSocket::New(const Arguments& args) {
     READ_ADDRESS_CONFIG(sc, family, address);
     
     EmiSocket* obj = new EmiSocket(jsHandle, sc);
-    // We need to Wrap the object now, or failing to desuspend
+    // We need to Wrap the object now, or failing to open
     // would result in a memory leak. (We rely on Wrap to deallocate
     // obj when it's no longer used.)
     obj->Wrap(args.This());
     
     EmiError err;
-    if (!obj->_sock.desuspend(err)) {
+    if (!obj->_sock.open(err)) {
         delete obj;
         
         return err.raise("Failed to open socket");
     }
     
     return args.This();
-}
-
-Handle<Value> EmiSocket::Suspend(const Arguments& args) {
-    HandleScope scope;
-    
-    if (0 != args.Length()) {
-        THROW_TYPE_ERROR("Wrong number of arguments");
-    }
-    
-    UNWRAP(EmiSocket, es, args);
-    es->_sock.suspend();
-    
-    return scope.Close(Undefined());
-}
-
-Handle<Value> EmiSocket::Desuspend(const Arguments& args) {
-    HandleScope scope;
-    
-    if (0 != args.Length()) {
-        THROW_TYPE_ERROR("Wrong number of arguments");
-    }
-    
-    UNWRAP(EmiSocket, es, args);
-    EmiError err;
-    if (!es->_sock.desuspend(err)) {
-        return err.raise("Failed to desuspend socket");
-    }
-    
-    return scope.Close(Undefined());
 }
 
 Handle<Value> EmiSocket::DoConnect(const Arguments& args, int family) {

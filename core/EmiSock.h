@@ -71,7 +71,7 @@ private:
         sockaddr_storage ss(config.address);
         EmiNetUtil::addrSetPort(ss, 0); // Bind to a random free port number
         
-        EUS *socket = EUS::open(onMessage, this, ss, err);
+        EUS *socket = EUS::open(_delegate, onMessage, this, ss, err);
         
         if (!socket) {
             return false;
@@ -174,7 +174,7 @@ public:
             sockaddr_storage ss(config.address);
             EmiNetUtil::addrSetPort(ss, config.port);
             
-            _serverSocket = EUS::open(onMessage, this, ss, err);
+            _serverSocket = EUS::open(_delegate, onMessage, this, ss, err);
             
             if (!_serverSocket) {
                 return false;

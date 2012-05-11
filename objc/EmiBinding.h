@@ -16,6 +16,7 @@
 #include <utility>
 #include <ifaddrs.h>
 
+class EmiSockDelegate;
 class EmiAddressCmp;
 @class GCDAsyncUdpSocket;
 
@@ -111,7 +112,8 @@ public:
     static void freeNetworkInterfaces(const NetworkInterfaces& ni);
     
     static void closeSocket(GCDAsyncUdpSocket *socket);
-    static GCDAsyncUdpSocket *openSocket(EmiOnMessage *callback,
+    static GCDAsyncUdpSocket *openSocket(EmiSockDelegate& sockDelegate,
+                                         EmiOnMessage *callback,
                                          void *userData,
                                          const sockaddr_storage& address,
                                          __strong NSError*& err);
