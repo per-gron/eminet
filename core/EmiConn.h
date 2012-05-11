@@ -42,7 +42,9 @@ class EmiConn {
     // This gets set when we receive the first packet from the other host.
     // Before that, it is an address with port 0
     sockaddr_storage       _localAddress;
-    const sockaddr_storage _remoteAddress;
+    // Is not the same as _remoteAddress for established P2P connections
+    const sockaddr_storage _originalRemoteAddress;
+    sockaddr_storage       _remoteAddress;
     
     ES&  _emisock;
     EUS *_socket;
@@ -106,6 +108,7 @@ public:
     
     EmiConn(const ConnDelegate& delegate, ES& emisock, const EmiConnParams<Binding>& params) :
     _inboundPort(params.inboundPort),
+    _originalRemoteAddress(params.address),
     _remoteAddress(params.address),
     _conn(NULL),
     _delegate(delegate),
@@ -305,7 +308,7 @@ public:
                           const uint8_t *data,
                           size_t len) {
         if (_conn) {
-            _conn->gotPrxSynAck(remoteAddr, data, len);
+            _conn->gotPrxSynAck(remoteAddr, data, len, _timers, &_remoteAddress, &_time);
         }
     }
     inline void gotPrxRstAck(const sockaddr_storage& remoteAddr) {
@@ -421,6 +424,10 @@ public:
         return _localAddress;
     }
     
+    inline const sockaddr_storage& getOriginalRemoteAddress() const {
+        return _originalRemoteAddress;
+    }
+    
     inline const sockaddr_storage& getRemoteAddress() const {
         return _remoteAddress;
     }
@@ -452,7 +459,9 @@ public:
         sendDatagram(getRemoteAddress(), data, size);
     }
     
-    // Invoked by EmiLogicalConnection
+    // Invoked by EmiNatPunchthrough (via EmiLogicalConnection);
+    // EmiNatPunchthrough needs the ability to send packets to
+    // other addresses than the current _remoteAddress
     void sendDatagram(const sockaddr_storage& address, const uint8_t *data, size_t size) {
         _timers.sentPacket();
         

@@ -123,8 +123,12 @@ public:
         }
     }
     
-    void updateRtoTimeout() {
+    inline void updateRtoTimeout() {
         _rtoTimer.updateRtoTimeout();
+    }
+    
+    inline void forceResetRtoTimer() {
+        _rtoTimer.forceResetRtoTimer();
     }
     
     inline bool issuedConnectionWarning() const {

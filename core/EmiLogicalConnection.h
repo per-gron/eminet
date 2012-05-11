@@ -255,12 +255,6 @@ public:
                           EMI_REASON_OTHER_HOST_CLOSED);
     }
     
-    void gotPrxRstAck() {
-        // TODO
-        
-        // TODO release reliable handshake message
-    }
-    
     void gotPrxRstSynAck(EmiTimeInterval now, const uint8_t *data, size_t len) {
         
         /// Parse the incoming data
@@ -316,11 +310,16 @@ public:
         }
     }
     
+    template<class ConnRtoTimer>
     inline void gotPrxSynAck(const sockaddr_storage& remoteAddr,
-                          const uint8_t *data,
-                          size_t len) {
+                             const uint8_t *data,
+                             size_t len,
+                             ConnRtoTimer& connRtoTimer,
+                             sockaddr_storage *connsRemoteAddr,
+                             EmiConnTime *connsTime) {
         if (_natPunchthrough) {
-            _natPunchthrough->gotPrxSynAck(remoteAddr, data, len);
+            _natPunchthrough->gotPrxSynAck(remoteAddr, data, len,
+                                           connRtoTimer, connsRemoteAddr, connsTime);
         }
     }
     

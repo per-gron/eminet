@@ -80,6 +80,11 @@ public:
         Binding::freeTimer(_connectionTimer);
     }
     
+    void forceResetRtoTimer() {
+        Binding::descheduleTimer(_rtoTimer);
+        updateRtoTimeout();
+    }
+    
     void updateRtoTimeout() {
         if (!_delegate.senderBufferIsEmpty(*this)) {
             if (!Binding::timerIsActive(_rtoTimer)) {

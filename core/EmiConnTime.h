@@ -23,13 +23,10 @@ class EmiConnTime {
     EmiTimeInterval _srtt; // -1 if not set
     EmiTimeInterval _rttvar; // -1 if not set
     
-private:
-    // Private copy constructor and assignment operator
-    inline EmiConnTime(const EmiConnTime& other);
-    inline EmiConnTime& operator=(const EmiConnTime& other);
-    
 public:
     EmiConnTime();
+    
+    void swap(EmiConnTime& other);
     
     void onRtoTimeout();
     void gotTimestamp(float heartbeatFrequency, EmiTimeInterval now, const void *buf, size_t bufSize);

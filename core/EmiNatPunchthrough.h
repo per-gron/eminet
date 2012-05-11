@@ -18,11 +18,11 @@
 
 #include <netinet/in.h>
 
-// This class takes care of sending (and, if applicable,
-// resending) PRX-SYN messages, and verifying PRX-SYN-ACK
-// messages. After the NAT punchthrough handshake process
-// is finished, this class takes care of the proxy teardown
-// handshake with the P2P mediator.
+// This class takes care of sending and verifying (and, if
+// applicable, resending) PRX-SYN messages, and sending and
+// verifying PRX-SYN-ACK messages. After the NAT punchthrough
+// handshake process is finished, this class takes care of
+// the proxy teardown handshake with the P2P mediator.
 template<class Binding, class Delegate>
 class EmiNatPunchthrough {
     
@@ -41,7 +41,6 @@ private:
     const EmiSequenceNumber _initialSequenceNumber;
     const sockaddr_storage  _mediatorAddress;
     const EmiP2PData&       _p2p;
-    // TODO What happens with _time once the P2P connection is established? Shouldn't this replace the EmiConn's EmiConnTime?
     EmiConnTime             _time;
     ERT                     _rtoTimer;
     
@@ -214,10 +213,14 @@ public:
         /// Respond with PRX-SYN-ACK packet
         sendPrxSynAckPacket(remoteAddr);
     }
-        
+    
+    template<class ConnRtoTimer>
     void gotPrxSynAck(const sockaddr_storage& remoteAddr,
                       const uint8_t *data,
-                      size_t len) {
+                      size_t len,
+                      ConnRtoTimer& connRtoTimer,
+                      sockaddr_storage *connsRemoteAddr,
+                      EmiConnTime *connsTime) {
         /// Check that the hash is correct
         uint8_t hashBuf[Binding::HMAC_HASH_SIZE];
         hashForPrxSynAck(hashBuf, sizeof(hashBuf), _peerEndpointPair, _peerEndpointPairLength);
@@ -228,11 +231,17 @@ public:
             return;
         }
         
-        // TODO Update the connection's remote address
+        /// Update the connection's remote address
+        memcpy(connsRemoteAddr, &remoteAddr, sizeof(sockaddr_storage));
         
-        // TODO Do the right thing with _time (I think we need to swap with the connection)
+        /// Because we are now swapping remote hosts with the connection,
+        /// we also need to swap EmiConnTime objects with it.
+        _time.swap(*connsTime);
         
-        // TODO Make sure the RTO timer is updated properly
+        /// Make sure both our and the connection's rto timers are updated,
+        /// now that we have swapped the EmiConnTime objects.
+        _rtoTimer.forceResetRtoTimer();
+        connRtoTimer.forceResetRtoTimer();
         
         /// This will make sure we stop re-sending the PRX-RST message,
         /// and instead re-send the PRX-RST message if necessary.

@@ -17,6 +17,12 @@ EmiConnTime::EmiConnTime() :
 _initTime(-1), _largestReceivedTime(0), _hasReceivedTime(false),
 _gotLargestReceivedTimeAt(-1), _rto(EMI_INIT_RTO), _srtt(-1), _rttvar(-1) {}
 
+void EmiConnTime::swap(EmiConnTime& other) {
+    EmiConnTime tmp(*this);
+    *this = other;
+    other = tmp;
+}
+
 void EmiConnTime::onRtoTimeout() {
     _rto *= 2; // See http://www.ietf.org/rfc/rfc2988.txt (5.4)
     _rto = std::min(_rto, EMI_MAX_RTO);
