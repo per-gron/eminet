@@ -308,6 +308,11 @@ public:
             _conn->gotPrxSynAck(remoteAddr, data, len);
         }
     }
+    inline void gotPrxRstAck(const sockaddr_storage& remoteAddr) {
+        if (_conn) {
+            _conn->gotPrxRstAck(remoteAddr);
+        }
+    }
     // Delegates to EmiLogicalConnection
     bool gotSynRst(EmiTimeInterval now,
                    const sockaddr_storage& inboundAddr,

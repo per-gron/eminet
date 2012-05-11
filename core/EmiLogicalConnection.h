@@ -120,16 +120,22 @@ private:
     }
     
     // Invoked by EmiNatPunchthrough
-    void sendNatPunchthroughPacket(const sockaddr_storage& addr, const uint8_t *buf, size_t bufSize) {
+    inline void sendNatPunchthroughPacket(const sockaddr_storage& addr, const uint8_t *buf, size_t bufSize) {
         if (_conn) {
             _conn->sendDatagram(addr, buf, bufSize);
         }
     }
     
     // Invoked by EmiNatPunchthrough
-    void natPunchthroughFailed() {
+    inline void natPunchthroughFinished() {
         delete _natPunchthrough;
         _natPunchthrough = NULL;
+    }
+    
+    // Invoked by EmiNatPunchthrough
+    inline void natPunchthroughFailed() {
+        // TODO Notify the user of EmiNet that we failed to establish a P2P connection
+        natPunchthroughFinished();
     }
     
 public:
@@ -293,6 +299,7 @@ public:
             _natPunchthrough = new ENP(_conn->getEmiSock().config.connectionTimeout,
                                        *this,
                                        _initialSequenceNumber,
+                                       _conn->getRemoteAddress(),
                                        _conn->getP2PData(),
                                        /*myEndpointPair:*/data, endpointPairLen,
                                        /*peerEndpointPair:*/data+endpointPairLen, endpointPairLen,
@@ -314,6 +321,12 @@ public:
                           size_t len) {
         if (_natPunchthrough) {
             _natPunchthrough->gotPrxSynAck(remoteAddr, data, len);
+        }
+    }
+    
+    inline void gotPrxRstAck(const sockaddr_storage& remoteAddr) {
+        if (_natPunchthrough) {
+            _natPunchthrough->gotPrxRstAck(remoteAddr);
         }
     }
     

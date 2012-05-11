@@ -20,7 +20,9 @@
 
 // This class takes care of sending (and, if applicable,
 // resending) PRX-SYN messages, and verifying PRX-SYN-ACK
-// messages.
+// messages. After the NAT punchthrough handshake process
+// is finished, this class takes care of the proxy teardown
+// handshake with the P2P mediator.
 template<class Binding, class Delegate>
 class EmiNatPunchthrough {
     
@@ -37,10 +39,13 @@ private:
     
     Delegate&               _delegate;
     const EmiSequenceNumber _initialSequenceNumber;
+    const sockaddr_storage  _mediatorAddress;
     const EmiP2PData&       _p2p;
     // TODO What happens with _time once the P2P connection is established? Shouldn't this replace the EmiConn's EmiConnTime?
     EmiConnTime             _time;
     ERT                     _rtoTimer;
+    
+    bool _isInProxyTeardownPhase;
     
     uint8_t* const         _myEndpointPair;
     const size_t           _myEndpointPairLength;
@@ -48,6 +53,14 @@ private:
     const size_t           _peerEndpointPairLength;
     const sockaddr_storage _peerInnerAddr;
     const sockaddr_storage _peerOuterAddr;
+    
+    void sendPrxRstPacket() {
+        EmiFlags flags(EMI_PRX_FLAG | EMI_RST_FLAG);
+        EmiMessage<Binding>::writeControlPacket(flags, ^(uint8_t *buf, size_t size) {
+            EmiMessage<Binding>::fillTimestamps(_time, buf, size);
+            _delegate.sendNatPunchthroughPacket(_mediatorAddress, buf, size);
+        });
+    }
     
     void sendPrxSynPackets() {
         uint8_t hashBuf[Binding::HMAC_HASH_SIZE];
@@ -113,14 +126,29 @@ private:
     
     // Invoked by EmiRtoTimer
     inline void connectionTimeout() {
-        _delegate.natPunchthroughFailed();
+        if (_isInProxyTeardownPhase) {
+            // We lost the connection to the P2P mediator.
+            // There's not much we can do about it, and we
+            // don't really care about it anyways.
+            _delegate.natPunchthroughFinished();
+        }
+        else {
+            _delegate.natPunchthroughFailed();
+        }
     }
     
     // Invoked by EmiRtoTimer
     inline void rtoTimeout(EmiTimeInterval now, EmiTimeInterval rtoWhenRtoTimerWasScheduled) {
-        // It seems like the PRX-SYN packets we sent got lost.
-        // Try re-sending them.
-        sendPrxSynPackets();
+        if (_isInProxyTeardownPhase) {
+            // It seems like the PRX-RST packet we sent got lost.
+            // Try re-sending it.
+            sendPrxRstPacket();
+        }
+        else {
+            // It seems like the PRX-SYN packets we sent got lost.
+            // Try re-sending them.
+            sendPrxSynPackets();
+        }
     }
     
     // Invoked by EmiRtoTimer
@@ -136,6 +164,7 @@ public:
     EmiNatPunchthrough(EmiTimeInterval connectionTimeout,
                        Delegate& delegate,
                        EmiSequenceNumber initialSequenceNumber,
+                       const sockaddr_storage& mediatorAddress,
                        const EmiP2PData& p2p,
                        const uint8_t *myEndpointPair, size_t myEndpointPairLength,
                        const uint8_t *peerEndpointPair, size_t peerEndpointPairLength,
@@ -143,9 +172,11 @@ public:
                        const sockaddr_storage& peerOuterAddr) :
     _delegate(delegate),
     _initialSequenceNumber(initialSequenceNumber),
+    _mediatorAddress(mediatorAddress),
     _p2p(p2p),
     _time(),
     _rtoTimer(/*disable connection warning:*/-1, connectionTimeout, _time, *this),
+    _isInProxyTeardownPhase(false),
     _myEndpointPair((uint8_t *)malloc(myEndpointPairLength)),
     _myEndpointPairLength(myEndpointPairLength),
     _peerEndpointPair((uint8_t *)malloc(peerEndpointPairLength)),
@@ -197,13 +228,27 @@ public:
             return;
         }
         
-        // TODO Make sure to stop re-send the PRX-RST message
-        
         // TODO Update the connection's remote address
         
         // TODO Do the right thing with _time (I think we need to swap with the connection)
         
-        // TODO Send reliable PRX-RST packet to the P2P mediator
+        // TODO Make sure the RTO timer is updated properly
+        
+        /// This will make sure we stop re-sending the PRX-RST message,
+        /// and instead re-send the PRX-RST message if necessary.
+        _isInProxyTeardownPhase = true;
+        
+        /// Send a PRX-RST packet to the P2P mediator
+        sendPrxRstPacket();
+    }
+    
+    void gotPrxRstAck(const sockaddr_storage& remoteAddr) {
+        if (0 != memcmp(&remoteAddr, &_mediatorAddress, sizeof(remoteAddr))) {
+            // This packet came from an unexpected source. Ignore it.
+            return;
+        }
+        
+        _delegate.natPunchthroughFinished();
     }
     
 };

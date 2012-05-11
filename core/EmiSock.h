@@ -285,7 +285,7 @@ public:
                                                             /*acceptPacketFromUnexpectedHost:*/true));
                         ENSURE_CONN_VAR(prxConn, "PRX-RST-ACK");
                         
-                        // TODO prxConn->gotPrxRstAck();
+                        prxConn->gotPrxRstAck(remoteAddress);
                     }
                     if (synFlag && !rstFlag && !ackFlag) {
                         // We want to accept PRX-SYN packets from hosts other than the
