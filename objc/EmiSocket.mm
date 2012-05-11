@@ -129,7 +129,8 @@ withFilterContext:(id)filterContext {
     
     EmiSocketUserDataWrapper *wrap = sock.userData;
     
-    (wrap.callback)(wrap.userData,
+    (wrap.callback)(sock,
+                    wrap.userData,
                     [NSDate timeIntervalSinceReferenceDate],
                     ss,
                     data, /*offset:*/0, [data length]);

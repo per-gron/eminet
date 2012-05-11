@@ -71,7 +71,7 @@ private:
         sockaddr_storage ss(config.address);
         EmiNetUtil::addrSetPort(ss, 0); // Bind to a random free port number
         
-        EUS *socket = EUS::open(ss, err);
+        EUS *socket = EUS::open(onMessage, this, ss, err);
         
         if (!socket) {
             return false;
@@ -101,6 +101,18 @@ private:
             ClientConnectionMapIter cur(_clientConns.find(sock));
             return _clientConns.end() == cur ? NULL : (*cur).second;
         }
+    }
+    
+    static void onMessage(EUS *socket,
+                          void *userData,
+                          EmiTimeInterval now,
+                          const sockaddr_storage& inboundAddress,
+                          const sockaddr_storage& remoteAddress,
+                          const TemporaryData& data,
+                          size_t offset,
+                          size_t len) {
+        EmiSock *sock((EmiSock *)userData);
+        sock->onMessage(now, socket, inboundAddress, remoteAddress, data, offset, len);
     }
 
     
@@ -162,7 +174,7 @@ public:
             sockaddr_storage ss(config.address);
             EmiNetUtil::addrSetPort(ss, config.port);
             
-            _serverSocket = EUS::open(ss, err);
+            _serverSocket = EUS::open(onMessage, this, ss, err);
             
             if (!_serverSocket) {
                 return false;
@@ -179,8 +191,9 @@ public:
     }
     
     void onMessage(EmiTimeInterval now,
-                   SocketHandle *sock,
-                   const sockaddr_storage& address,
+                   EUS *sock,
+                   const sockaddr_storage& inboundAddress,
+                   const sockaddr_storage& remoteAddress,
                    const TemporaryData& data,
                    size_t offset,
                    size_t len) {
@@ -190,13 +203,11 @@ public:
         
         __block const char *err = NULL;
         
-        sockaddr_storage inboundAddr;
-        SockDelegate::extractLocalAddress(sock, inboundAddr);
-        uint16_t inboundPort(EmiNetUtil::addrPortH(inboundAddr));
+        uint16_t inboundPort(EmiNetUtil::addrPortH(inboundAddress));
         
         const uint8_t *rawData(Binding::extractData(data)+offset);
         
-        __block EC *conn = NULL; // TODO getConnectionForMessage(sock, address);
+        __block EC *conn(getConnectionForMessage(sock, remoteAddress));
         
         if (conn) {
             conn->gotPacket();
@@ -293,9 +304,9 @@ public:
                     }
                     
                     if (!conn) {
-                        conn = _delegate.makeConnection(ECP(/*TODO sock*/NULL, address, inboundPort));
-                        ASSERT(0 == _serverConns.count(AddressKey(address)));
-                        _serverConns.insert(std::make_pair(AddressKey(address), conn));
+                        conn = _delegate.makeConnection(ECP(sock, remoteAddress, inboundPort));
+                        ASSERT(0 == _serverConns.count(AddressKey(remoteAddress)));
+                        _serverConns.insert(std::make_pair(AddressKey(remoteAddress), conn));
                     }
                     
                     conn->gotTimestamp(now, rawData, len);
@@ -332,7 +343,7 @@ public:
                         ENSURE(conn->isOpening(), "Got SYN-RST message for open connection");
                         
                         conn->gotTimestamp(now, rawData, len);
-                        if (!conn->gotSynRst(now, inboundAddr, header.sequenceNumber)) {
+                        if (!conn->gotSynRst(now, inboundAddress, header.sequenceNumber)) {
                             err = "Failed to process SYN-RST message";
                             return false;
                         }
@@ -352,7 +363,7 @@ public:
                     
                     // Regardless of whether we still have a connection up, respond with a SYN-RST-ACK message
                     EM::writeControlPacket(EMI_SYN_FLAG | EMI_RST_FLAG | EMI_ACK_FLAG, ^(uint8_t *buf, size_t size) {
-                        SockDelegate::sendData(sock, address, buf, size);
+                        sock->sendData(inboundAddress, remoteAddress, buf, size);
                     });
                 }
                 else if (!synFlag && !rstFlag) {
@@ -369,7 +380,7 @@ public:
                     // will set conn to NULL, which is correct, because we don't want
                     // to give any additional data to it anyway, even if this packet
                     // contains more messages.
-                    conn = getConnectionForMessage(/*TODO sock*/NULL, address);
+                    conn = getConnectionForMessage(sock, remoteAddress);
                 }
                 else {
                     err = "Invalid message flags";

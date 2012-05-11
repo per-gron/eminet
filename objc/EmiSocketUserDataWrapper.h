@@ -10,8 +10,11 @@
 #import <Foundation/Foundation.h>
 #include <netinet/in.h>
 
+@class GCDAsyncUdpSocket;
+
 typedef NSData* EmiOnMessageTemporaryData;
-typedef void (EmiOnMessage)(void *userData,
+typedef void (EmiOnMessage)(GCDAsyncUdpSocket *socket,
+                            void *userData,
                             EmiTimeInterval now,
                             const sockaddr_storage& address,
                             const __unsafe_unretained EmiOnMessageTemporaryData& data,

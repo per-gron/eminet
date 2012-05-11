@@ -33,19 +33,39 @@ private:
     typedef std::vector<AddrSocketPair>                SocketVector;
     typedef typename SocketVector::iterator            SocketVectorIter;
     
+    typedef void (OnMessage)(EmiUdpSocket *socket,
+                             void *userData,
+                             EmiTimeInterval now,
+                             const sockaddr_storage& inboundAddress,
+                             const sockaddr_storage& remoteAddress,
+                             const TemporaryData& data,
+                             size_t offset,
+                             size_t len);
+    
     SocketVector  _sockets;
     uint16_t      _localPort;
+    OnMessage    *_callback;
+    void         *_userData;
     
-    EmiUdpSocket() :
-    _sockets(), _localPort(0) {}
+    EmiUdpSocket(OnMessage *callback, void *userData) :
+    _sockets(),
+    _localPort(0),
+    _callback(callback),
+    _userData(userData) {}
     
-    static void onMessage(void *userData,
+    static void onMessage(SocketHandle *sock,
+                          void *userData,
                           EmiTimeInterval now,
-                          const sockaddr_storage& address,
+                          const sockaddr_storage& remoteAddress,
                           const TemporaryData& data,
                           size_t offset,
                           size_t len) {
-        // TODO
+        EmiUdpSocket *eus((EmiUdpSocket *)userData);
+        
+        sockaddr_storage inboundAddress;
+        Binding::extractLocalAddress(sock, inboundAddress);
+        
+        eus->_callback(eus, eus->_userData, now, inboundAddress, remoteAddress, data, offset, len);
     }
     
     bool init(const sockaddr_storage& address, Error& err) {
@@ -104,8 +124,8 @@ public:
         }
     }
     
-    static EmiUdpSocket *open(const sockaddr_storage& address, Error& err) {
-        EmiUdpSocket *sock = new EmiUdpSocket();
+    static EmiUdpSocket *open(OnMessage *callback, void *userData, const sockaddr_storage& address, Error& err) {
+        EmiUdpSocket *sock = new EmiUdpSocket(callback, userData);
         
         if (!sock->init(address, err)) {
             goto error;
