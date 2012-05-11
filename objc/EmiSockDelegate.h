@@ -46,6 +46,8 @@ public:
     void gotConnection(EC& conn);
     
     static void connectionOpened(ConnectionOpenedCallbackCookie& cookie, bool error, EmiDisconnectReason reason, EC& ec);
+    
+    inline void *getSocketCookie() { return NULL; }
 };
 
 #endif

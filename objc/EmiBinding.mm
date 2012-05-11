@@ -133,7 +133,7 @@ void EmiBinding::closeSocket(GCDAsyncUdpSocket *socket) {
     [socket close];
 }
 
-GCDAsyncUdpSocket *EmiBinding::openSocket(EmiSockDelegate& sockDelegate,
+GCDAsyncUdpSocket *EmiBinding::openSocket(void *socketCookie,
                                           EmiOnMessage *callback,
                                           void *userData,
                                           const sockaddr_storage& address,

@@ -16,6 +16,7 @@
 #include "EmiMessageHeader.h"
 #include "EmiMessage.h"
 #include "EmiAddressCmp.h"
+#include "EmiUdpSocket.h"
 
 #include <algorithm>
 #include <cmath>
@@ -24,11 +25,9 @@
 
 static const EmiTimeInterval EMI_P2P_COOKIE_RESOLUTION  = 5*60; // In seconds
 
-template<class P2PSockDelegate>
+template<class Binding>
 class EmiP2PSock {
     
-    typedef typename P2PSockDelegate::Binding  Binding;
-    typedef typename Binding::SocketHandle     SocketHandle;
     typedef typename Binding::TemporaryData    TemporaryData;
     typedef typename Binding::Error            Error;
     
@@ -37,7 +36,8 @@ class EmiP2PSock {
     static const size_t          EMI_P2P_RAND_NUM_SIZE = 8;
     static const size_t          EMI_P2P_COOKIE_SIZE = EMI_P2P_RAND_NUM_SIZE + Binding::HMAC_HASH_SIZE;
     
-    typedef EmiP2PConn<P2PSockDelegate, EmiP2PSock, EMI_P2P_COOKIE_SIZE> Conn;
+    typedef EmiP2PConn<Binding, EmiP2PSock, EMI_P2P_COOKIE_SIZE> Conn;
+    typedef EmiUdpSocket<Binding> EUS;
     
     typedef EmiP2PSockConfig                                 SockConfig;
     typedef typename Conn::ConnCookie                        ConnCookie;
@@ -51,9 +51,8 @@ private:
     inline EmiP2PSock(const EmiP2PSock& other);
     inline EmiP2PSock& operator=(const EmiP2PSock& other);
     
-    uint8_t         _serverSecret[EMI_P2P_SERVER_SECRET_SIZE];
-    SocketHandle   *_socket;
-    P2PSockDelegate _delegate;
+    uint8_t  _serverSecret[EMI_P2P_SERVER_SECRET_SIZE];
+    EUS     *_socket;
     
     // The keys of this map are the Conn*'s peer addresses;
     // each conn has two entries in _conns.
@@ -113,8 +112,9 @@ private:
                            EmiSequenceNumber initialSequenceNumber,
                            const uint8_t *rawData,
                            size_t len,
-                           SocketHandle *sock,
-                           const sockaddr_storage& address,
+                           EUS *sock,
+                           const sockaddr_storage& inboundAddress,
+                           const sockaddr_storage& remoteAddress,
                            const uint8_t *cookie,
                            size_t cookieLength) {
         if (!checkCookie(now, cookie, cookieLength)) {
@@ -122,9 +122,9 @@ private:
             return;
         }
         
-        Conn *conn = findConn(address);
+        Conn *conn = findConn(remoteAddress);
         
-        if (conn && conn->isInitialSequenceNumberMismatch(address, initialSequenceNumber)) {
+        if (conn && conn->isInitialSequenceNumberMismatch(remoteAddress, initialSequenceNumber)) {
             // The connection is already open, and we get a SYN message with a
             // different initial sequence number. This probably means that the
             // other host has forgot about the connection we have open. Drop it
@@ -147,54 +147,67 @@ private:
                 // We don't need to save the cookie anymore
                 _connCookies.erase(cur);
                 
-                conn->gotOtherAddress(address, initialSequenceNumber);
+                conn->gotOtherAddress(inboundAddress, remoteAddress, initialSequenceNumber);
             }
             else {
                 // There was no connection open with this cookie. Open new one
                 
-                conn = new Conn(*this, initialSequenceNumber, cc, sock, address, config.connectionTimeout, config.rateLimit);
+                conn = new Conn(*this, initialSequenceNumber, cc, sock, remoteAddress, config.connectionTimeout, config.rateLimit);
                 _connCookies.insert(std::make_pair(cc, conn));
             }
             
-            _conns.insert(std::make_pair(address, conn));
+            _conns.insert(std::make_pair(remoteAddress, conn));
         }
         
-        conn->gotTimestamp(address, now, rawData, len);
+        conn->gotTimestamp(remoteAddress, now, rawData, len);
         
         // Regardless of whether we had an EmiP2PConn object set up
         // for this address, we want to reply to the host with an
         // acknowledgement that we have received the SYN message.
-        conn->sendPrx(address);
+        conn->sendPrx(inboundAddress, remoteAddress);
     }
     
     // conn must not be NULL
-    void gotConnectionOpenAck(const sockaddr_storage& address,
+    void gotConnectionOpenAck(const sockaddr_storage& inboundAddress,
+                              const sockaddr_storage& remoteAddress,
                               Conn *conn,
                               EmiTimeInterval now,
                               const uint8_t *rawData,
                               size_t len) {
-        const size_t ipLen = EmiNetUtil::ipLength(address);
+        const size_t ipLen = EmiNetUtil::ipLength(remoteAddress);
         static const size_t portLen = 2;
         if (len != ipLen+portLen) {
             // Invalid packet
             return;
         }
         
-        conn->gotTimestamp(address, now, rawData, len);
+        conn->gotTimestamp(remoteAddress, now, rawData, len);
         
         sockaddr_storage innerAddress;
         
-        EmiNetUtil::makeAddress(address.ss_family,
+        EmiNetUtil::makeAddress(remoteAddress.ss_family,
                                 rawData, ipLen,
                                 *((uint16_t *)(rawData+ipLen)),
                                 &innerAddress);
         
-        conn->gotInnerAddress(address, innerAddress);
+        conn->gotInnerAddress(remoteAddress, innerAddress);
         
         if (conn->hasBothInnerAddresses()) {
-            conn->sendEndpointPair(0);
-            conn->sendEndpointPair(1);
+            conn->sendEndpointPair(inboundAddress, 0);
+            conn->sendEndpointPair(inboundAddress, 1);
         }
+    }
+    
+    static void onMessage(EUS *socket,
+                          void *userData,
+                          EmiTimeInterval now,
+                          const sockaddr_storage& inboundAddress,
+                          const sockaddr_storage& remoteAddress,
+                          const TemporaryData& data,
+                          size_t offset,
+                          size_t len) {
+        EmiP2PSock *sock((EmiP2PSock *)userData);
+        sock->onMessage(now, socket, inboundAddress, remoteAddress, data, offset, len);
     }
     
 public:
@@ -214,13 +227,15 @@ public:
     
     const SockConfig config;
     
-    EmiP2PSock(const SockConfig& config_, const P2PSockDelegate& delegate) :
-    _socket(NULL), _delegate(delegate), config(config_) {
+    EmiP2PSock(const SockConfig& config_) :
+    _socket(NULL), config(config_) {
         Binding::randomBytes(_serverSecret, sizeof(_serverSecret));
     }
     virtual ~EmiP2PSock() {
-        // This will close the socket
-        suspend();
+        if (_socket) {
+            delete _socket;
+            _socket = NULL;
+        }
         
         ConnMapIter iter = _conns.begin();
         ConnMapIter end  = _conns.end();
@@ -231,21 +246,19 @@ public:
     }
     
     bool isOpen() const {
-        return _socket;
+        return !!_socket;
     }
     
-    void suspend() {
-        if (_socket) {
-            P2PSockDelegate::closeSocket(*this, _socket);
-            _socket = NULL;
-        }
-    }
-    
-    bool desuspend(Error& err) {
+    template<class SocketCookie>
+    bool open(const SocketCookie& socketCookie, Error& err) {
         if (!_socket) {
             sockaddr_storage ss(config.address);
             EmiNetUtil::addrSetPort(ss, config.port);
-            _socket = _delegate.openSocket(ss, err);
+            _socket = EUS::open(socketCookie,
+                                onMessage,
+                                this,
+                                ss,
+                                err);
             if (!_socket) return false;
         }
         
@@ -260,7 +273,7 @@ public:
         Binding::randomBytes(buf, EMI_P2P_RAND_NUM_SIZE);
         
         hashCookie(stamp, /*randNum:*/buf,
-                      buf+EMI_P2P_RAND_NUM_SIZE, bufLen-EMI_P2P_RAND_NUM_SIZE);
+                   buf+EMI_P2P_RAND_NUM_SIZE, bufLen-EMI_P2P_RAND_NUM_SIZE);
         
         return EMI_P2P_COOKIE_SIZE;
     }
@@ -275,8 +288,9 @@ public:
     }
     
     void onMessage(EmiTimeInterval now,
-                   SocketHandle *sock,
-                   const sockaddr_storage& address,
+                   EUS *sock,
+                   const sockaddr_storage& inboundAddress,
+                   const sockaddr_storage& remoteAddress,
                    const TemporaryData& data,
                    size_t offset,
                    size_t len) {
@@ -287,16 +301,16 @@ public:
         const char *err = NULL;
         const uint8_t *rawData(Binding::extractData(data)+offset);
         
-        Conn *conn = findConn(address);
+        Conn *conn = findConn(remoteAddress);
         if (conn) {
-            conn->gotPacket(address);
+            conn->gotPacket(remoteAddress);
         }
         
         if (EMI_TIMESTAMP_LENGTH+1 == len) {
             // This is a heartbeat packet. Just forward the packet (if we can)
             if (conn) {
-                conn->gotTimestamp(address, now, rawData, len);
-                conn->forwardPacket(now, address, data, offset, len);
+                conn->gotTimestamp(remoteAddress, now, rawData, len);
+                conn->forwardPacket(now, inboundAddress, remoteAddress, data, offset, len);
             }
         }
         else if (len < EMI_TIMESTAMP_LENGTH + EMI_HEADER_LENGTH) {
@@ -340,18 +354,19 @@ public:
                                       rawData,
                                       len,
                                       sock,
-                                      address,
+                                      inboundAddress,
+                                      remoteAddress,
                                       rawData+EMI_TIMESTAMP_LENGTH+header.headerLength,
                                       header.length);
                 }
                 else if ((EMI_PRX_FLAG | EMI_ACK_FLAG) == relevantFlags) {
                     // This is a connection open ACK message.
-                    if (conn && conn->isInitialSequenceNumberMismatch(address, header.sequenceNumber)) {
+                    if (conn && conn->isInitialSequenceNumberMismatch(remoteAddress, header.sequenceNumber)) {
                         err = "Got PRX-ACK message with unexpected sequence number";
                         goto error;
                     }
                     else if (conn) {
-                        gotConnectionOpenAck(address, conn, now, rawData, len);
+                        gotConnectionOpenAck(inboundAddress, remoteAddress, conn, now, rawData, len);
                     }
                     else {
                         err = "Got PRX-ACK message without open conection";
@@ -365,8 +380,8 @@ public:
                         // we haven't yet received confirmation from the other
                         // host that it has received the RST message, so we
                         // forward it.
-                        conn->gotTimestamp(address, now, rawData, len);
-                        conn->forwardPacket(now, address, data, offset, len);
+                        conn->gotTimestamp(remoteAddress, now, rawData, len);
+                        conn->forwardPacket(now, inboundAddress, remoteAddress, data, offset, len);
                     }
                     else {
                         // We don't have an open connection. This probably means
@@ -378,7 +393,7 @@ public:
                         
                         EmiFlags responseFlags(EMI_SYN_FLAG | EMI_RST_FLAG | EMI_ACK_FLAG);
                         EmiMessage<Binding>::writeControlPacket(responseFlags, ^(uint8_t *buf, size_t size) {
-                            P2PSockDelegate::sendData(_socket, address, buf, size);
+                            _socket->sendData(inboundAddress, remoteAddress, buf, size);
                         });
                     }
                 }
@@ -394,7 +409,7 @@ public:
                         // host to resend the RST-ACK message, in which case we
                         // will respond with SYN-RST-ACK anyways, but that is slower
                         // than immediately forwarding this packet)
-                        conn->forwardPacket(now, address, data, offset, len);
+                        conn->forwardPacket(now, inboundAddress, remoteAddress, data, offset, len);
                         
                         removeConnection(conn);
                     }
@@ -413,7 +428,7 @@ public:
                     
                     EmiFlags responseFlags(EMI_PRX_FLAG | EMI_RST_FLAG | EMI_ACK_FLAG);
                     EmiMessage<Binding>::writeControlPacket(responseFlags, ^(uint8_t *buf, size_t size) {
-                        P2PSockDelegate::sendData(_socket, address, buf, size);
+                        _socket->sendData(inboundAddress, remoteAddress, buf, size);
                     });
                 }
                 else {
@@ -425,8 +440,8 @@ public:
                 // This is not a control message, so we don't care about its
                 // contents. Just forward it.
                 if (conn) {
-                    conn->gotTimestamp(address, now, rawData, len);
-                    conn->forwardPacket(now, address, data, offset, len);
+                    conn->gotTimestamp(remoteAddress, now, rawData, len);
+                    conn->forwardPacket(now, inboundAddress, remoteAddress, data, offset, len);
                 }
             }
         }
@@ -435,14 +450,6 @@ public:
     error:
         
         return;
-    }
-    
-    P2PSockDelegate& getDelegate() {
-        return _delegate;
-    }
-    
-    const P2PSockDelegate& getDelegate() const {
-        return _delegate;
     }
 };
 

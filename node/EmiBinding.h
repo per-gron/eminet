@@ -18,6 +18,7 @@
 
 class EmiAddressCmp;
 class EmiSockDelegate;
+class EmiObjectWrap;
 
 class EmiBinding {
 private:
@@ -91,7 +92,7 @@ public:
 #endif
     
     static void closeSocket(uv_udp_t *socket);
-    static uv_udp_t *openSocket(EmiSockDelegate& sockDelegate,
+    static uv_udp_t *openSocket(EmiObjectWrap *jsObj,
                                 EmiOnMessage *callback,
                                 void *userData,
                                 const sockaddr_storage& address,

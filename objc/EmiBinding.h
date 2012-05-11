@@ -112,7 +112,7 @@ public:
     static void freeNetworkInterfaces(const NetworkInterfaces& ni);
     
     static void closeSocket(GCDAsyncUdpSocket *socket);
-    static GCDAsyncUdpSocket *openSocket(EmiSockDelegate& sockDelegate,
+    static GCDAsyncUdpSocket *openSocket(void *socketCookie,
                                          EmiOnMessage *callback,
                                          void *userData,
                                          const sockaddr_storage& address,

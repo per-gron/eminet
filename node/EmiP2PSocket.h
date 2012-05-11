@@ -2,16 +2,14 @@
 #ifndef emilir_EmiP2PSocket_h
 #define emilir_EmiP2PSocket_h
 
-#include "EmiP2PSockDelegate.h"
 #include "EmiObjectWrap.h"
+#include "EmiBinding.h"
 
 #include "../core/EmiP2PSock.h"
 #include <node.h>
 
 class EmiP2PSocket : public EmiObjectWrap {
-    typedef EmiP2PSock<EmiP2PSockDelegate> EPS;
-    
-    friend class EmiP2PSockDelegate;
+    typedef EmiP2PSock<EmiBinding> EPS;
     
 private:
     EPS _sock;
@@ -33,8 +31,6 @@ private:
     
     static v8::Handle<v8::Value> SetCallbacks(const v8::Arguments& args);
     static v8::Handle<v8::Value> New(const v8::Arguments& args);
-    static v8::Handle<v8::Value> Suspend(const v8::Arguments& args);
-    static v8::Handle<v8::Value> Desuspend(const v8::Arguments& args);
     
 public:
     static void Init(v8::Handle<v8::Object> target);

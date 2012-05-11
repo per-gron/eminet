@@ -9,6 +9,7 @@
 #include <node.h>
 #include <uv.h>
 
+class EmiObjectWrap;
 class EmiSocket;
 class EmiSockDelegate;
 class EmiConnDelegate;
@@ -46,6 +47,8 @@ public:
     
     inline EmiSocket& getEmiSocket() { return _es; }
     inline const EmiSocket& getEmiSocket() const { return _es; }
+    
+    inline EmiObjectWrap *getSocketCookie() { return (EmiObjectWrap *)&_es; }
 };
 
 #endif

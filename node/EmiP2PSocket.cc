@@ -24,7 +24,7 @@ EXPAND_SYMS
 Persistent<Function> EmiP2PSocket::connectionError;
 
 EmiP2PSocket::EmiP2PSocket(v8::Handle<v8::Object> jsHandle, const EmiP2PSockConfig& sc) :
-_sock(sc, EmiP2PSockDelegate(*this)),
+_sock(sc),
 _jsHandle(v8::Persistent<v8::Object>::New(jsHandle)) {}
 
 EmiP2PSocket::~EmiP2PSocket() {
@@ -44,14 +44,6 @@ void EmiP2PSocket::Init(Handle<Object> target) {
     Local<FunctionTemplate> tpl = FunctionTemplate::New(New);
     tpl->SetClassName(String::NewSymbol("EmiP2PSocket"));
     tpl->InstanceTemplate()->SetInternalFieldCount(1);
-    
-    // Prototype
-#define X(sym, name)                                        \
-  tpl->PrototypeTemplate()->Set(String::NewSymbol(name),    \
-      FunctionTemplate::New(sym)->GetFunction());
-    X(Suspend,   "suspend");
-    X(Desuspend, "desuspend");
-#undef X
     
     Persistent<Function> constructor = Persistent<Function>::New(tpl->GetFunction());
     target->Set(String::NewSymbol("EmiP2PSocket"), constructor);
@@ -122,40 +114,17 @@ Handle<Value> EmiP2PSocket::New(const Arguments& args) {
     READ_ADDRESS_CONFIG(sc, family, address);
     
     EmiP2PSocket* obj = new EmiP2PSocket(jsHandle, sc);
-    // We need to Wrap the object now, or failing to desuspend
+    // We need to Wrap the object now, or failing to open
     // would result in a memory leak. (We rely on Wrap to deallocate
     // obj when it's no longer used.)
     obj->Wrap(args.This());
     
     EmiError err;
-    if (!obj->_sock.desuspend(err)) {
+    if (!obj->_sock.open(obj, err)) {
         delete obj;
         
         return err.raise("Failed to open socket");
     }
     
     return args.This();
-}
-
-Handle<Value> EmiP2PSocket::Suspend(const Arguments& args) {
-    HandleScope scope;
-    
-    ENSURE_ZERO_ARGS(args);
-    UNWRAP(EmiP2PSocket, es, args);
-    es->_sock.suspend();
-    
-    return scope.Close(Undefined());
-}
-
-Handle<Value> EmiP2PSocket::Desuspend(const Arguments& args) {
-    HandleScope scope;
-    
-    ENSURE_ZERO_ARGS(args);
-    UNWRAP(EmiP2PSocket, es, args);
-    EmiError err;
-    if (!es->_sock.desuspend(err)) {
-        return err.raise("Failed to desuspend socket");
-    }
-    
-    return scope.Close(Undefined());
 }

@@ -237,7 +237,7 @@ void EmiBinding::closeSocket(uv_udp_t *socket) {
     free(ebsd);
 }
 
-uv_udp_t *EmiBinding::openSocket(EmiSockDelegate& sockDelegate,
+uv_udp_t *EmiBinding::openSocket(EmiObjectWrap* jsObj,
                                  EmiOnMessage *callback,
                                  void *userData,
                                  const sockaddr_storage& address,
@@ -245,7 +245,7 @@ uv_udp_t *EmiBinding::openSocket(EmiSockDelegate& sockDelegate,
     EmiBindingSockData *ebsd = (EmiBindingSockData *)malloc(sizeof(EmiBindingSockData));
     ebsd->callback = callback;
     ebsd->userData = userData;
-    ebsd->jsObj = &sockDelegate._es;
+    ebsd->jsObj = jsObj;
     
     uv_udp_t *ret(EmiNodeUtil::openSocket(address,
                                           recv_cb, ebsd,

@@ -15,8 +15,9 @@
 #include "EmiMessage.h"
 #include "EmiRtoTimer.h"
 #include "EmiAddressCmp.h"
+#include "EmiUdpSocket.h"
 
-template<class P2PSockDelegate, class Delegate, int EMI_P2P_COOKIE_SIZE>
+template<class Binding, class Delegate, int EMI_P2P_COOKIE_SIZE>
 class EmiP2PConn {
 public:
     
@@ -43,7 +44,6 @@ public:
     
 private:
     
-    typedef typename P2PSockDelegate::Binding Binding;
     typedef typename Binding::SocketHandle    SocketHandle;
     typedef typename Binding::TemporaryData   TemporaryData;
     typedef typename Binding::Timer           Timer;
@@ -58,13 +58,15 @@ private:
     
     Delegate& _delegate;
     
-    SocketHandle        *_sock;
-    const EmiAddressCmp  _acmp;
-    sockaddr_storage     _peers[2];
-    sockaddr_storage     _innerEndpoints[2];
-    EmiConnTime          _times[2];
-    bool                 _waitingForPrxAck[2];
-    EmiSequenceNumber    _initialSequenceNumbers[2];
+    EmiUdpSocket<Binding> *_sock;
+    const EmiAddressCmp    _acmp;
+    sockaddr_storage       _peers[2];
+    sockaddr_storage       _innerEndpoints[2];
+    EmiConnTime            _times[2];
+    bool                   _waitingForPrxAck[2];
+    // We need to store the inbound address for the SYN-RST packets for rtoTimeout
+    sockaddr_storage       _synRstInboundAddr;
+    EmiSequenceNumber      _initialSequenceNumbers[2];
     
     const size_t     _rateLimit;
     size_t           _bytesSentSinceRateLimitTimeout;
@@ -103,7 +105,8 @@ private:
         return addr;
     }
     
-    void sendData(const sockaddr_storage& address,
+    void sendData(const sockaddr_storage& inboundAddress,
+                  const sockaddr_storage& remoteAddress,
                   const TemporaryData& data,
                   size_t offset,
                   size_t len) {
@@ -112,18 +115,15 @@ private:
             return;
         }
         
-        P2PSockDelegate::sendData(_sock,
-                                  address,
-                                  Binding::extractData(data)+offset,
-                                  len);
+        _sock->sendData(inboundAddress, remoteAddress, Binding::extractData(data)+offset, len);
     }
     
-    void sendSynRst(int addrIdx) {
+    void sendSynRst(const sockaddr_storage& inboundAddress, int addrIdx) {
         EmiSequenceNumber otherHostSN = _initialSequenceNumbers[0 == addrIdx ? 1 : 0];
         
         EmiMessage<Binding>::writeControlPacket(EMI_SYN_FLAG | EMI_RST_FLAG, otherHostSN, ^(uint8_t *buf, size_t size) {
             EmiMessage<Binding>::fillTimestamps(_times[addrIdx], buf, size);
-            P2PSockDelegate::sendData(_sock, _peers[addrIdx], buf, size);
+            _sock->sendData(inboundAddress, _peers[addrIdx], buf, size);
         });
     }
     
@@ -151,7 +151,7 @@ public:
     EmiP2PConn(Delegate& delegate,
                EmiSequenceNumber initialSequenceNumber,
                const ConnCookie &cookie_,
-               SocketHandle *sock,
+               EmiUdpSocket<Binding> *sock,
                const sockaddr_storage& firstPeer,
                EmiTimeInterval connectionTimeout,
                size_t rateLimit) :
@@ -177,6 +177,7 @@ public:
         
         _waitingForPrxAck[0] = false;
         _waitingForPrxAck[1] = false;
+        EmiBinding::fillNilAddress(family, _synRstInboundAddr);
         
         if (rateLimit) {
             Binding::scheduleTimer(_rateLimitTimer, rateLimitTimeoutCallback,
@@ -199,26 +200,30 @@ public:
     }
     
     void forwardPacket(EmiTimeInterval now,
-                       const sockaddr_storage& address,
+                       const sockaddr_storage& inboundAddress,
+                       const sockaddr_storage& remoteAddress,
                        const TemporaryData& data,
                        size_t offset,
                        size_t len) {
-        const sockaddr_storage *otherAddr = otherAddress(address);
+        const sockaddr_storage *otherAddr = otherAddress(remoteAddress);
         if (!otherAddr) {
             return;
         }
         
-        sendData(*otherAddr, data, offset, len);
+        sendData(inboundAddress, *otherAddr, data, offset, len);
     }
     
-    void gotOtherAddress(const sockaddr_storage& address, EmiSequenceNumber initialSequenceNumber) {
-        _peers[1] = address;
+    void gotOtherAddress(const sockaddr_storage& inboundAddress,
+                         const sockaddr_storage& remoteAddress,
+                         EmiSequenceNumber initialSequenceNumber) {
+        _peers[1] = remoteAddress;
         _initialSequenceNumbers[1] = initialSequenceNumber;
         
         _waitingForPrxAck[0] = true;
         _waitingForPrxAck[1] = true;
-        sendSynRst(0);
-        sendSynRst(1);
+        memcpy(&_synRstInboundAddr, &inboundAddress, sizeof(inboundAddress));
+        sendSynRst(inboundAddress, 0);
+        sendSynRst(inboundAddress, 1);
         
         // Make sure that we re-send the syn-ack messages on rto timeout
         _rtoTimer0.updateRtoTimeout();
@@ -248,18 +253,20 @@ public:
         }
     }
     
-    void sendPrx(const sockaddr_storage& address) {
+    void sendPrx(const sockaddr_storage& inboundAddress,
+                 const sockaddr_storage& remoteAddress) {
         EmiMessage<Binding>::writeControlPacket(EMI_PRX_FLAG, ^(uint8_t *buf, size_t size) {
-            int idx(addressIndex(address));
+            int idx(addressIndex(remoteAddress));
             ASSERT(-1 != idx);
             EmiMessage<Binding>::fillTimestamps(_times[idx], buf, size);
-            P2PSockDelegate::sendData(_sock, address, buf, size);
+            _sock->sendData(inboundAddress, remoteAddress, buf, size);
         });
     }
     
-    void rtoTimeout(EmiTimeInterval now, EmiTimeInterval rtoWhenRtoTimerWasScheduled) {
-        if (_waitingForPrxAck[0]) sendSynRst(0);
-        if (_waitingForPrxAck[1]) sendSynRst(1);
+    void rtoTimeout(EmiTimeInterval now,
+                    EmiTimeInterval rtoWhenRtoTimerWasScheduled) {
+        if (_waitingForPrxAck[0]) sendSynRst(_synRstInboundAddr, 0);
+        if (_waitingForPrxAck[1]) sendSynRst(_synRstInboundAddr, 1);
     }
     
     bool senderBufferIsEmpty(ERT& ert) const {
@@ -267,7 +274,8 @@ public:
         return !_waitingForPrxAck[idx];
     }
     
-    void gotInnerAddress(const sockaddr_storage& address, const sockaddr_storage& innerAddress) {
+    void gotInnerAddress(const sockaddr_storage& address,
+                         const sockaddr_storage& innerAddress) {
         int idx(addressIndex(address));
         ASSERT(-1 != idx);
         
@@ -283,7 +291,7 @@ public:
                !EmiBinding::isNilAddress(_innerEndpoints[1]);
     }
     
-    void sendEndpointPair(int idx) {
+    void sendEndpointPair(const sockaddr_storage& inboundAddress, int idx) {
         ASSERT(0 == idx || 1 == idx);
         
         int otherIdx = (0 == idx) ? 1 : 0;
@@ -327,7 +335,7 @@ public:
             EmiMessage<Binding>::fillTimestamps(_times[idx], buf, size);
             
             /// Actually send the packet
-            P2PSockDelegate::sendData(_sock, _peers[idx], buf, size);
+            _sock->sendData(inboundAddress, _peers[idx], buf, size);
         });
     }
 };
