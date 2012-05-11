@@ -73,19 +73,25 @@ private:
         });
     }
     
-    void sendPrxSynAckPacket(const sockaddr_storage& remoteAddr) {
+    void hashForPrxSynAck(uint8_t *hashBuf, size_t hashBufLen,
+                          uint8_t *endpointPair, size_t endpointPairLen) {
         uint8_t toBeHashed[128];
-        ASSERT(sizeof(toBeHashed) >= _myEndpointPairLength+strlen(EMI_NAT_PUNCHTHROUGH_PRX_SYN_ACK_SALT));
-        memcpy(toBeHashed, _myEndpointPair, _myEndpointPairLength);
-        memcpy(toBeHashed+_myEndpointPairLength,
+        ASSERT(sizeof(toBeHashed) >= endpointPairLen+strlen(EMI_NAT_PUNCHTHROUGH_PRX_SYN_ACK_SALT));
+        memcpy(toBeHashed, endpointPair, endpointPairLen);
+        memcpy(toBeHashed+endpointPairLen,
                EMI_NAT_PUNCHTHROUGH_PRX_SYN_ACK_SALT,
                strlen(EMI_NAT_PUNCHTHROUGH_PRX_SYN_ACK_SALT));
         
-        uint8_t hashBuf[Binding::HMAC_HASH_SIZE];
+        ASSERT(hashBufLen >= Binding::HMAC_HASH_SIZE);
         
         Binding::hmacHash(_p2p.sharedSecret, _p2p.sharedSecretLength,
-                          toBeHashed, _myEndpointPairLength+strlen(EMI_NAT_PUNCHTHROUGH_PRX_SYN_ACK_SALT),
+                          toBeHashed, endpointPairLen+strlen(EMI_NAT_PUNCHTHROUGH_PRX_SYN_ACK_SALT),
                           hashBuf, sizeof(hashBuf));
+    }
+    
+    void sendPrxSynAckPacket(const sockaddr_storage& remoteAddr) {
+        uint8_t hashBuf[Binding::HMAC_HASH_SIZE];
+        hashForPrxSynAck(hashBuf, sizeof(hashBuf), _myEndpointPair, _myEndpointPairLength);
         
         /// Prepare the message headers
         EmiFlags flags(EMI_PRX_FLAG | EMI_SYN_FLAG | EMI_ACK_FLAG);
@@ -178,8 +184,20 @@ public:
         sendPrxSynAckPacket(remoteAddr);
     }
         
-    void gotPrxSynAck() {
-        // TODO Make sure to stop re-sending the PRX-RST message
+    void gotPrxSynAck(const sockaddr_storage& remoteAddr,
+                      const uint8_t *data,
+                      size_t len) {
+        /// Check that the hash is correct
+        uint8_t hashBuf[Binding::HMAC_HASH_SIZE];
+        hashForPrxSynAck(hashBuf, sizeof(hashBuf), _peerEndpointPair, _peerEndpointPairLength);
+        
+        if (len != sizeof(hashBuf) ||
+            0 != memcmp(data, hashBuf, len)) {
+            // Invalid hash
+            return;
+        }
+        
+        // TODO Make sure to stop re-send the PRX-RST message
         
         // TODO Update the connection's remote address
         

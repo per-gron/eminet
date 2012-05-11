@@ -274,7 +274,7 @@ public:
     
     // Methods that delegate to EmiLogicalConnetion
 #define X(msg)                  \
-    inline void got##msg() {           \
+    inline void got##msg() {    \
         if (_conn) {            \
             _conn->got##msg();  \
         }                       \
@@ -299,6 +299,13 @@ public:
                           size_t len) {
         if (_conn) {
             _conn->gotPrxSyn(remoteAddr, data, len);
+        }
+    }
+    inline void gotPrxSynAck(const sockaddr_storage& remoteAddr,
+                          const uint8_t *data,
+                          size_t len) {
+        if (_conn) {
+            _conn->gotPrxSynAck(remoteAddr, data, len);
         }
     }
     // Delegates to EmiLogicalConnection

@@ -309,6 +309,14 @@ public:
         }
     }
     
+    inline void gotPrxSynAck(const sockaddr_storage& remoteAddr,
+                          const uint8_t *data,
+                          size_t len) {
+        if (_natPunchthrough) {
+            _natPunchthrough->gotPrxSynAck(remoteAddr, data, len);
+        }
+    }
+    
     // Returns false if the connection is not in the opening state (that's an error)
     bool gotSynRst(EmiTimeInterval now,
                    const sockaddr_storage& inboundAddr,

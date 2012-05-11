@@ -305,7 +305,7 @@ public:
                                                             /*acceptPacketFromUnexpectedHost:*/true));
                         ENSURE_CONN_VAR(prxConn, "PRX-SYN-ACK");
                         
-                        // TODO prxConn->gotPrxSynAck();
+                        prxConn->gotPrxSynAck(remoteAddress, rawData+actualDataOffset, header.length);
                     }
                     else {
                         err = "Invalid message flags";
