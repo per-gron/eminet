@@ -73,7 +73,7 @@ void EmiSockDelegate::extractLocalAddress(uv_udp_t *socket, sockaddr_storage& ad
     uv_udp_getsockname(socket, (struct sockaddr *)&address, &len);
 }
 
-EmiSockDelegate::EC *EmiSockDelegate::makeConnection(const EmiConnParams& params) {
+EmiSockDelegate::EC *EmiSockDelegate::makeConnection(const EmiConnParams<EmiBinding>& params) {
     HandleScope scope;
     
     // TODO I think the HandleScope will dispose of EmiConnection after

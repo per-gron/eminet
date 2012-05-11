@@ -18,14 +18,14 @@
 // The purpose of this class is to encapsulate opening one UDP socket
 // per network interface, to be able to tell which the receiver address
 // of each datagram is.
-template<class SockDelegate>
+template<class Binding>
 class EmiUdpSocket {
 private:
     // Private copy constructor and assignment operator
     inline EmiUdpSocket(const EmiUdpSocket& other);
     inline EmiUdpSocket& operator=(const EmiUdpSocket& other);
     
-    typedef typename SockDelegate::Binding             Binding;
+    typedef typename Binding::TemporaryData            TemporaryData;
     typedef typename Binding::NetworkInterfaces        NetworkInterfaces;
     typedef typename Binding::Error                    Error;
     typedef typename Binding::SocketHandle             SocketHandle;
@@ -33,12 +33,20 @@ private:
     typedef std::vector<AddrSocketPair>                SocketVector;
     typedef typename SocketVector::iterator            SocketVectorIter;
     
-    SockDelegate& _delegate;
     SocketVector  _sockets;
     uint16_t      _localPort;
     
-    EmiUdpSocket(SockDelegate& delegate) :
-    _delegate(delegate), _sockets(), _localPort(0) {}
+    EmiUdpSocket() :
+    _sockets(), _localPort(0) {}
+    
+    static void onMessage(void *userData,
+                          EmiTimeInterval now,
+                          const sockaddr_storage& address,
+                          const TemporaryData& data,
+                          size_t offset,
+                          size_t len) {
+        // TODO
+    }
     
     bool init(const sockaddr_storage& address, Error& err) {
         // TODO Do something more with address than just use
@@ -60,13 +68,13 @@ private:
             
             EmiNetUtil::addrSetPort(ifAddr, _localPort);
             
-            SocketHandle *handle = _delegate.openSocket(ifAddr, err);
+            SocketHandle *handle = Binding::openSocket(onMessage, this, ifAddr, err);
             if (!handle) {
                 return false;
             }
             
             sockaddr_storage localAddr;
-            SockDelegate::extractLocalAddress(handle, localAddr);
+            Binding::extractLocalAddress(handle, localAddr);
             
             _sockets.push_back(std::make_pair(localAddr, handle));
             
@@ -89,15 +97,15 @@ public:
         while (iter != end) {
             SocketHandle* sh((*iter).second);
             if (sh) {
-                SockDelegate::closeSocket(_delegate, sh);
+                Binding::closeSocket(sh);
             }
             
             ++iter;
         }
     }
     
-    static EmiUdpSocket *open(SockDelegate& delegate, const sockaddr_storage& address, Error& err) {
-        EmiUdpSocket *sock = new EmiUdpSocket(delegate);
+    static EmiUdpSocket *open(const sockaddr_storage& address, Error& err) {
+        EmiUdpSocket *sock = new EmiUdpSocket();
         
         if (!sock->init(address, err)) {
             goto error;
@@ -127,7 +135,7 @@ public:
                 
                 SocketHandle* sh(asp.second);
                 if (sh) {
-                    _delegate.sendData(sh, toAddress, data, size);
+                    Binding::sendData(sh, toAddress, data, size);
                 }
                 
             }

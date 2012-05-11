@@ -8,6 +8,7 @@
 
 #import "EmiConnection.h"
 
+#include "EmiBinding.h"
 #include "EmiConn.h"
 #import "EmiSocket.h"
 
@@ -15,14 +16,14 @@
 
 class EmiSockDelegate;
 class EmiConnDelegate;
-template<class SockDelegate>
+template<class Binding>
 class EmiConnParams;
 typedef EmiConn<EmiSockDelegate, EmiConnDelegate> EC;
 
 @interface EmiConnection()
 
 - (id)initWithSocket:(EmiSocket *)socket
-              params:(const EmiConnParams<EmiSockDelegate> *)params;
+              params:(const EmiConnParams<EmiBinding> *)params;
 
 - (EC*)conn;
 

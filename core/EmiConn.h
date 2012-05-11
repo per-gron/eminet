@@ -31,7 +31,7 @@ class EmiConn {
     typedef typename SockDelegate::ConnectionOpenedCallbackCookie ConnectionOpenedCallbackCookie;
     
     typedef EmiSock<SockDelegate, ConnDelegate>      ES;
-    typedef EmiUdpSocket<SockDelegate>               EUS;
+    typedef EmiUdpSocket<Binding>                    EUS;
     typedef EmiMessage<Binding>                      EM;
     typedef EmiReceiverBuffer<SockDelegate, EmiConn> ERB;
     typedef EmiSendQueue<SockDelegate, ConnDelegate> ESQ;
@@ -104,7 +104,7 @@ public:
                                  /*dontFlush:*/true));
     }
     
-    EmiConn(const ConnDelegate& delegate, ES& emisock, const EmiConnParams<SockDelegate>& params) :
+    EmiConn(const ConnDelegate& delegate, ES& emisock, const EmiConnParams<Binding>& params) :
     _inboundPort(params.inboundPort),
     _remoteAddress(params.address),
     _conn(NULL),

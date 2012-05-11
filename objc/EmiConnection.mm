@@ -17,7 +17,7 @@
 @synthesize delegate = _delegate;
 
 - (id)initWithSocket:(EmiSocket *)socket
-              params:(const EmiConnParams<EmiSockDelegate> *)params {
+              params:(const EmiConnParams<EmiBinding> *)params {
     if (self = [super init]) {
         _emiSocket = socket;
         _ec = new EC(EmiConnDelegate(self), *socket.sock, *params);

@@ -9,6 +9,8 @@
 #ifndef roshambo_EmiBinding_h
 #define roshambo_EmiBinding_h
 
+#import "EmiSocketUserDataWrapper.h"
+
 #include "EmiTypes.h"
 #import <Foundation/Foundation.h>
 #include <utility>
@@ -107,6 +109,14 @@ public:
     static bool getNetworkInterfaces(NetworkInterfaces& ni, Error& err);
     static bool nextNetworkInterface(NetworkInterfaces& ni, const char*& name, struct sockaddr_storage& addr);
     static void freeNetworkInterfaces(const NetworkInterfaces& ni);
+    
+    static void closeSocket(GCDAsyncUdpSocket *socket);
+    static GCDAsyncUdpSocket *openSocket(EmiOnMessage *callback,
+                                         void *userData,
+                                         const sockaddr_storage& address,
+                                         __strong NSError*& err);
+    static void extractLocalAddress(GCDAsyncUdpSocket *socket, sockaddr_storage& address);
+    static void sendData(GCDAsyncUdpSocket *socket, const sockaddr_storage& address, const uint8_t *data, size_t size);
 };
 
 #endif

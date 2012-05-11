@@ -13,53 +13,11 @@
 #import "EmiSocketInternal.h"
 #import "EmiConnectionInternal.h"
 
-#import "GCDAsyncUdpSocket.h"
-
 EmiSockDelegate::EmiSockDelegate(EmiSocket *socket) : _socket(socket) {}
 
-void EmiSockDelegate::closeSocket(EmiSockDelegate& sock, GCDAsyncUdpSocket *socket) {
-    [socket close];
-}
-
-GCDAsyncUdpSocket *EmiSockDelegate::openSocket(const sockaddr_storage& address, __strong NSError*& err) {
-    GCDAsyncUdpSocket *socket = [[GCDAsyncUdpSocket alloc] initWithDelegate:_socket delegateQueue:dispatch_get_current_queue()];
-    
-    if (![socket bindToAddress:[NSData dataWithBytes:&address
-                                              length:EmiNetUtil::addrSize(address)]
-                         error:&err]) {
-        return nil;
-    }
-    
-    if (![socket beginReceiving:&err]) {
-        return nil;
-    }
-    
-    return socket;
-}
-
-void EmiSockDelegate::extractLocalAddress(GCDAsyncUdpSocket *socket, sockaddr_storage& address) {
-    NSData *a = [socket localAddress];
-    // If there is no address, a can have length 0.
-    // To ensure that we don't return garbage, begin
-    // with filling out address with something that is
-    // at least valid.
-    EmiNetUtil::anyAddr(0, AF_INET, &address);
-    if (a) {
-        memcpy(&address, [a bytes], MIN([a length], sizeof(sockaddr_storage)));
-    }
-}
-
-EC *EmiSockDelegate::makeConnection(const EmiConnParams<EmiSockDelegate>& params) {
+EC *EmiSockDelegate::makeConnection(const EmiConnParams<EmiBinding>& params) {
     return [[EmiConnection alloc] initWithSocket:_socket
                                           params:&params].conn;
-}
-
-void EmiSockDelegate::sendData(GCDAsyncUdpSocket *socket, const sockaddr_storage& address, const uint8_t *data, size_t size) {
-    // TODO This copies the packet data. We might want to redesign
-    // this part of the code so that this is not required.
-    [socket sendData:[NSData dataWithBytes:data     length:size]
-           toAddress:[NSData dataWithBytes:&address length:EmiNetUtil::addrSize(address)]
-         withTimeout:-1 tag:0];
 }
 
 void EmiSockDelegate::gotConnection(EC& conn) {

@@ -17,6 +17,7 @@ template<class SockDelegate, class ConnDelegate>
 class EmiSock;
 template<class SockDelegate, class ConnDelegate>
 class EmiConn;
+template<class Binding>
 class EmiConnParams;
 
 class EmiSockDelegate {
@@ -37,12 +38,12 @@ public:
     uv_udp_t *openSocket(const sockaddr_storage& address, Error& err);
     static void extractLocalAddress(uv_udp_t *socket, sockaddr_storage& address);
     
-    EC *makeConnection(const EmiConnParams& params);
+    EC *makeConnection(const EmiConnParams<EmiBinding>& params);
     
-    void sendData(uv_udp_t *socket,
-                  const sockaddr_storage& address,
-                  const uint8_t *data,
-                  size_t size);
+    static void sendData(uv_udp_t *socket,
+                         const sockaddr_storage& address,
+                         const uint8_t *data,
+                         size_t size);
     void gotConnection(EC& conn);
     
     static void connectionOpened(ConnectionOpenedCallbackCookie& cookie,

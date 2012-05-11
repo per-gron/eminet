@@ -8,8 +8,10 @@
 
 #include "EmiBinding.h"
 
+#import "EmiSocket.h"
 #include "EmiNetUtil.h"
 
+#import "GCDAsyncUdpSocket.h"
 #include <Security/Security.h>
 #include <CommonCrypto/CommonHMAC.h>
 #include <arpa/inet.h>
@@ -124,4 +126,50 @@ bool EmiBinding::nextNetworkInterface(NetworkInterfaces& ni, const char*& name, 
 
 void EmiBinding::freeNetworkInterfaces(const NetworkInterfaces& ni) {
     freeifaddrs(ni.first);
+}
+
+
+void EmiBinding::closeSocket(GCDAsyncUdpSocket *socket) {
+    [socket close];
+}
+
+GCDAsyncUdpSocket *EmiBinding::openSocket(EmiOnMessage *callback,
+                                          void *userData,
+                                          const sockaddr_storage& address,
+                                          __strong NSError*& err) {
+    GCDAsyncUdpSocket *socket = [[GCDAsyncUdpSocket alloc] initWithDelegate:[EmiSocket class]
+                                                              delegateQueue:dispatch_get_current_queue()];
+    socket.userData = [[EmiSocketUserDataWrapper alloc] initWithUserData:userData callback:callback];
+    
+    if (![socket bindToAddress:[NSData dataWithBytes:&address
+                                              length:EmiNetUtil::addrSize(address)]
+                         error:&err]) {
+        return nil;
+    }
+    
+    if (![socket beginReceiving:&err]) {
+        return nil;
+    }
+    
+    return socket;
+}
+
+void EmiBinding::extractLocalAddress(GCDAsyncUdpSocket *socket, sockaddr_storage& address) {
+    NSData *a = [socket localAddress];
+    // If there is no address, a can have length 0.
+    // To ensure that we don't return garbage, begin
+    // with filling out address with something that is
+    // at least valid.
+    EmiNetUtil::anyAddr(0, AF_INET, &address);
+    if (a) {
+        memcpy(&address, [a bytes], MIN([a length], sizeof(sockaddr_storage)));
+    }
+}
+
+void EmiBinding::sendData(GCDAsyncUdpSocket *socket, const sockaddr_storage& address, const uint8_t *data, size_t size) {
+    // TODO This copies the packet data. We might want to redesign
+    // this part of the code so that this is not required.
+    [socket sendData:[NSData dataWithBytes:data     length:size]
+           toAddress:[NSData dataWithBytes:&address length:EmiNetUtil::addrSize(address)]
+         withTimeout:-1 tag:0];
 }

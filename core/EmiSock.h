@@ -42,10 +42,10 @@ class EmiSock {
         }
     };
     
-    typedef EmiConnParams<SockDelegate>         ECP;
+    typedef EmiConnParams<Binding>              ECP;
     typedef EmiConn<SockDelegate, ConnDelegate> EC;
     typedef EmiMessage<Binding>                 EM;
-    typedef EmiUdpSocket<SockDelegate>          EUS;
+    typedef EmiUdpSocket<Binding>               EUS;
     
     typedef std::map<AddressKey, EC*>              ServerConnectionMap;
     typedef typename ServerConnectionMap::iterator ServerConnectionMapIter;
@@ -71,7 +71,7 @@ private:
         sockaddr_storage ss(config.address);
         EmiNetUtil::addrSetPort(ss, 0); // Bind to a random free port number
         
-        EUS *socket = EUS::open(_delegate, ss, err);
+        EUS *socket = EUS::open(ss, err);
         
         if (!socket) {
             return false;
@@ -162,7 +162,7 @@ public:
             sockaddr_storage ss(config.address);
             EmiNetUtil::addrSetPort(ss, config.port);
             
-            _serverSocket = EUS::open(_delegate, ss, err);
+            _serverSocket = EUS::open(ss, err);
             
             if (!_serverSocket) {
                 return false;
@@ -196,7 +196,7 @@ public:
         
         const uint8_t *rawData(Binding::extractData(data)+offset);
         
-        __block EC *conn = getConnectionForMessage(sock, address);
+        __block EC *conn = NULL; // TODO getConnectionForMessage(sock, address);
         
         if (conn) {
             conn->gotPacket();
@@ -293,9 +293,9 @@ public:
                     }
                     
                     if (!conn) {
-                        conn = _delegate.makeConnection(ECP(sock, address, inboundPort));
+                        conn = _delegate.makeConnection(ECP(/*TODO sock*/NULL, address, inboundPort));
                         ASSERT(0 == _serverConns.count(AddressKey(address)));
-                        _serverConns.insert(AddressKey(address), conn);
+                        _serverConns.insert(std::make_pair(AddressKey(address), conn));
                     }
                     
                     conn->gotTimestamp(now, rawData, len);
@@ -352,7 +352,7 @@ public:
                     
                     // Regardless of whether we still have a connection up, respond with a SYN-RST-ACK message
                     EM::writeControlPacket(EMI_SYN_FLAG | EMI_RST_FLAG | EMI_ACK_FLAG, ^(uint8_t *buf, size_t size) {
-                        _delegate.sendData(sock, address, buf, size);
+                        SockDelegate::sendData(sock, address, buf, size);
                     });
                 }
                 else if (!synFlag && !rstFlag) {
@@ -369,7 +369,7 @@ public:
                     // will set conn to NULL, which is correct, because we don't want
                     // to give any additional data to it anyway, even if this packet
                     // contains more messages.
-                    conn = getConnectionForMessage(sock, address);
+                    conn = getConnectionForMessage(/*TODO sock*/NULL, address);
                 }
                 else {
                     err = "Invalid message flags";

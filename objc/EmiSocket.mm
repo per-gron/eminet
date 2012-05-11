@@ -10,6 +10,7 @@
 
 #import "EmiConnectionInternal.h"
 #import "EmiSocketConfigInternal.h"
+#import "EmiSocketUserDataWrapper.h"
 #include "EmiSendQueue.h"
 #include "EmiConnDelegate.h"
 
@@ -119,19 +120,22 @@
 
 #pragma mark - CGDAsyncUdpSocket delegate methods
 
-- (void)udpSocket:(GCDAsyncUdpSocket *)sock
++ (void)udpSocket:(GCDAsyncUdpSocket *)sock
    didReceiveData:(NSData *)data
       fromAddress:(NSData *)address
 withFilterContext:(id)filterContext {
     sockaddr_storage ss;
     memcpy(&ss, [address bytes], MIN([address length], sizeof(ss)));
     
-    ((S *)_sock)->onMessage([NSDate timeIntervalSinceReferenceDate],
-                            sock, ss,
-                            data, /*offset:*/0, [data length]);
+    EmiSocketUserDataWrapper *wrap = sock.userData;
+    
+    (wrap.callback)(wrap.userData,
+                    [NSDate timeIntervalSinceReferenceDate],
+                    ss,
+                    data, /*offset:*/0, [data length]);
 }
 
-- (void)udpSocket:(GCDAsyncUdpSocket *)sock didNotSendDataWithTag:(long)tag dueToError:(NSError *)error {
++ (void)udpSocket:(GCDAsyncUdpSocket *)sock didNotSendDataWithTag:(long)tag dueToError:(NSError *)error {
     // NSLog(@"Failed to send packet!");
 }
 
