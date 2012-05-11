@@ -56,6 +56,21 @@ void EmiNetUtil::anyAddr(uint16_t port,
     }
 }
 
+bool EmiNetUtil::isAnyAddr(const sockaddr_storage& address) {
+    if (AF_INET6 == address.ss_family) {
+        const sockaddr_in6& addr6(*((struct sockaddr_in6 *)&address));
+        return 0 == memcmp(&addr6.sin6_addr, &in6addr_any, sizeof(in6addr_any));;
+    }
+    else if (AF_INET == address.ss_family) {
+        const sockaddr_in& addr(*((struct sockaddr_in *)&address));
+        return htonl(INADDR_ANY) == addr.sin_addr.s_addr;
+    }
+    else {
+        ASSERT(0 && "unexpected address family");
+        abort();
+    }
+}
+
 uint16_t EmiNetUtil::addrPortN(const sockaddr_storage& address) {
     if (AF_INET6 == address.ss_family) {
         const struct sockaddr_in6& addr6(*((const struct sockaddr_in6 *)&address));

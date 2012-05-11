@@ -53,6 +53,7 @@ public:
     static void anyAddr(uint16_t port,
                         int family,
                         sockaddr_storage *out);
+    static bool isAnyAddr(const sockaddr_storage& addr);
     
     // Returns the port number in network byte order
     static uint16_t addrPortN(const sockaddr_storage& address);

@@ -70,15 +70,18 @@ private:
     
     template<class SocketCookie>
     bool init(const SocketCookie& socketCookie, const sockaddr_storage& address, Error& err) {
-        // TODO Do something more with address than just use
-        // its address family; we should probably only bind
-        // address unless address is 0.0.0.0.
-        
         NetworkInterfaces ni;
         
         if (!Binding::getNetworkInterfaces(ni, err)) {
             return false;
         }
+        
+        bool addressIsAnyAddress = EmiNetUtil::isAnyAddr(address);
+        const size_t addressIpLen = EmiNetUtil::ipLength(address);
+        uint8_t addressIp[24];
+        EmiNetUtil::extractIp(address, addressIp, sizeof(addressIp));
+        
+        _localPort = EmiNetUtil::addrPortH(address);
         
         const char *ifName;
         sockaddr_storage ifAddr;
@@ -87,10 +90,21 @@ private:
                 continue;
             }
             
+            // If address is not 0.0.0.0 (the any address),
+            // don't bind to ifAddr unless the addresses
+            // match.
+            if (!addressIsAnyAddress) {
+                uint8_t ifAddrIp[24];
+                EmiNetUtil::extractIp(ifAddr, ifAddrIp, sizeof(ifAddrIp));
+                
+                if (0 != memcmp(ifAddrIp, addressIp, addressIpLen)) {
+                    continue;
+                }
+            }
+            
             EmiNetUtil::addrSetPort(ifAddr, _localPort);
             
-            // TODO Should we really bind to address here??
-            SocketHandle *handle = Binding::openSocket(socketCookie, onMessage, this, address, err);
+            SocketHandle *handle = Binding::openSocket(socketCookie, onMessage, this, ifAddr, err);
             if (!handle) {
                 return false;
             }
