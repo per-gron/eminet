@@ -13,6 +13,8 @@
 #include <cstdio>
 #include <cstring>
 
+const uint64_t EmiNetUtil::ARC4RANDOM_MAX = 0x100000000;
+
 void EmiNetUtil::addrSetPort(sockaddr_storage& ss, uint16_t port) {
     if (AF_INET == ss.ss_family) {
         struct sockaddr_in& addr(*((struct sockaddr_in *)&ss));

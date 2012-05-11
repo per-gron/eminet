@@ -31,6 +31,8 @@ private:
     
 public:
     
+    static const uint64_t ARC4RANDOM_MAX;
+    
     inline static int32_t cyclicDifference16(int32_t a, int32_t b) {
         return (a>=b ? a-b : 0xffff-b+a) & 0xffff;
     }

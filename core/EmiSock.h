@@ -22,8 +22,6 @@
 #include <cstdlib>
 #include <netinet/in.h>
 
-static const uint64_t ARC4RANDOM_MAX = 0x100000000;
-
 template<class SockDelegate, class ConnDelegate>
 class EmiSock {
     typedef typename SockDelegate::Binding     Binding;
@@ -159,7 +157,7 @@ private:
     inline bool shouldArtificiallyDropPacket() const {
         if (0 == config.fabricatedPacketDropRate) return false;
         
-        return ((float)arc4random() / ARC4RANDOM_MAX) < config.fabricatedPacketDropRate;
+        return ((float)arc4random() / EmiNetUtil::ARC4RANDOM_MAX) < config.fabricatedPacketDropRate;
     }
     
     // SockDelegate::connectionOpened will be called on the cookie iff this function returns true.

@@ -25,7 +25,6 @@ static const EmiTimeInterval EMI_P2P_COOKIE_RESOLUTION  = 5*60; // In seconds
 
 template<class P2PSockDelegate>
 class EmiP2PSock {
-    static const uint64_t ARC4RANDOM_MAX = 0x100000000;
     
     typedef typename P2PSockDelegate::Binding  Binding;
     typedef typename Binding::SocketHandle     SocketHandle;
