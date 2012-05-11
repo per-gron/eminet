@@ -274,7 +274,7 @@ public:
     
     // Methods that delegate to EmiLogicalConnetion
 #define X(msg)                  \
-    void got##msg() {           \
+    inline void got##msg() {           \
         if (_conn) {            \
             _conn->got##msg();  \
         }                       \
@@ -283,16 +283,22 @@ public:
     X(Rst);
     // Warning: This method might deallocate the object
     X(SynRstAck);
-    X(PrxRstAck);
 #undef X
-    void gotPrx(EmiTimeInterval now) {
+    inline void gotPrx(EmiTimeInterval now) {
         if (_conn) {
             _conn->gotPrx(now);
         }
     }
-    void gotPrxRstSynAck(EmiTimeInterval now, const uint8_t *data, size_t len) {
+    inline void gotPrxRstSynAck(EmiTimeInterval now, const uint8_t *data, size_t len) {
         if (_conn) {
             _conn->gotPrxRstSynAck(now, data, len);
+        }
+    }
+    inline void gotPrxSyn(const sockaddr_storage& remoteAddr,
+                          const uint8_t *data,
+                          size_t len) {
+        if (_conn) {
+            _conn->gotPrxSyn(remoteAddr, data, len);
         }
     }
     // Delegates to EmiLogicalConnection

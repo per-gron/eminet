@@ -28,6 +28,8 @@ class EmiNatPunchthrough {
     
     friend class EmiRtoTimer<Binding, EmiNatPunchthrough>;
     
+#define EMI_NAT_PUNCHTHROUGH_PRX_SYN_ACK_SALT "HELLO"
+    
 private:
     // Private copy constructor and assignment operator
     inline EmiNatPunchthrough(const EmiNatPunchthrough& other);
@@ -42,6 +44,8 @@ private:
     
     uint8_t* const         _myEndpointPair;
     const size_t           _myEndpointPairLength;
+    uint8_t* const         _peerEndpointPair;
+    const size_t           _peerEndpointPairLength;
     const sockaddr_storage _peerInnerAddr;
     const sockaddr_storage _peerOuterAddr;
     
@@ -60,12 +64,38 @@ private:
             EmiMessage<Binding>::fillTimestamps(_time, buf, size);
             
             /// Actually send the packet(s)
-            _delegate.sendPrxSynPacket(_peerInnerAddr, buf, size);
+            _delegate.sendNatPunchthroughPacket(_peerInnerAddr, buf, size);
             
             if (0 != EmiAddressCmp::compare(_peerInnerAddr, _peerOuterAddr)) {
                 // Only send one packet if the inner and outer endpoints are equal
-                _delegate.sendPrxSynPacket(_peerOuterAddr, buf, size);
+                _delegate.sendNatPunchthroughPacket(_peerOuterAddr, buf, size);
             }
+        });
+    }
+    
+    void sendPrxSynAckPacket(const sockaddr_storage& remoteAddr) {
+        uint8_t toBeHashed[128];
+        ASSERT(sizeof(toBeHashed) >= _myEndpointPairLength+strlen(EMI_NAT_PUNCHTHROUGH_PRX_SYN_ACK_SALT));
+        memcpy(toBeHashed, _myEndpointPair, _myEndpointPairLength);
+        memcpy(toBeHashed+_myEndpointPairLength,
+               EMI_NAT_PUNCHTHROUGH_PRX_SYN_ACK_SALT,
+               strlen(EMI_NAT_PUNCHTHROUGH_PRX_SYN_ACK_SALT));
+        
+        uint8_t hashBuf[Binding::HMAC_HASH_SIZE];
+        
+        Binding::hmacHash(_p2p.sharedSecret, _p2p.sharedSecretLength,
+                          toBeHashed, _myEndpointPairLength+strlen(EMI_NAT_PUNCHTHROUGH_PRX_SYN_ACK_SALT),
+                          hashBuf, sizeof(hashBuf));
+        
+        /// Prepare the message headers
+        EmiFlags flags(EMI_PRX_FLAG | EMI_SYN_FLAG | EMI_ACK_FLAG);
+        EmiMessage<Binding>::template writeControlPacketWithData<128>(flags, hashBuf, sizeof(hashBuf), ^(uint8_t *buf,
+                                                                                                         size_t size) {
+            /// Fill the timestamps
+            EmiMessage<Binding>::fillTimestamps(_time, buf, size);
+            
+            /// Actually send the packet
+            _delegate.sendNatPunchthroughPacket(remoteAddr, buf, size);
         });
     }
     
@@ -102,6 +132,7 @@ public:
                        EmiSequenceNumber initialSequenceNumber,
                        const EmiP2PData& p2p,
                        const uint8_t *myEndpointPair, size_t myEndpointPairLength,
+                       const uint8_t *peerEndpointPair, size_t peerEndpointPairLength,
                        const sockaddr_storage& peerInnerAddr,
                        const sockaddr_storage& peerOuterAddr) :
     _delegate(delegate),
@@ -111,9 +142,12 @@ public:
     _rtoTimer(/*disable connection warning:*/-1, connectionTimeout, _time, *this),
     _myEndpointPair((uint8_t *)malloc(myEndpointPairLength)),
     _myEndpointPairLength(myEndpointPairLength),
+    _peerEndpointPair((uint8_t *)malloc(peerEndpointPairLength)),
+    _peerEndpointPairLength(peerEndpointPairLength),
     _peerInnerAddr(peerInnerAddr),
     _peerOuterAddr(peerOuterAddr) {
-        memcpy(_myEndpointPair, myEndpointPair, myEndpointPairLength);
+        memcpy(_myEndpointPair,   myEndpointPair,   myEndpointPairLength);
+        memcpy(_peerEndpointPair, peerEndpointPair, peerEndpointPairLength);
         
         _rtoTimer.updateRtoTimeout();
         
@@ -122,6 +156,36 @@ public:
     
     virtual ~EmiNatPunchthrough() {
         free(_myEndpointPair);
+    }
+    
+    void gotPrxSyn(const sockaddr_storage& remoteAddr,
+                   const uint8_t *data,
+                   size_t len) {
+        /// Check that the hash is correct
+        uint8_t hashBuf[Binding::HMAC_HASH_SIZE];
+        
+        Binding::hmacHash(_p2p.sharedSecret, _p2p.sharedSecretLength,
+                          _peerEndpointPair, _peerEndpointPairLength,
+                          hashBuf, sizeof(hashBuf));
+        
+        if (len != sizeof(hashBuf) ||
+            0 != memcmp(data, hashBuf, len)) {
+            // Invalid hash
+            return;
+        }
+        
+        /// Respond with PRX-SYN-ACK packet
+        sendPrxSynAckPacket(remoteAddr);
+    }
+        
+    void gotPrxSynAck() {
+        // TODO Make sure to stop re-sending the PRX-RST message
+        
+        // TODO Update the connection's remote address
+        
+        // TODO Do the right thing with _time (I think we need to swap with the connection)
+        
+        // TODO Send reliable PRX-RST packet to the P2P mediator
     }
     
 };

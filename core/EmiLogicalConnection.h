@@ -120,7 +120,7 @@ private:
     }
     
     // Invoked by EmiNatPunchthrough
-    void sendPrxSynPacket(const sockaddr_storage& addr, const uint8_t *buf, size_t bufSize) {
+    void sendNatPunchthroughPacket(const sockaddr_storage& addr, const uint8_t *buf, size_t bufSize) {
         if (_conn) {
             _conn->sendDatagram(addr, buf, bufSize);
         }
@@ -295,8 +295,17 @@ public:
                                        _initialSequenceNumber,
                                        _conn->getP2PData(),
                                        /*myEndpointPair:*/data, endpointPairLen,
+                                       /*peerEndpointPair:*/data+endpointPairLen, endpointPairLen,
                                        /*peerInnerAddr:*/addrs[0],
                                        /*peerOuterAddr:*/addrs[1]);
+        }
+    }
+    
+    inline void gotPrxSyn(const sockaddr_storage& remoteAddr,
+                          const uint8_t *data,
+                          size_t len) {
+        if (_natPunchthrough) {
+            _natPunchthrough->gotPrxSyn(remoteAddr, data, len);
         }
     }
     
