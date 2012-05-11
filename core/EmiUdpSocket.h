@@ -41,6 +41,10 @@ private:
     _delegate(delegate), _sockets(), _localPort(0) {}
     
     bool init(const sockaddr_storage& address, Error& err) {
+        // TODO Do something more with address than just use
+        // its address family; we should probably only bind
+        // address unless address is 0.0.0.0.
+        
         NetworkInterfaces ni;
         
         if (!Binding::getNetworkInterfaces(ni, err)) {
@@ -56,7 +60,7 @@ private:
             
             EmiNetUtil::addrSetPort(ifAddr, _localPort);
             
-            SocketHandle *handle = _delegate.openSocket(address, err);
+            SocketHandle *handle = _delegate.openSocket(ifAddr, err);
             if (!handle) {
                 return false;
             }

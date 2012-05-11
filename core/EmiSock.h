@@ -30,158 +30,77 @@ class EmiSock {
     typedef typename Binding::SocketHandle     SocketHandle;
     typedef typename SockDelegate::ConnectionOpenedCallbackCookie  ConnectionOpenedCallbackCookie;
     
-    class EmiConnectionKey {
+    struct AddressKey {
     public:
-        EmiConnectionKey(const sockaddr_storage& address_, uint16_t inboundPort_) :
-        address(address_), inboundPort(inboundPort_) {}
-        
-        sockaddr_storage address;
-        uint16_t inboundPort;
-        
-        inline bool operator<(const EmiConnectionKey& rhs) const {
-            if (inboundPort < rhs.inboundPort) return true;
-            else if (inboundPort > rhs.inboundPort) return false;
-            else {
-                return 0 > EmiAddressCmp::compare(address, rhs.address);
-            }
-        }
-    };
-    
-    struct EmiClientSocketKey {
-    public:
-        EmiClientSocketKey(const sockaddr_storage& address_) :
+        explicit AddressKey(const sockaddr_storage& address_) :
         address(address_) {}
         
         sockaddr_storage address;
         
-        inline bool operator<(const EmiClientSocketKey& rhs) const {
+        inline bool operator<(const AddressKey& rhs) const {
             return 0 > EmiAddressCmp::compare(address, rhs.address);
         }
     };
     
-    struct EmiClientSocket {
-        typedef EmiUdpSocket<SockDelegate> EUS;
-        
-        EmiClientSocket(EmiSock& emiSock_, uint16_t port_) :
-        emiSock(emiSock_), port(port_), socket(NULL) {}
-        
-        EmiSock& emiSock;
-        uint16_t port;
-        EUS *socket;
-        std::set<EmiClientSocketKey> addresses;
-        
-        bool open(Error& err) {
-            if (!socket) {
-                sockaddr_storage ss(emiSock.config.address);
-                EmiNetUtil::addrSetPort(ss, port);
-                socket = EUS::open(emiSock._delegate, ss, err);
-                
-                if (socket && 0 == port) {
-                    port = socket->getLocalPort();
-                }
-            }
-            
-            return !!socket;
-        }
-        
-        void close() {
-            delete socket;
-            socket = NULL;
-        }
-    };
-    
-    typedef EmiConnParams                       ECP;
+    typedef EmiConnParams<SockDelegate>         ECP;
     typedef EmiConn<SockDelegate, ConnDelegate> EC;
     typedef EmiMessage<Binding>                 EM;
+    typedef EmiUdpSocket<SockDelegate>          EUS;
     
-    typedef std::map<EmiConnectionKey, EC*>       EmiConnectionMap;
-    typedef typename EmiConnectionMap::iterator   EmiConnectionMapIter;
-    typedef std::map<uint16_t, EmiClientSocket>   EmiClientSocketMap;
-    typedef typename EmiClientSocketMap::iterator EmiClientSocketMapIter;
+    typedef std::map<AddressKey, EC*>              ServerConnectionMap;
+    typedef typename ServerConnectionMap::iterator ServerConnectionMapIter;
+    
+    typedef std::map<EUS*, EC*>                    ClientConnectionMap;
+    typedef typename ClientConnectionMap::iterator ClientConnectionMapIter;
     
 private:
     // Private copy constructor and assignment operator
     inline EmiSock(const EmiSock& other);
     inline EmiSock& operator=(const EmiSock& other);
     
-    SocketHandle         *_serverSocket;
-    EmiConnectionMap      _conns;
-    EmiClientSocketMap    _clientSockets;
+    EUS                  *_serverSocket;
+    ServerConnectionMap   _serverConns;
+    ClientConnectionMap   _clientConns;
     SockDelegate          _delegate;
-    
-    int32_t findFreeClientPort(const sockaddr_storage& address) {
-        EmiClientSocketKey key(address);
-        
-        EmiClientSocketMapIter iter = _clientSockets.begin();
-        EmiClientSocketMapIter end  = _clientSockets.end();
-        while (iter != end) {
-            if (0 == (*iter).second.addresses.count(key)) {
-                return (*iter).first;
-            }
-            
-            ++iter;
-        }
-        
-        return -1;
-    }
-    
-    uint16_t openClientSocket(const sockaddr_storage& address, Error& err) {
-        // Ensure that the datagram sockets are open
-        if (!desuspend(err)) {
-            return 0;
-        }
-        
-        int32_t inboundPort = findFreeClientPort(address);
-        if (-1 == inboundPort) {
-            EmiClientSocket ecs(*this, 0);
-            
-            if (!ecs.open(err)) {
-                return 0;
-            }
-            inboundPort = ecs.port;
-            
-            _clientSockets.insert(typename EmiClientSocketMap::value_type(inboundPort, ecs));
-        }
-        
-        (*(_clientSockets.find(inboundPort))).second.addresses.insert(EmiClientSocketKey(address));
-        
-        return inboundPort;
-    }
-    
-    void suspendIfInactive() {
-        if (!config.acceptConnections && _clientSockets.empty()) {
-            suspend();
-        }
-    }
-    
-    inline bool shouldArtificiallyDropPacket() const {
-        if (0 == config.fabricatedPacketDropRate) return false;
-        
-        return ((float)arc4random() / EmiNetUtil::ARC4RANDOM_MAX) < config.fabricatedPacketDropRate;
-    }
     
     // SockDelegate::connectionOpened will be called on the cookie iff this function returns true.
     bool connectHelper(EmiTimeInterval now, const sockaddr_storage& address,
                        const uint8_t *p2pCookie, size_t p2pCookieLength,
                        const uint8_t *sharedSecret, size_t sharedSecretLength,
                        const ConnectionOpenedCallbackCookie& callbackCookie, Error& err) {
-        uint16_t inboundPort = openClientSocket(address, err);
+        sockaddr_storage ss(config.address);
+        EmiNetUtil::addrSetPort(ss, 0); // Bind to a random free port number
+        
+        EUS *socket = EUS::open(_delegate, ss, err);
+        
+        if (!socket) {
+            return false;
+        }
+        
+        uint16_t inboundPort = socket->getLocalPort();
         
         if (!inboundPort) {
             return false;
         }
         
-        EmiConnectionKey key(address, inboundPort);
-        // Assert that openClientSocket returned an unused port number.
-        ASSERT(0 == _conns.count(key));
-        
-        EC *ec(_delegate.makeConnection(ECP(address, inboundPort, 
+        EC *ec(_delegate.makeConnection(ECP(socket, address, inboundPort, 
                                             p2pCookie, p2pCookieLength,
                                             sharedSecret, sharedSecretLength)));
-        _conns.insert(std::make_pair(key, ec));
+        _clientConns.insert(std::make_pair(socket, ec));
         ec->open(now, callbackCookie);
         
         return true;
+    }
+    
+    EC *getConnectionForMessage(EUS *sock, const sockaddr_storage& remoteAddr) {
+        if (_serverSocket == sock) {
+            ServerConnectionMapIter cur(_serverConns.find(AddressKey(remoteAddr)));
+            return _serverConns.end() == cur ? NULL : (*cur).second;
+        }
+        else {
+            ClientConnectionMapIter cur(_clientConns.find(sock));
+            return _clientConns.end() == cur ? NULL : (*cur).second;
+        }
     }
 
     
@@ -192,31 +111,42 @@ public:
     config(config_), _delegate(delegate), _serverSocket(NULL) {}
     
     virtual ~EmiSock() {
-        // EmiSock should not be deleted before all open connections are closed,
-        // but just to be sure, we close all remaining connections.
-        size_t numConns = _conns.size();
-        EmiConnectionMapIter iter = _conns.begin();
-        EmiConnectionMapIter end  = _conns.end();
-        while (iter != end) {
-            // This will remove the connection from _conns
-            (*iter).second->forceClose();
-            
-            // We do this check to make sure we don't enter an infinite loop.
-            // It shouldn't be required.
-            size_t newNumConns = _conns.size();
-            ASSERT(newNumConns < numConns);
-            numConns = newNumConns;
-            
-            // We can't increment iter, it has been
-            // invalidated because the connection was
-            // removed from _conns
-            iter = _conns.begin();
-        }
+        /// EmiSock should not be deleted before all open connections are closed,
+        /// but just to be sure, we close all remaining connections.
         
-        // This will close (which, depending on the binding, might mean deallocate)
-        // all sockets. (By now all sockets except possibly the server should be closed
-        // already.)
-        suspend();
+#define X(map, Iter)                                                                  \
+        do {                                                                          \
+            size_t numConns = map.size();                                             \
+            Iter iter = map.begin();                                                  \
+            Iter end  = map.end();                                                    \
+            while (iter != end) {                                                     \
+                /* This will remove the connection from _conns */                     \
+                (*iter).second->forceClose();                                         \
+                                                                                      \
+                /* We do this check to make sure we don't enter an infinite loop. */  \
+                /* It shouldn't be required.                                      */  \
+                size_t newNumConns = map.size();                                      \
+                ASSERT(newNumConns < numConns);                                       \
+                numConns = newNumConns;                                               \
+                                                                                      \
+                /* We can't increment iter, it has been   */                          \
+                /* invalidated because the connection was */                          \
+                /* removed from _conns                    */                          \
+                iter = map.begin();                                                   \
+            }                                                                         \
+        } while (0);
+        
+        /// Close all client connections
+        X(_clientConns, ClientConnectionMapIter);
+        /// Close all server connections
+        X(_serverConns, ServerConnectionMapIter);
+        
+#undef X
+        
+        /// Close the server socket (all client sockets will be closed by now)
+        if (_serverSocket) {
+            delete _serverSocket;
+        }
     }
     
     SockDelegate& getDelegate() {
@@ -227,46 +157,25 @@ public:
         return _delegate;
     }
     
-    bool isOpen() const {
-        return _serverSocket || !_clientSockets.empty();
-    }
-    
-    void suspend() {
-        if (isOpen()) {
-            if (_serverSocket) {
-                SockDelegate::closeSocket(_delegate, _serverSocket);
-                _serverSocket = NULL;
-            }
+    bool open(Error& err) {
+        if (!_serverSocket && config.acceptConnections) {
+            sockaddr_storage ss(config.address);
+            EmiNetUtil::addrSetPort(ss, config.port);
             
-            EmiClientSocketMapIter iter = _clientSockets.begin();
-            EmiClientSocketMapIter end = _clientSockets.end();
-            while (iter != end) {
-                (*iter).second.close();
-                ++iter;
-            }
-        }
-    }
-    
-    bool desuspend(Error& err) {
-        if (!isOpen()) {
-            if (config.acceptConnections || !_conns.empty()) {
-                sockaddr_storage ss(config.address);
-                EmiNetUtil::addrSetPort(ss, config.port);
-                _serverSocket = _delegate.openSocket(ss, err);
-                if (!_serverSocket) return false;
-            }
+            _serverSocket = EUS::open(_delegate, ss, err);
             
-            EmiClientSocketMapIter iter = _clientSockets.begin();
-            EmiClientSocketMapIter end = _clientSockets.end();
-            while (iter != end) {
-                if (!(*iter).second.open(err)) {
-                    return false;
-                }
-                ++iter;
+            if (!_serverSocket) {
+                return false;
             }
         }
         
         return true;
+    }
+    
+    inline bool shouldArtificiallyDropPacket() const {
+        if (0 == config.fabricatedPacketDropRate) return false;
+        
+        return ((float)arc4random() / EmiNetUtil::ARC4RANDOM_MAX) < config.fabricatedPacketDropRate;
     }
     
     void onMessage(EmiTimeInterval now,
@@ -287,9 +196,7 @@ public:
         
         const uint8_t *rawData(Binding::extractData(data)+offset);
         
-        EmiConnectionKey ckey(address, inboundPort);
-        EmiConnectionMapIter cur = _conns.find(ckey);
-        __block EC *conn = _conns.end() == cur ? NULL : (*cur).second;
+        __block EC *conn = getConnectionForMessage(sock, address);
         
         if (conn) {
             conn->gotPacket();
@@ -386,8 +293,9 @@ public:
                     }
                     
                     if (!conn) {
-                        conn = _delegate.makeConnection(ECP(address, inboundPort, EMI_CONNECTION_TYPE_SERVER));
-                        _conns.insert(std::make_pair(ckey, conn));
+                        conn = _delegate.makeConnection(ECP(sock, address, inboundPort));
+                        ASSERT(0 == _serverConns.count(AddressKey(address)));
+                        _serverConns.insert(AddressKey(address), conn);
                     }
                     
                     conn->gotTimestamp(now, rawData, len);
@@ -461,8 +369,7 @@ public:
                     // will set conn to NULL, which is correct, because we don't want
                     // to give any additional data to it anyway, even if this packet
                     // contains more messages.
-                    EmiConnectionMapIter cur = _conns.find(ckey);
-                    conn = _conns.end() == cur ? NULL : (*cur).second;
+                    conn = getConnectionForMessage(sock, address);
                 }
                 else {
                     err = "Invalid message flags";
@@ -504,48 +411,17 @@ public:
                              callbackCookie, err);
     }
     
-    void sendDatagram(EC *conn, const sockaddr_storage& address, const uint8_t *data, size_t size) {
-        conn->sentPacket();
-        
-        if (shouldArtificiallyDropPacket()) {
-            return;
-        }
-        
+    void deregisterConnection(EC *conn) {
         if (EMI_CONNECTION_TYPE_SERVER != conn->getType()) {
-            EmiClientSocketMapIter cur = _clientSockets.find(conn->getInboundPort());
-            EmiUdpSocket<SockDelegate> *socket = _clientSockets.end() == cur ? NULL : (*cur).second.socket;
+            EUS *socket = conn->getSocket();
             
-            // I'm not 100% sure that socket will never be NULL
-            if (socket) {
-                socket->sendData(conn->getLocalAddress(), address, data, size);
-            }
+            _clientConns.erase(socket);
+            
+            conn->closeSocket();
         }
         else {
-            // I'm not 100% sure that socket will never be NULL
-            if (_serverSocket) {
-                _delegate.sendData(_serverSocket, address, data, size);
-            }
+            _serverConns.erase(AddressKey(conn->getRemoteAddress()));
         }
-    }
-    
-    void deregisterConnection(EC *conn) {
-        const sockaddr_storage& address = conn->getRemoteAddress();
-        uint16_t inboundPort = conn->getInboundPort();
-        
-        EmiClientSocketMapIter cur = _clientSockets.find(inboundPort);
-        if (_clientSockets.end() != cur) {
-            EmiClientSocket& cs((*cur).second);
-            cs.addresses.erase(EmiClientSocketKey(address));
-            
-            if (cs.addresses.empty()) {
-                cs.close();
-                _clientSockets.erase(inboundPort);
-            }
-        }
-        
-        _conns.erase(EmiConnectionKey(address, inboundPort));
-        
-        suspendIfInactive();
     }
 };
 

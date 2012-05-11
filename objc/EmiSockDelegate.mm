@@ -49,7 +49,7 @@ void EmiSockDelegate::extractLocalAddress(GCDAsyncUdpSocket *socket, sockaddr_st
     }
 }
 
-EC *EmiSockDelegate::makeConnection(const EmiConnParams& params) {
+EC *EmiSockDelegate::makeConnection(const EmiConnParams<EmiSockDelegate>& params) {
     return [[EmiConnection alloc] initWithSocket:_socket
                                           params:&params].conn;
 }

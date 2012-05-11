@@ -19,6 +19,7 @@
 #include "EmiConnTime.h"
 #include "EmiP2PData.h"
 #include "EmiConnTimers.h"
+#include "EmiUdpSocket.h"
 
 template<class SockDelegate, class ConnDelegate>
 class EmiConn {
@@ -30,6 +31,7 @@ class EmiConn {
     typedef typename SockDelegate::ConnectionOpenedCallbackCookie ConnectionOpenedCallbackCookie;
     
     typedef EmiSock<SockDelegate, ConnDelegate>      ES;
+    typedef EmiUdpSocket<SockDelegate>               EUS;
     typedef EmiMessage<Binding>                      EM;
     typedef EmiReceiverBuffer<SockDelegate, EmiConn> ERB;
     typedef EmiSendQueue<SockDelegate, ConnDelegate> ESQ;
@@ -42,7 +44,8 @@ class EmiConn {
     sockaddr_storage       _localAddress;
     const sockaddr_storage _remoteAddress;
     
-    ES &_emisock;
+    ES&  _emisock;
+    EUS *_socket;
     
     EmiP2PData        _p2p;
     EmiConnectionType _type;
@@ -101,12 +104,13 @@ public:
                                  /*dontFlush:*/true));
     }
     
-    EmiConn(const ConnDelegate& delegate, ES& socket, const EmiConnParams& params) :
+    EmiConn(const ConnDelegate& delegate, ES& emisock, const EmiConnParams<SockDelegate>& params) :
     _inboundPort(params.inboundPort),
     _remoteAddress(params.address),
     _conn(NULL),
     _delegate(delegate),
-    _emisock(socket),
+    _emisock(emisock),
+    _socket(params.socket),
     _type(params.type),
     _p2p(params.p2p),
     _senderBuffer(_emisock.config.senderBufferSize),
@@ -150,12 +154,10 @@ public:
         }
     }
     
-    void sentPacket() {
-        _timers.sentPacket();
-    }
     void gotPacket() {
         _timers.resetConnectionTimeout();
     }
+    
     void gotTimestamp(EmiTimeInterval now, const uint8_t *data, size_t len) {
         _time.gotTimestamp(_emisock.config.heartbeatFrequency, now, data, len);
     }
@@ -406,6 +408,12 @@ public:
     inline bool issuedConnectionWarning() const {
         return _timers.issuedConnectionWarning();
     }
+    inline const EUS *getSocket() const {
+        return _socket;
+    }
+    inline EUS *getSocket() {
+        return _socket;
+    }
     inline EmiConnectionType getType() const {
         return _type;
     }
@@ -421,12 +429,27 @@ public:
     
     // Invoked by EmiSendQueue
     void sendDatagram(const uint8_t *data, size_t size) {
-        _emisock.sendDatagram(this, getRemoteAddress(), data, size);
+        sendDatagram(getRemoteAddress(), data, size);
     }
     
     // Invoked by EmiLogicalConnection
     void sendDatagram(const sockaddr_storage& address, const uint8_t *data, size_t size) {
-        _emisock.sendDatagram(this, address, data, size);
+        _timers.sentPacket();
+        
+        if (_emisock.shouldArtificiallyDropPacket()) {
+            return;
+        }
+        
+        if (_socket) {
+            _socket->sendData(_localAddress, address, data, size);
+        }
+    }
+    
+    void closeSocket() {
+        if (_socket) {
+            delete _socket;
+            _socket = NULL;
+        }
     }
     
     inline inline ES& getEmiSock() {

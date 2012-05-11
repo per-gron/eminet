@@ -87,7 +87,7 @@
     _sock = new S(*sc, EmiSockDelegate(self));
     
     NSError *err = nil;
-    ((S *)_sock)->desuspend(err);
+    ((S *)_sock)->open(err);
     *errPtr = err;
     
     return !err;
@@ -95,22 +95,6 @@
 
 
 #pragma mark - Public methods
-
-- (BOOL)open {
-    return ((S *)_sock)->isOpen();
-}
-
-- (void)suspend {
-    ((S *)_sock)->suspend();
-}
-
-- (BOOL)desuspendWithError:(NSError **)errPtr {
-    NSError *err = nil;
-    BOOL retVal = ((S *)_sock)->desuspend(err);
-    *errPtr = err;
-    
-    return retVal;
-}
 
 - (BOOL)connectToAddress:(NSData *)address block:(EmiConnectionOpenedBlock)block error:(NSError **)errPtr {
     NSError *err = nil;

@@ -34,10 +34,6 @@ typedef void (^EmiConnectionOpenedBlock)(NSError *err, EmiConnection *connection
 // Returns YES on success
 - (BOOL)startWithConfig:(EmiSocketConfig *)config error:(NSError **)error;
 
-- (void)suspend;
-// Returns YES on success
-- (BOOL)desuspendWithError:(NSError **)err;
-
 - (BOOL)connectToAddress:(NSData *)address block:(EmiConnectionOpenedBlock)block error:(NSError **)err;
 /**
  * If an obvious error is detected, this method immediately returns NO and sets err.
@@ -48,7 +44,6 @@ typedef void (^EmiConnectionOpenedBlock)(NSError *err, EmiConnection *connection
 
 @property (nonatomic, unsafe_unretained) id<EmiSocketDelegate> delegate;
 @property (nonatomic, readonly, strong) NSData *serverAddress;
-@property (nonatomic, readonly, assign) BOOL open;
 @property (nonatomic, readonly, assign) EmiTimeInterval connectionTimeout;
 @property (nonatomic, readonly, assign) float heartbeatsBeforeConnectionWarning;
 @property (nonatomic, readonly, assign) NSUInteger receiverBufferSize;

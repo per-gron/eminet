@@ -26,6 +26,7 @@ template<class SockDelegate, class ConnDelegate>
 class EmiSock;
 template<class SockDelegate, class ConnDelegate>
 class EmiConn;
+template<class SockDelegate>
 class EmiConnParams;
 
 class EmiSockDelegate {
@@ -44,7 +45,7 @@ public:
     GCDAsyncUdpSocket *openSocket(const sockaddr_storage& address, __strong NSError*& err);
     static void extractLocalAddress(GCDAsyncUdpSocket *socket, sockaddr_storage& address);
     
-    EC *makeConnection(const EmiConnParams& params);
+    EC *makeConnection(const EmiConnParams<EmiSockDelegate>& params);
     
     void sendData(GCDAsyncUdpSocket *socket, const sockaddr_storage& address, const uint8_t *data, size_t size);
     void gotConnection(EC& conn);
