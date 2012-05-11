@@ -64,7 +64,7 @@ private:
     SockDelegate          _delegate;
     
     // SockDelegate::connectionOpened will be called on the cookie iff this function returns true.
-    bool connectHelper(EmiTimeInterval now, const sockaddr_storage& address,
+    bool connectHelper(EmiTimeInterval now, const sockaddr_storage& remoteAddress,
                        const uint8_t *p2pCookie, size_t p2pCookieLength,
                        const uint8_t *sharedSecret, size_t sharedSecretLength,
                        const ConnectionOpenedCallbackCookie& callbackCookie, Error& err) {
@@ -83,7 +83,7 @@ private:
             return false;
         }
         
-        EC *ec(_delegate.makeConnection(ECP(socket, address, inboundPort, 
+        EC *ec(_delegate.makeConnection(ECP(socket, remoteAddress, inboundPort, 
                                             p2pCookie, p2pCookieLength,
                                             sharedSecret, sharedSecretLength)));
         _clientConns.insert(std::make_pair(socket, ec));
@@ -92,7 +92,9 @@ private:
         return true;
     }
     
-    EC *getConnectionForMessage(EUS *sock, const sockaddr_storage& remoteAddr) {
+    EC *getConnectionForMessage(EUS *sock,
+                                const sockaddr_storage& remoteAddr,
+                                bool acceptPacketFromUnexpectedHost = false) {
         if (_serverSocket == sock) {
             ServerConnectionMapIter cur(_serverConns.find(AddressKey(remoteAddr)));
             return _serverConns.end() == cur ? NULL : (*cur).second;
@@ -105,8 +107,9 @@ private:
             
             EC *conn = (*cur).second;
             
-            if (0 != EmiAddressCmp::compare(conn->getRemoteAddress(), remoteAddr)) {
-                // We only want to accept messages from the correct remote host.
+            if (!acceptPacketFromUnexpectedHost &&
+                0 != EmiAddressCmp::compare(conn->getRemoteAddress(), remoteAddr)) {
+                // We only want to accept packets from the correct remote host.
                 return NULL;
             }
             
@@ -238,7 +241,7 @@ public:
             ^ bool (const EmiMessageHeader& header, size_t dataOffset) {
                 size_t actualDataOffset = dataOffset+EMI_TIMESTAMP_LENGTH+offset;
                 
-#define ENSURE_CONN(msg)                                            \
+#define ENSURE_CONN_VAR(conn, msg)                                  \
                 do {                                                \
                     if (!conn) {                                    \
                         err = "Got "msg" message but has no "       \
@@ -246,6 +249,7 @@ public:
                         return false;                               \
                     }                                               \
                 } while (0)
+#define ENSURE_CONN(msg) ENSURE_CONN_VAR(conn, msg)
 #define ENSURE(check, errStr)                   \
                 do {                            \
                     if (!(check)) {             \
@@ -274,19 +278,34 @@ public:
                         conn->gotPrxRstSynAck(now, rawData+actualDataOffset, header.length);
                     }
                     if (!synFlag && rstFlag && ackFlag) {
-                        ENSURE_CONN("PRX-RST-ACK");
+                        // We want to accept PRX-RST-ACK packets from hosts other than the
+                        // current remote host of the connection.
+                        EC *prxConn(getConnectionForMessage(sock,
+                                                            remoteAddress,
+                                                            /*acceptPacketFromUnexpectedHost:*/true));
+                        ENSURE_CONN_VAR(prxConn, "PRX-RST-ACK");
                         
-                        conn->gotPrxRstAck();
+                        prxConn->gotPrxRstAck();
                     }
                     if (synFlag && !rstFlag && !ackFlag) {
-                        ENSURE_CONN("PRX-SYN");
+                        // We want to accept PRX-SYN packets from hosts other than the
+                        // current remote host of the connection.
+                        EC *prxConn(getConnectionForMessage(sock,
+                                                            remoteAddress,
+                                                            /*acceptPacketFromUnexpectedHost:*/true));
+                        ENSURE_CONN_VAR(prxConn, "PRX-SYN");
                         
-                        // TODO conn->gotPrxSyn();
+                        // TODO prxConn->gotPrxSyn();
                     }
                     if (synFlag && !rstFlag && ackFlag) {
-                        ENSURE_CONN("PRX-SYN-ACK");
+                        // We want to accept PRX-SYN-ACK packets from hosts other than the
+                        // current remote host of the connection.
+                        EC *prxConn(getConnectionForMessage(sock,
+                                                            remoteAddress,
+                                                            /*acceptPacketFromUnexpectedHost:*/true));
+                        ENSURE_CONN_VAR(prxConn, "PRX-SYN-ACK");
                         
-                        // TODO conn->gotPrxSynAck();
+                        // TODO prxConn->gotPrxSynAck();
                     }
                     else {
                         err = "Invalid message flags";
@@ -414,19 +433,22 @@ public:
     }
     
     // SockDelegate::connectionOpened will be called on the cookie iff this function returns true.
-    bool connect(EmiTimeInterval now, const sockaddr_storage& address, const ConnectionOpenedCallbackCookie& callbackCookie, Error& err) {
-        return connectHelper(now, address,
+    bool connect(EmiTimeInterval now,
+                 const sockaddr_storage& remoteAddress,
+                 const ConnectionOpenedCallbackCookie& callbackCookie,
+                 Error& err) {
+        return connectHelper(now, remoteAddress,
                              /*p2pCookie:*/NULL, /*p2pCookieLength:*/0,
                              /*sharedSecret:*/NULL, /*sharedSecretLength:*/0,
                              callbackCookie, err);
     }
     
     // SockDelegate::connectionOpened will be called on the cookie iff this function returns true.
-    bool connectP2P(EmiTimeInterval now, const sockaddr_storage& address,
+    bool connectP2P(EmiTimeInterval now, const sockaddr_storage& remoteAddress,
                     const uint8_t *p2pCookie, size_t p2pCookieLength,
                     const uint8_t *sharedSecret, size_t sharedSecretLength,
                     const ConnectionOpenedCallbackCookie& callbackCookie, Error& err) {
-        return connectHelper(now, address,
+        return connectHelper(now, remoteAddress,
                              p2pCookie, p2pCookieLength,
                              sharedSecret, sharedSecretLength,
                              callbackCookie, err);
