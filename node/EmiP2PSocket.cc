@@ -45,6 +45,15 @@ void EmiP2PSocket::Init(Handle<Object> target) {
     tpl->SetClassName(String::NewSymbol("EmiP2PSocket"));
     tpl->InstanceTemplate()->SetInternalFieldCount(1);
     
+    // Prototype
+#define X(sym, name)                                        \
+  tpl->PrototypeTemplate()->Set(String::NewSymbol(name),    \
+      FunctionTemplate::New(sym)->GetFunction());
+    X(GetAddressType, "getAddressType");
+    X(GetPort,        "getPort");
+    X(GetAddress,     "getAddress");
+#undef X
+    
     Persistent<Function> constructor = Persistent<Function>::New(tpl->GetFunction());
     target->Set(String::NewSymbol("EmiP2PSocket"), constructor);
     
@@ -127,4 +136,49 @@ Handle<Value> EmiP2PSocket::New(const Arguments& args) {
     }
     
     return args.This();
+}
+
+Handle<Value> EmiP2PSocket::GetAddressType(const Arguments& args) {
+    HandleScope scope;
+    
+    ENSURE_ZERO_ARGS(args);
+    UNWRAP(EmiP2PSocket, ec, args);
+    
+    const char *type;
+    
+    // We use getRemoteAddress, because it is valid even before we
+    // have received the first packet from the other host, unlike
+    // getLocalAddress.
+    const struct sockaddr_storage& addr(ec->_sock.getAddress());
+    if (AF_INET == addr.ss_family) {
+        type = "udp4";
+    }
+    else if (AF_INET6 == addr.ss_family) {
+        type = "udp6";
+    }
+    else {
+        ASSERT(0 && "unexpected address family");
+    }
+    
+    return scope.Close(String::New(type));
+}
+
+Handle<Value> EmiP2PSocket::GetPort(const Arguments& args) {
+    HandleScope scope;
+    
+    ENSURE_ZERO_ARGS(args);
+    UNWRAP(EmiP2PSocket, ec, args);
+    
+    return scope.Close(Number::New(EmiNetUtil::addrPortH(ec->_sock.getAddress())));
+}
+
+Handle<Value> EmiP2PSocket::GetAddress(const Arguments& args) {
+    HandleScope scope;
+    
+    ENSURE_ZERO_ARGS(args);
+    UNWRAP(EmiP2PSocket, ec, args);
+    
+    char buf[256];
+    EmiNodeUtil::ipName(buf, sizeof(buf), ec->_sock.getAddress());
+    return scope.Close(String::New(buf));
 }

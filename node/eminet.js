@@ -127,7 +127,7 @@ Util.inherits(EmiConnection, Events.EventEmitter);
 [
   'close', 'forceClose', 'closeOrForceClose', 'flush', 'send',
   'hasIssuedConnectionWarning', 'getSocket', 'getAddressType',
-  'getLocalPort', 'getLocaAddress', 'getRemoteAddress',
+  'getLocalPort', 'getLocalAddress', 'getRemoteAddress',
   'getRemotePort', 'getInboundPort', 'isOpen', 'isOpening'
 ].forEach(function(name) {
   EmiConnection.prototype[name] = function() {
@@ -150,21 +150,32 @@ EmiSocket.prototype.connect = function(address, port, cb) {
   return new EmiConnection(/*initiator:*/true, this._handle, address, port, cb);
 };
 
-// TODO suspend doesn't seem to work when you call it on a disconnect
-// callback. I suspect this is a libuv bug, because the assert that
-// triggers is removed by this commit:
-// https://github.com/joyent/libuv/commit/28b0867f0312e3ccdc45d7fde0218d065ed40c65
-EmiSocket.prototype.suspend = function() {
-  return this._handle.suspend.apply(this._handle, arguments);
+
+var EmiP2PSocket = function(args) {
+  this._handle = new EmiNetAddon.EmiP2PSocket(this, args);
+  
+  for (var key in args) {
+    this[key] = args[key];
+  }
 };
 
-EmiSocket.prototype.desuspend = function() {
-  return this._handle.desuspend.apply(this._handle, arguments);
-};
+Util.inherits(EmiP2PSocket, Events.EventEmitter);
+
+[
+  'getAddressType', 'getPort', 'getAddress'
+].forEach(function(name) {
+  EmiP2PSocket.prototype[name] = function() {
+    return this._handle[name].apply(this._handle, arguments);
+  };
+});
 
 
 exports.open = function(args) {
   return new EmiSocket(args);
+};
+
+exports.openMediator = function(args) {
+  return new EmiP2PSocket(args);
 };
 
 exports.channelQualifier = function(type, number) {

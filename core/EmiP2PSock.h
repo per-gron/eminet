@@ -51,6 +51,8 @@ private:
     inline EmiP2PSock(const EmiP2PSock& other);
     inline EmiP2PSock& operator=(const EmiP2PSock& other);
     
+    sockaddr_storage _address;
+    
     uint8_t  _serverSecret[EMI_P2P_SERVER_SECRET_SIZE];
     EUS     *_socket;
     
@@ -252,12 +254,12 @@ public:
     template<class SocketCookie>
     bool open(const SocketCookie& socketCookie, Error& err) {
         if (!_socket) {
-            sockaddr_storage ss(config.address);
-            EmiNetUtil::addrSetPort(ss, config.port);
+            memcpy(&_address, &config.address, sizeof(_address));
+            EmiNetUtil::addrSetPort(_address, config.port);
             _socket = EUS::open(socketCookie,
                                 onMessage,
                                 this,
-                                ss,
+                                _address,
                                 err);
             if (!_socket) return false;
         }
@@ -450,6 +452,10 @@ public:
     error:
         
         return;
+    }
+    
+    const sockaddr_storage& getAddress() const {
+        return _address;
     }
 };
 

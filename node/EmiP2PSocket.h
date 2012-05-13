@@ -40,6 +40,12 @@ public:
     inline EPS& getP2PSock() { return _sock; }
     inline const EPS& getP2PSock() const { return _sock; }
     inline v8::Handle<v8::Object> getJsHandle() const { return _jsHandle; }
+    
+private:
+    static v8::Handle<v8::Value> GetAddressType(const v8::Arguments& args);
+    static v8::Handle<v8::Value> GetPort(const v8::Arguments& args);
+    static v8::Handle<v8::Value> GetAddress(const v8::Arguments& args);
+    static v8::Handle<v8::Value> GetRemotePort(const v8::Arguments& args);
 };
 
 #endif
