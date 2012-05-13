@@ -79,7 +79,7 @@ private:
         uint8_t toBeHashed[EMI_P2P_RAND_NUM_SIZE+sizeof(integerStamp)];
         
         memcpy(toBeHashed, randNum, EMI_P2P_RAND_NUM_SIZE);
-        *((uint64_t *)toBeHashed+EMI_P2P_RAND_NUM_SIZE) = integerStamp;
+        *((uint64_t *)(toBeHashed+EMI_P2P_RAND_NUM_SIZE)) = integerStamp;
         
         Binding::hmacHash(_serverSecret, sizeof(_serverSecret),
                           toBeHashed, sizeof(toBeHashed),
