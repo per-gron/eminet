@@ -86,7 +86,7 @@ EmiNetAddon.setP2PCallbacks(
 );
 
 
-var EmiConnection = function(initiator, sockHandle, address, port, cb) {
+var EmiConnection = function(initiator, sockHandle, address, port, cb, p2pCookie, sharedSecret) {
   if (initiator) {
     var self = this;
     
@@ -107,14 +107,22 @@ var EmiConnection = function(initiator, sockHandle, address, port, cb) {
       return self;
     };
     
+    var fn;
     if ('udp4' == type) {
-        sockHandle.connect4(address, port, wrappedCb);
+      fn = 'connect4';
     }
     else if ('udp6' == type) {
-        sockHandle.connect6(address, port, wrappedCb);
+      fn = 'connect6';
     }
     else {
         throw new Error('Bad socket type. Valid types: udp4, udp6');
+    }
+    
+    if (typeof p2pCookie != 'undefined' || typeof sharedSecret != 'undefined') {
+      sockHandle[fn](address, port, wrappedCb, new Buffer(p2pCookie), new Buffer(sharedSecret));
+    }
+    else {
+      sockHandle[fn](address, port, wrappedCb);
     }
   }
   else {
@@ -150,6 +158,10 @@ EmiSocket.prototype.connect = function(address, port, cb) {
   return new EmiConnection(/*initiator:*/true, this._handle, address, port, cb);
 };
 
+EmiSocket.prototype.connectP2P = function(address, port, p2pCookie, sharedSecret, cb) {
+  return new EmiConnection(/*initiator:*/true, this._handle, address, port, cb, p2pCookie, sharedSecret);
+};
+
 
 var EmiP2PSocket = function(args) {
   this._handle = new EmiNetAddon.EmiP2PSocket(this, args);
@@ -162,13 +174,22 @@ var EmiP2PSocket = function(args) {
 Util.inherits(EmiP2PSocket, Events.EventEmitter);
 
 [
-  'getAddressType', 'getPort', 'getAddress', 'generateCookie',
-  'generateSharedSecret'
+  'getAddressType', 'getPort', 'getAddress'
 ].forEach(function(name) {
   EmiP2PSocket.prototype[name] = function() {
     return this._handle[name].apply(this._handle, arguments);
   };
 });
+
+EmiP2PSocket.prototype.generateCookie = function() {
+  var ret = this._handle.generateCookie.apply(this._handle, arguments);
+  return ret ? new Buffer(ret) : ret;
+};
+
+EmiP2PSocket.prototype.generateSharedSecret = function() {
+  var ret = this._handle.generateSharedSecret.apply(this._handle, arguments);
+  return ret ? new Buffer(ret) : ret;
+};
 
 
 exports.open = function(args) {

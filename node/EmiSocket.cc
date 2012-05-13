@@ -170,13 +170,21 @@ Handle<Value> EmiSocket::DoConnect(const Arguments& args, int family) {
     
     /// Extract arguments
     
-    if (3 != args.Length()) {
+    if (3 != args.Length() && 5 != args.Length()) {
         THROW_TYPE_ERROR("Wrong number of arguments");
     }
+    
+    bool p2p = (5 == args.Length());
     
     if (!args[0]->IsString() ||
         !args[1]->IsNumber() ||
         !args[2]->IsFunction()) {
+        THROW_TYPE_ERROR("Wrong arguments");
+    }
+    
+    // Note that we do not verify that the arguments are Buffer objects;
+    // we assume that the JS binding code ensures that.
+    if (p2p && (!args[3]->IsObject() || !args[4]->IsObject())) {
         THROW_TYPE_ERROR("Wrong arguments");
     }
     
@@ -201,17 +209,35 @@ Handle<Value> EmiSocket::DoConnect(const Arguments& args, int family) {
     // EmiSock::connect returns false, in which case we'll do it here.
     Persistent<Object> cookie(Persistent<Object>::New(callback));
     
-    if (!es->_sock.connect(EmiNodeUtil::now(), address, cookie, err)) {
-        // Since the connect operation failed, we need to dispose of the
-        // cookie.  (If it succeeds, EmiSockDelegate::connectionOpened
-        // will take care of the cookie disposal.)
-        cookie.Dispose();
-        cookie.Clear();
+    if (p2p) {
+        Local<Object>    p2pCookie(args[3]->ToObject());
+        Local<Object> sharedSecret(args[4]->ToObject());
         
-        return err.raise("Failed to connect");
+        if (!es->_sock.connectP2P(EmiNodeUtil::now(), address,
+                                  (uint8_t *)node::Buffer::Data(p2pCookie),
+                                  node::Buffer::Length(p2pCookie),
+                                  (uint8_t *)node::Buffer::Data(sharedSecret),
+                                  node::Buffer::Length(sharedSecret),
+                                  cookie, err)) {
+            goto error;
+        }
+    }
+    else {
+        if (!es->_sock.connect(EmiNodeUtil::now(), address, cookie, err)) {
+            goto error;
+        }
     }
     
     return scope.Close(Undefined());
+    
+error:
+    // Since the connect operation failed, we need to dispose of the
+    // cookie.  (If it succeeds, EmiSockDelegate::connectionOpened
+    // will take care of the cookie disposal.)
+    cookie.Dispose();
+    cookie.Clear();
+    
+    return err.raise("Failed to connect");
 }
 
 Handle<Value> EmiSocket::Connect4(const Arguments& args) {

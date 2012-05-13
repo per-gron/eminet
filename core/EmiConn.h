@@ -228,7 +228,8 @@ public:
         }
     }
     bool open(EmiTimeInterval now, const ConnectionOpenedCallbackCookie& cookie) {
-        ASSERT(EMI_CONNECTION_TYPE_CLIENT == _type);
+        ASSERT(EMI_CONNECTION_TYPE_CLIENT == _type ||
+               EMI_CONNECTION_TYPE_P2P    == _type);
         
         if (_conn) {
             // We don't need to explicitly resend the init message here;
