@@ -206,3 +206,7 @@ void EmiNodeUtil::sendData(uv_udp_t *socket,
         ASSERT(0 && "unexpected address family");
     }
 }
+
+EmiTimeInterval EmiNodeUtil::now() {
+    return ((double)uv_hrtime())/NSECS_PER_SEC;
+}

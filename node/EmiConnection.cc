@@ -18,10 +18,6 @@ Persistent<Function> EmiConnection::constructor;
 EmiConnection::EmiConnection(EmiSocket& es, const ECP& params) :
 _conn(EmiConnDelegate(*this), es.getSock(), params) {};
 
-EmiTimeInterval EmiConnection::Now() {
-    return ((double)uv_hrtime())/EmiNodeUtil::NSECS_PER_SEC;
-}
-
 EmiConnection::~EmiConnection() {
     _jsHandle.Dispose();
 }
@@ -104,7 +100,7 @@ Handle<Value> EmiConnection::Close(const Arguments& args) {
     UNWRAP(EmiConnection, ec, args);
     
     EmiError err;
-    if (!ec->_conn.close(Now(), err)) {
+    if (!ec->_conn.close(EmiNodeUtil::now(), err)) {
         return err.raise("Failed to close connection");
     }
     
@@ -129,7 +125,7 @@ Handle<Value> EmiConnection::CloseOrForceClose(const Arguments& args) {
     UNWRAP(EmiConnection, ec, args);
     
     EmiError err;
-    if (!ec->_conn.close(Now(), err)) {
+    if (!ec->_conn.close(EmiNodeUtil::now(), err)) {
         ec->_conn.forceClose();
     }
     
@@ -142,7 +138,7 @@ Handle<Value> EmiConnection::Flush(const Arguments& args) {
     ENSURE_ZERO_ARGS(args);
     UNWRAP(EmiConnection, ec, args);
     
-    ec->_conn.flush(Now());
+    ec->_conn.flush(EmiNodeUtil::now());
     
     return scope.Close(Undefined());
 }
@@ -196,7 +192,7 @@ Handle<Value> EmiConnection::Send(const Arguments& args) {
     UNWRAP(EmiConnection, ec, args);
     
     EmiError err;
-    if (!ec->_conn.send(Now(),
+    if (!ec->_conn.send(EmiNodeUtil::now(),
                         Persistent<Object>::New(args[0]->ToObject()),
                         channelQualifier,
                         priority,

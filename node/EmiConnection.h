@@ -30,8 +30,6 @@ private:
     virtual ~EmiConnection();
     
 public:
-    static EmiTimeInterval Now();
-    
     static void Init(v8::Handle<v8::Object> target);
     
     static v8::Handle<v8::Object> NewInstance(EmiSocket& es,

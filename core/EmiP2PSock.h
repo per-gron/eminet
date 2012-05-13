@@ -27,14 +27,17 @@ static const EmiTimeInterval EMI_P2P_COOKIE_RESOLUTION  = 5*60; // In seconds
 
 template<class Binding>
 class EmiP2PSock {
+public:
     
-    typedef typename Binding::TemporaryData    TemporaryData;
-    typedef typename Binding::Error            Error;
     
     static const size_t          EMI_P2P_SERVER_SECRET_SIZE = 32;
     static const size_t          EMI_P2P_SHARED_SECRET_SIZE = 32;
     static const size_t          EMI_P2P_RAND_NUM_SIZE = 8;
     static const size_t          EMI_P2P_COOKIE_SIZE = EMI_P2P_RAND_NUM_SIZE + Binding::HMAC_HASH_SIZE;
+    
+protected:
+    typedef typename Binding::TemporaryData    TemporaryData;
+    typedef typename Binding::Error            Error;
     
     typedef EmiP2PConn<Binding, EmiP2PSock, EMI_P2P_COOKIE_SIZE> Conn;
     typedef EmiUdpSocket<Binding> EUS;

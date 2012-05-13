@@ -3,6 +3,7 @@
 #define emilir_EmiNodeUtil_h
 
 #include "../core/EmiNetUtil.h"
+#include "../core/EmiTypes.h"
 
 #include <stdint.h>
 #include <uv.h>
@@ -109,6 +110,8 @@ public:
                          const sockaddr_storage& address,
                          const uint8_t *data,
                          size_t size);
+    
+    static EmiTimeInterval now();
 
 };
 

@@ -201,7 +201,7 @@ Handle<Value> EmiSocket::DoConnect(const Arguments& args, int family) {
     // EmiSock::connect returns false, in which case we'll do it here.
     Persistent<Object> cookie(Persistent<Object>::New(callback));
     
-    if (!es->_sock.connect(EmiConnection::Now(), address, cookie, err)) {
+    if (!es->_sock.connect(EmiNodeUtil::now(), address, cookie, err)) {
         // Since the connect operation failed, we need to dispose of the
         // cookie.  (If it succeeds, EmiSockDelegate::connectionOpened
         // will take care of the cookie disposal.)

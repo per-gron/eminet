@@ -162,7 +162,8 @@ var EmiP2PSocket = function(args) {
 Util.inherits(EmiP2PSocket, Events.EventEmitter);
 
 [
-  'getAddressType', 'getPort', 'getAddress'
+  'getAddressType', 'getPort', 'getAddress', 'generateCookie',
+  'generateSharedSecret'
 ].forEach(function(name) {
   EmiP2PSocket.prototype[name] = function() {
     return this._handle[name].apply(this._handle, arguments);

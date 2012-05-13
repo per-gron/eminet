@@ -49,9 +49,11 @@ void EmiP2PSocket::Init(Handle<Object> target) {
 #define X(sym, name)                                        \
   tpl->PrototypeTemplate()->Set(String::NewSymbol(name),    \
       FunctionTemplate::New(sym)->GetFunction());
-    X(GetAddressType, "getAddressType");
-    X(GetPort,        "getPort");
-    X(GetAddress,     "getAddress");
+    X(GetAddressType,       "getAddressType");
+    X(GetPort,              "getPort");
+    X(GetAddress,           "getAddress");
+    X(GenerateCookie,       "generateCookie");
+    X(GenerateSharedSecret, "generateSharedSecret");
 #undef X
     
     Persistent<Function> constructor = Persistent<Function>::New(tpl->GetFunction());
@@ -181,4 +183,34 @@ Handle<Value> EmiP2PSocket::GetAddress(const Arguments& args) {
     char buf[256];
     EmiNodeUtil::ipName(buf, sizeof(buf), ec->_sock.getAddress());
     return scope.Close(String::New(buf));
+}
+
+Handle<Value> EmiP2PSocket::GenerateCookie(const Arguments& args) {
+    HandleScope scope;
+    
+    ENSURE_ZERO_ARGS(args);
+    UNWRAP(EmiP2PSocket, ec, args);
+    
+    // Allocate a buffer
+    node::Buffer *buf(node::Buffer::New(EPS::EMI_P2P_COOKIE_SIZE));
+    
+    ec->_sock.generateCookie(EmiNodeUtil::now(), (uint8_t *)node::Buffer::Data(buf), node::Buffer::Length(buf));
+    
+    // Make a new persistent handle (do not just reuse the persistent buf->handle_ handle)
+    return scope.Close(buf->handle_);
+}
+
+Handle<Value> EmiP2PSocket::GenerateSharedSecret(const Arguments& args) {
+    HandleScope scope;
+    
+    ENSURE_ZERO_ARGS(args);
+    UNWRAP(EmiP2PSocket, ec, args);
+    
+    // Allocate a buffer
+    node::Buffer *buf(node::Buffer::New(EPS::EMI_P2P_SHARED_SECRET_SIZE));
+    
+    ec->_sock.generateSharedSecret((uint8_t *)node::Buffer::Data(buf), node::Buffer::Length(buf));
+    
+    // Make a new persistent handle (do not just reuse the persistent buf->handle_ handle)
+    return scope.Close(buf->handle_);
 }
