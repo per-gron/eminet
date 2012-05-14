@@ -10,7 +10,6 @@
 
 #include "EmiSock.h"
 #include "EmiConn.h"
-#include "EmiAddressCmp.h"
 #include "EmiSockDelegate.h"
 #include "EmiConnDelegate.h"
 

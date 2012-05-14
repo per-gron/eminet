@@ -59,7 +59,6 @@ private:
     Delegate& _delegate;
     
     EmiUdpSocket<Binding> *_sock;
-    const EmiAddressCmp    _acmp;
     sockaddr_storage       _peers[2];
     sockaddr_storage       _innerEndpoints[2];
     EmiConnTime            _times[2];
@@ -77,10 +76,10 @@ private:
     
     // Returns -1 on error
     int addressIndex(const sockaddr_storage& address) const {
-        if (0 == _acmp(_peers[0], address)) {
+        if (0 == EmiAddressCmp::compare(_peers[0], address)) {
             return 0;
         }
-        else if (0 == _acmp(_peers[1], address)) {
+        else if (0 == EmiAddressCmp::compare(_peers[1], address)) {
             return 1;
         }
         else {
@@ -137,6 +136,7 @@ private:
     inline void connectionRegained() { ASSERT(0 && "Internal error"); }
     
     inline void connectionTimeout() {
+        // Note: This will deallocate this object
         _delegate.removeConnection(this);
     }
     
@@ -158,7 +158,6 @@ public:
     cookie(cookie_),
     _delegate(delegate),
     _sock(sock),
-    _acmp(EmiAddressCmp()),
     _times(),
     _rateLimit(rateLimit),
     _bytesSentSinceRateLimitTimeout(0),

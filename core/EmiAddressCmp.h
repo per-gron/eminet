@@ -50,8 +50,8 @@ public:
         }
     }
     
-    inline int operator()(const struct sockaddr_storage& a, const struct sockaddr_storage& b) const {
-        return compare(a, b);
+    inline bool operator()(const struct sockaddr_storage& a, const struct sockaddr_storage& b) const {
+        return compare(a, b) < 0;
     }
 };
 

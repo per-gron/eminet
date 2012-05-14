@@ -17,7 +17,6 @@
 #include <ifaddrs.h>
 
 class EmiSockDelegate;
-class EmiAddressCmp;
 @class GCDAsyncUdpSocket;
 
 class EmiBinding {
@@ -45,7 +44,6 @@ public:
     };
     
     typedef __strong NSError* Error;
-    typedef EmiAddressCmp AddressCmp;
     typedef GCDAsyncUdpSocket SocketHandle;
     typedef NSData* Address;
     // PersistentData is data that is assumed to be

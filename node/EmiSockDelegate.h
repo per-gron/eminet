@@ -13,7 +13,6 @@ class EmiObjectWrap;
 class EmiSocket;
 class EmiSockDelegate;
 class EmiConnDelegate;
-class EmiAddressCmp;
 template<class SockDelegate, class ConnDelegate>
 class EmiSock;
 template<class SockDelegate, class ConnDelegate>

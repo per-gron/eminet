@@ -16,7 +16,6 @@
 #include <net/if.h>
 #endif
 
-class EmiAddressCmp;
 class EmiSockDelegate;
 class EmiObjectWrap;
 
@@ -27,7 +26,6 @@ private:
 public:
     
     typedef EmiError                   Error;
-    typedef EmiAddressCmp              AddressCmp;
     typedef uv_udp_t                   SocketHandle;
     typedef struct sockaddr_storage    Address;
     typedef v8::Local<v8::Object>      TemporaryData;
