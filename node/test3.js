@@ -16,10 +16,24 @@ var cookie       = mediator.generateCookie(),
 console.log("A cookie:", cookie);
 console.log("A shared secret:", sharedSecret);
 
-es1.connectP2P(mediator.getAddress(), mediator.getPort(), cookie, sharedSecret, function() {
-  console.log("ES1 connected", arguments);
-});
+var connect = function(socket, name) {
+  socket.connectP2P(mediator.getAddress(), mediator.getPort(), cookie, sharedSecret, function(err, conn) {
+    if (null !== err) {
+      return console.log(name+' connection failed');
+    }
+    
+    console.log(name+" connected", arguments);
+    
+    socket.on('message', function(channelQualifier, buf) {
+      console.log(name+" got message", buf.toString());
+    });
+    
+    setTimeout(function() {
+      console.log("Sending message from "+name);
+      conn.send(new Buffer("Hej"));
+    }, 2000);
+  });
+};
 
-es2.connectP2P(mediator.getAddress(), mediator.getPort(), cookie, sharedSecret, function() {
-  console.log("ES2 connected", arguments);
-});
+connect(es1, 'ES1');
+connect(es2, 'ES2');
