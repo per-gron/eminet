@@ -384,16 +384,25 @@ public:
                     ENSURE(!ackFlag, "Got RST message with ACK flag");
                     ENSURE(!sackFlag, "Got RST message with SACK flag");
                     
+                    // Regardless of whether we still have a connection up,
+                    // respond with a SYN-RST-ACK message.
+                    EM::writeControlPacket(EMI_SYN_FLAG | EMI_RST_FLAG | EMI_ACK_FLAG, ^(uint8_t *buf, size_t size) {
+                        sock->sendData(inboundAddress, remoteAddress, buf, size);
+                    });
+                    
+                    // Note that this has to be done after we send the control
+                    // packet, since invoking gotRst might deallocate the sock
+                    // object.
+                    //
+                    // TODO: Closing the socket here might be the wrong thing
+                    // to do. It might be better to let it stay alive for a full
+                    // connection timeout cycle, just to make sure that the other
+                    // host gets our SYN-RST-ACK response.
                     if (conn) {
                         conn->gotTimestamp(now, rawData, len);
                         conn->gotRst();
                         conn = NULL;
                     }
-                    
-                    // Regardless of whether we still have a connection up, respond with a SYN-RST-ACK message
-                    EM::writeControlPacket(EMI_SYN_FLAG | EMI_RST_FLAG | EMI_ACK_FLAG, ^(uint8_t *buf, size_t size) {
-                        sock->sendData(inboundAddress, remoteAddress, buf, size);
-                    });
                 }
                 else if (!synFlag && !rstFlag) {
                     // This is a data message
