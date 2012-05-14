@@ -70,6 +70,10 @@ public:
     
     // The IP and port number should be in network byte order
     static void makeAddress(int family, const uint8_t *ip, size_t ipLen, uint16_t port, sockaddr_storage *out);
+    
+    // Will fill address with an address that cannot be the receiver of a packet
+    static void fillNilAddress(int family, sockaddr_storage& address);
+    static bool isNilAddress(const sockaddr_storage& address);
 };
 
 #endif

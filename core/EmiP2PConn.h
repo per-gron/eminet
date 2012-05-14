@@ -101,10 +101,10 @@ private:
             return NULL;
         }
         
-        const sockaddr_storage *addr(&_peers[idx]);
+        const sockaddr_storage *addr(&_peers[0 == idx ? 1 : 0]);
         
         // Return NULL if the address is a nil address
-        if (EmiBinding::isNilAddress(*addr)) {
+        if (EmiNetUtil::isNilAddress(*addr)) {
             return NULL;
         }
         
@@ -176,16 +176,16 @@ public:
         int family = firstPeer.ss_family;
         
         _peers[0] = firstPeer;
-        EmiBinding::fillNilAddress(family, _peers[1]);
-        EmiBinding::fillNilAddress(family, _innerEndpoints[0]);
-        EmiBinding::fillNilAddress(family, _innerEndpoints[1]);
+        EmiNetUtil::fillNilAddress(family, _peers[1]);
+        EmiNetUtil::fillNilAddress(family, _innerEndpoints[0]);
+        EmiNetUtil::fillNilAddress(family, _innerEndpoints[1]);
         
         _initialSequenceNumbers[0] = initialSequenceNumber;
         _initialSequenceNumbers[1] = 0;
         
         _waitingForPrxAck[0] = false;
         _waitingForPrxAck[1] = false;
-        EmiBinding::fillNilAddress(family, _synRstInboundAddr);
+        EmiNetUtil::fillNilAddress(family, _synRstInboundAddr);
         
         if (rateLimit) {
             Binding::scheduleTimer(_rateLimitTimer, rateLimitTimeoutCallback,
@@ -295,8 +295,8 @@ public:
     }
     
     bool hasBothInnerAddresses() const {
-        return !EmiBinding::isNilAddress(_innerEndpoints[0]) &&
-               !EmiBinding::isNilAddress(_innerEndpoints[1]);
+        return !EmiNetUtil::isNilAddress(_innerEndpoints[0]) &&
+               !EmiNetUtil::isNilAddress(_innerEndpoints[1]);
     }
     
     inline bool firstPeerHadComplementaryCookie() const {

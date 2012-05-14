@@ -45,7 +45,6 @@ public:
     
     typedef __strong NSError* Error;
     typedef GCDAsyncUdpSocket SocketHandle;
-    typedef NSData* Address;
     // PersistentData is data that is assumed to be
     // stored until it is explicitly released with the
     // releasePersistentData method. PersistentData must

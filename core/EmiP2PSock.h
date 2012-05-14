@@ -365,7 +365,12 @@ public:
             conn->gotPacket(remoteAddress);
         }
         
+        char buf[50];
+        uv_ip4_name((sockaddr_in *)&remoteAddress, buf, sizeof(buf));
+        printf("Got packet for connection %x (%s:%d)\n", conn, buf, EmiNetUtil::addrPortH(remoteAddress));
+        
         if (EMI_TIMESTAMP_LENGTH+1 == len) {
+            printf("  Heartbeat packet\n");
             // This is a heartbeat packet. Just forward the packet (if we can)
             if (conn) {
                 conn->gotTimestamp(remoteAddress, now, rawData, len);
@@ -391,6 +396,12 @@ public:
             bool isTheOnlyMessageInThisPacket = (len == expectedPacketLength);
             
             if (isControlMessage) {
+                printf("  control packet %s-%s-%s-%s\n",
+                       header.flags & EMI_PRX_FLAG ? "PRX" : "",
+                       header.flags & EMI_SYN_FLAG ? "SYN" : "",
+                       header.flags & EMI_RST_FLAG ? "RST" : "",
+                       header.flags & EMI_ACK_FLAG ? "ACK" : "");
+                
                 if (!isTheOnlyMessageInThisPacket) {
                     // This check also ensures that we don't buffer overflow
                     // when we access the message's data part.
@@ -496,6 +507,7 @@ public:
                 }
             }
             else {
+                printf("  data packet %lu\n", len);
                 // This is not a control message, so we don't care about its
                 // contents. Just forward it.
                 if (conn) {

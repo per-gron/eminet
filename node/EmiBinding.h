@@ -27,7 +27,6 @@ public:
     
     typedef EmiError                   Error;
     typedef uv_udp_t                   SocketHandle;
-    typedef struct sockaddr_storage    Address;
     typedef v8::Local<v8::Object>      TemporaryData;
     typedef v8::Persistent<v8::Object> PersistentData;
     typedef uv_timer_t                 Timer;
@@ -40,10 +39,6 @@ public:
                                 const TemporaryData& data,
                                 size_t offset,
                                 size_t len);
-    
-    // Will fill address with an address that cannot be the receiver of a packet
-    static void fillNilAddress(int family, Address& address);
-    static bool isNilAddress(const Address& address);
     
     inline static EmiError makeError(const char *domain, int32_t code) {
         return EmiError(domain, code);

@@ -166,3 +166,11 @@ void EmiNetUtil::makeAddress(int family, const uint8_t *ip, size_t ipLen, uint16
         abort();
     }
 }
+
+void EmiNetUtil::fillNilAddress(int family, sockaddr_storage& address) {
+    anyAddr(/*port:*/0, family, &address);
+}
+
+bool EmiNetUtil::isNilAddress(const sockaddr_storage& address) {
+    return 0 == ntohs(EmiNetUtil::addrPortN(address));
+}

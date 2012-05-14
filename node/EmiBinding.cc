@@ -14,14 +14,6 @@
 
 using namespace v8;
 
-void EmiBinding::fillNilAddress(int family, Address& address) {
-    EmiNetUtil::anyAddr(/*port:*/0, family, &address);
-}
-
-bool EmiBinding::isNilAddress(const Address& address) {
-    return 0 != ntohs(EmiNetUtil::addrPortN(address));
-}
-
 Persistent<Object> EmiBinding::makePersistentData(const uint8_t *data, size_t length) {
     HandleScope scope;
     
