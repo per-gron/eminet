@@ -25,9 +25,15 @@ public:
     public:
         uint8_t cookie[EMI_P2P_COOKIE_SIZE];
         
-        ConnCookie(const uint8_t *cookie_, size_t cookieLength) {
+        ConnCookie(const uint8_t *cookie_, size_t cookieLength, bool isComplementary = false) {
             ASSERT(EMI_P2P_COOKIE_SIZE == cookieLength);
             memcpy(cookie, cookie_, sizeof(cookie));
+            
+            if (isComplementary) {
+                for (int i=0; i<cookieLength; i++) {
+                    cookie[i] = ~cookie[i];
+                }
+            }
         }
         
         inline ConnCookie(const ConnCookie& other) {
@@ -59,6 +65,7 @@ private:
     Delegate& _delegate;
     
     EmiUdpSocket<Binding> *_sock;
+    bool                   _firstPeerHadComplementaryCookie;
     sockaddr_storage       _peers[2];
     sockaddr_storage       _innerEndpoints[2];
     EmiConnTime            _times[2];
@@ -146,16 +153,18 @@ private:
     }
     
 public:
-    ConnCookie cookie;
+    const ConnCookie cookie;
     
     EmiP2PConn(Delegate& delegate,
                EmiSequenceNumber initialSequenceNumber,
                const ConnCookie &cookie_,
+               bool firstPeerHadComplementaryCookie,
                EmiUdpSocket<Binding> *sock,
                const sockaddr_storage& firstPeer,
                EmiTimeInterval connectionTimeout,
                size_t rateLimit) :
     cookie(cookie_),
+    _firstPeerHadComplementaryCookie(firstPeerHadComplementaryCookie),
     _delegate(delegate),
     _sock(sock),
     _times(),
@@ -288,6 +297,10 @@ public:
     bool hasBothInnerAddresses() const {
         return !EmiBinding::isNilAddress(_innerEndpoints[0]) &&
                !EmiBinding::isNilAddress(_innerEndpoints[1]);
+    }
+    
+    inline bool firstPeerHadComplementaryCookie() const {
+        return _firstPeerHadComplementaryCookie;
     }
     
     void sendEndpointPair(const sockaddr_storage& inboundAddress, int idx) {

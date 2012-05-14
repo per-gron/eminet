@@ -52,7 +52,7 @@ void EmiP2PSocket::Init(Handle<Object> target) {
     X(GetAddressType,       "getAddressType");
     X(GetPort,              "getPort");
     X(GetAddress,           "getAddress");
-    X(GenerateCookie,       "generateCookie");
+    X(GenerateCookiePair,   "generateCookiePair");
     X(GenerateSharedSecret, "generateSharedSecret");
 #undef X
     
@@ -185,16 +185,20 @@ Handle<Value> EmiP2PSocket::GetAddress(const Arguments& args) {
     return scope.Close(String::New(buf));
 }
 
-Handle<Value> EmiP2PSocket::GenerateCookie(const Arguments& args) {
+Handle<Value> EmiP2PSocket::GenerateCookiePair(const Arguments& args) {
     HandleScope scope;
     
     ENSURE_ZERO_ARGS(args);
     UNWRAP(EmiP2PSocket, ec, args);
     
-    // Allocate a buffer
-    node::Buffer *buf(node::Buffer::New(EPS::EMI_P2P_COOKIE_SIZE));
+    // Allocate a buffer, one that will contain both cookies
+    static const size_t bufLen(EPS::EMI_P2P_COOKIE_SIZE*2);
+    node::Buffer *buf(node::Buffer::New(bufLen));
+    uint8_t *bufData((uint8_t *)node::Buffer::Data(buf));
     
-    ec->_sock.generateCookie(EmiNodeUtil::now(), (uint8_t *)node::Buffer::Data(buf), node::Buffer::Length(buf));
+    ec->_sock.generateCookiePair(EmiNodeUtil::now(),
+                                 bufData,          bufLen/2,
+                                 bufData+bufLen/2, bufLen/2);
     
     // Make a new persistent handle (do not just reuse the persistent buf->handle_ handle)
     return scope.Close(buf->handle_);

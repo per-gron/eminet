@@ -10,13 +10,13 @@ var mediator = EmiNet.openMediator({
 
 console.log("Mediator address:", mediator.getAddress()+':'+mediator.getPort());
 
-var cookie       = mediator.generateCookie(),
+var cookiePair   = mediator.generateCookiePair(),
     sharedSecret = mediator.generateSharedSecret();
 
-console.log("A cookie:", cookie);
+console.log("A cookie pair:", cookiePair);
 console.log("A shared secret:", sharedSecret);
 
-var connect = function(socket, name) {
+var connect = function(socket, cookie, name) {
   socket.connectP2P(mediator.getAddress(), mediator.getPort(), cookie, sharedSecret, function(err, conn) {
     if (null !== err) {
       return console.log(name+' connection failed');
@@ -35,5 +35,5 @@ var connect = function(socket, name) {
   });
 };
 
-connect(es1, 'ES1');
-connect(es2, 'ES2');
+connect(es1, cookiePair[0], 'ES1');
+connect(es2, cookiePair[1], 'ES2');

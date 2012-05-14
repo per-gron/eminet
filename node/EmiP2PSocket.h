@@ -46,7 +46,7 @@ private:
     static v8::Handle<v8::Value> GetPort(const v8::Arguments& args);
     static v8::Handle<v8::Value> GetAddress(const v8::Arguments& args);
     static v8::Handle<v8::Value> GetRemotePort(const v8::Arguments& args);
-    static v8::Handle<v8::Value> GenerateCookie(const v8::Arguments& args);
+    static v8::Handle<v8::Value> GenerateCookiePair(const v8::Arguments& args);
     static v8::Handle<v8::Value> GenerateSharedSecret(const v8::Arguments& args);
 };
 

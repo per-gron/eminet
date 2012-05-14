@@ -86,9 +86,17 @@ private:
                           buf, bufLen);
     }
     
+    static void complementaryCookie(uint8_t *out, size_t outLen,
+                                    const uint8_t *in, size_t inLen) {
+        ASSERT(EMI_P2P_COOKIE_SIZE == outLen && EMI_P2P_COOKIE_SIZE == inLen);
+        for (int i=0; i<EMI_P2P_COOKIE_SIZE; i++) {
+            out[i] = ~in[i];
+        }
+    }
+    
     // Returns true if the cookie is valid
-    bool checkCookie(EmiTimeInterval stamp,
-                     const uint8_t *buf, size_t bufLen) const {
+    bool checkNonComplementaryCookie(EmiTimeInterval stamp,
+                                     const uint8_t *buf, size_t bufLen) const {
         if (EMI_P2P_COOKIE_SIZE != bufLen) {
             return false;
         }
@@ -102,6 +110,31 @@ private:
         
         hashCookie(stamp, buf, testBuf, sizeof(testBuf), /*minusOne:*/true);
         if (0 == memcmp(testBuf, buf+EMI_P2P_RAND_NUM_SIZE, sizeof(testBuf))) {
+            return true;
+        }
+        
+        return false;
+    }
+    
+    // Returns true if the cookie is valid. If the cookie was valid,
+    // sets the wasComplementary parameter.
+    bool checkCookie(EmiTimeInterval stamp,
+                     const uint8_t *cookie, size_t cookieLen,
+                     bool *wasComplementary) const {
+        if (EMI_P2P_COOKIE_SIZE != cookieLen) {
+            return false;
+        }
+        
+        if (checkNonComplementaryCookie(stamp, cookie, cookieLen)) {
+            *wasComplementary = false;
+            return true;
+        }
+        
+        uint8_t buf[EMI_P2P_COOKIE_SIZE];
+        complementaryCookie(buf, sizeof(buf), cookie, cookieLen);
+        
+        if (checkNonComplementaryCookie(stamp, buf, sizeof(buf))) {
+            *wasComplementary = true;
             return true;
         }
         
@@ -122,7 +155,8 @@ private:
                            const sockaddr_storage& remoteAddress,
                            const uint8_t *cookie,
                            size_t cookieLength) {
-        if (!checkCookie(now, cookie, cookieLength)) {
+        bool cookieIsComplementary;
+        if (!checkCookie(now, cookie, cookieLength, &cookieIsComplementary)) {
             // Invalid cookie. Ignore packet.
             return;
         }
@@ -141,7 +175,7 @@ private:
         if (!conn) {
             // We did not already have a connection with this address
             // Check to see if we have a connection with this cookie
-            ConnCookie cc(cookie, cookieLength);
+            ConnCookie cc(cookie, cookieLength, cookieIsComplementary);
             
             ConnCookieMapIter cur = _connCookies.find(cc);
             
@@ -149,15 +183,31 @@ private:
                 // There was a connection open with this cookie
                 
                 conn = (*cur).second;
+                
+                if (conn->firstPeerHadComplementaryCookie() == cookieIsComplementary) {
+                    // This happens if we get a SYN message with the same cookie data
+                    // from more than one remote address. This ought not to happen,
+                    // unfortunately it does, because at first, EmiConn will tell
+                    // EmiUdpSocket to send packets from every bound interface, which
+                    // might make EmiP2PSock receive multiple packets from different
+                    // addresses even though they are sent from the same peer.
+                    //
+                    // This packet should be ignored.
+                    return;
+                }
+                
                 // We don't need to save the cookie anymore
                 _connCookies.erase(cur);
                 
                 conn->gotOtherAddress(inboundAddress, remoteAddress, initialSequenceNumber);
             }
             else {
-                // There was no connection open with this cookie. Open new one
+                // There was no connection open with this cookie. Open a new one
                 
-                conn = new Conn(*this, initialSequenceNumber, cc, sock, remoteAddress, config.connectionTimeout, config.rateLimit);
+                conn = new Conn(*this, initialSequenceNumber,
+                                cc, cookieIsComplementary,
+                                sock, remoteAddress,
+                                config.connectionTimeout, config.rateLimit);
                 _connCookies.insert(std::make_pair(cc, conn));
             }
             
@@ -271,14 +321,18 @@ public:
     }
     
     // Returns the size of the cookie
-    size_t generateCookie(EmiTimeInterval stamp,
-                          uint8_t *buf, size_t bufLen) const {
-        ASSERT(bufLen >= EMI_P2P_COOKIE_SIZE);
+    size_t generateCookiePair(EmiTimeInterval stamp,
+                              uint8_t *bufA, size_t bufALen,
+                              uint8_t *bufB, size_t bufBLen) const {
+        ASSERT(bufALen >= EMI_P2P_COOKIE_SIZE);
+        ASSERT(bufBLen >= EMI_P2P_COOKIE_SIZE);
         
-        Binding::randomBytes(buf, EMI_P2P_RAND_NUM_SIZE);
+        Binding::randomBytes(bufA, EMI_P2P_RAND_NUM_SIZE);
         
-        hashCookie(stamp, /*randNum:*/buf,
-                   buf+EMI_P2P_RAND_NUM_SIZE, bufLen-EMI_P2P_RAND_NUM_SIZE);
+        hashCookie(stamp, /*randNum:*/bufA,
+                   bufA+EMI_P2P_RAND_NUM_SIZE, bufALen-EMI_P2P_RAND_NUM_SIZE);
+        
+        complementaryCookie(bufB, bufBLen, bufA, bufALen);
         
         return EMI_P2P_COOKIE_SIZE;
     }

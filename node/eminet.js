@@ -181,9 +181,15 @@ Util.inherits(EmiP2PSocket, Events.EventEmitter);
   };
 });
 
-EmiP2PSocket.prototype.generateCookie = function() {
-  var ret = this._handle.generateCookie.apply(this._handle, arguments);
-  return ret ? new Buffer(ret) : ret;
+EmiP2PSocket.prototype.generateCookiePair = function() {
+  var ret = this._handle.generateCookiePair.apply(this._handle, arguments);
+  if (ret) {
+    var buf = new Buffer(ret);
+    return [buf.slice(0, buf.length/2), buf.slice(buf.length/2, buf.length)];
+  }
+  else {
+    return ret;
+  }
 };
 
 EmiP2PSocket.prototype.generateSharedSecret = function() {
