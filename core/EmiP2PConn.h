@@ -116,10 +116,14 @@ private:
                   const TemporaryData& data,
                   size_t offset,
                   size_t len) {
-        _bytesSentSinceRateLimitTimeout += len;
-        if (_bytesSentSinceRateLimitTimeout > _rateLimit) {
-            return;
+        if (_rateLimit) {
+            _bytesSentSinceRateLimitTimeout += len;
+            if (_bytesSentSinceRateLimitTimeout > _rateLimit) {
+                return;
+            }
         }
+        
+        // TODO Fill timestamps
         
         _sock->sendData(inboundAddress, remoteAddress, Binding::extractData(data)+offset, len);
     }
