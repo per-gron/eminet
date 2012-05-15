@@ -24,7 +24,7 @@ var connect = function(socket, cookie, name) {
     
     console.log(name+" connected", arguments);
     
-    socket.on('message', function(channelQualifier, buf) {
+    conn.on('message', function(channelQualifier, buf) {
       console.log(name+" got message", buf.toString());
     });
     
