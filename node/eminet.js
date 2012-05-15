@@ -73,12 +73,12 @@ var p2pSockError = function() {
 }
 
 EmiNetAddon.setCallbacks(
-    gotConnection,
-    connectionMessage,
-    connectionLost,
-    connectionRegained,
-    connectionDisconnect,
-    connectionError
+  gotConnection,
+  connectionMessage,
+  connectionLost,
+  connectionRegained,
+  connectionDisconnect,
+  connectionError
 );
 
 EmiNetAddon.setP2PCallbacks(
