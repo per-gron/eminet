@@ -390,6 +390,9 @@ public:
                 goto error;
             }
             
+            const uint8_t *msgData   = rawData+EMI_TIMESTAMP_LENGTH+header.headerLength;
+            const size_t   msgLength = header.length;
+            
             bool isControlMessage = !!(header.flags & (EMI_PRX_FLAG | EMI_RST_FLAG | EMI_SYN_FLAG));
             
             size_t expectedPacketLength = EMI_TIMESTAMP_LENGTH+header.headerLength+header.length;
@@ -426,8 +429,7 @@ public:
                                       sock,
                                       inboundAddress,
                                       remoteAddress,
-                                      rawData+EMI_TIMESTAMP_LENGTH+header.headerLength,
-                                      header.length);
+                                      msgData, msgLength);
                 }
                 else if ((EMI_PRX_FLAG | EMI_ACK_FLAG) == relevantFlags) {
                     // This is a connection open ACK message.
@@ -436,7 +438,9 @@ public:
                         goto error;
                     }
                     else if (conn) {
-                        gotConnectionOpenAck(inboundAddress, remoteAddress, conn, now, rawData, len);
+                        gotConnectionOpenAck(inboundAddress, remoteAddress,
+                                             conn, now,
+                                             msgData, msgLength);
                     }
                     else {
                         err = "Got PRX-ACK message without open conection";
