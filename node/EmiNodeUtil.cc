@@ -28,6 +28,10 @@ static uv_buf_t alloc_cb(uv_handle_t* handle, size_t suggested_size) {
 }
 
 static void send_cb(uv_udp_send_t* req, int status) {
+    uv_buf_t *buf = (uv_buf_t *)&req[1];
+    
+    free(buf->base);
+    
     free(req);
 }
 
@@ -177,10 +181,21 @@ void EmiNodeUtil::sendData(uv_udp_t *socket,
                            const uint8_t *data,
                            size_t size) {
     uv_udp_send_t *req = (uv_udp_send_t *)malloc(sizeof(uv_udp_send_t)+
-                                                 sizeof(uv_buf_t));
+                                                 sizeof(uv_buf_t)+
+                                                 sizeof(size_t));
     uv_buf_t      *buf = (uv_buf_t *)&req[1];
+    size_t        *sizePtr = (size_t *)&buf[1];
     
-    *buf = uv_buf_init((char *)data, size);
+    // TODO This copies the packet data. We might want to redesign
+    // this part of the code so that this is not required.
+    //
+    // TODO It would probably be better and faster to use the slab
+    // allocator here.
+    char *bufData = (char *)malloc(size);
+    memcpy(bufData, data, size);
+    
+    *buf = uv_buf_init((char *)bufData, size);
+    *sizePtr = size;
     
     if (AF_INET == address.ss_family) {
         if (0 != uv_udp_send(req,
