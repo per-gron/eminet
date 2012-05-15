@@ -47,13 +47,14 @@ struct EmiMessageHeader {
         uint8_t connByte = buf[0];
         uint16_t length = ntohs(*((uint16_t *)(buf+2)));
         
+        bool prxFlag = connByte & EMI_PRX_FLAG;
         bool rstFlag = connByte & EMI_RST_FLAG;
         bool ackFlag = connByte & EMI_ACK_FLAG;
         bool synFlag = connByte & EMI_SYN_FLAG;
         
         // If the message has RST, SYN and ACK flags, it's a close
         // connection ack message, not a normal message with ack
-        bool messageHasAckData = ackFlag && !(rstFlag && synFlag);
+        bool messageHasAckData = ackFlag && !(rstFlag && synFlag) && !prxFlag;
         
         size_t lengthOffset = length ? 3 : (synFlag ? 2 : 0);
         size_t headerLength = EMI_HEADER_LENGTH + lengthOffset + (messageHasAckData ? 2 : 0);
