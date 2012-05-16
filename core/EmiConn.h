@@ -485,12 +485,21 @@ public:
         }
     }
     
-    inline inline ES& getEmiSock() {
+    inline ES& getEmiSock() {
         return _emisock;
     }
     
-    inline inline const EmiP2PData& getP2PData() const {
+    inline const EmiP2PData& getP2PData() const {
         return _p2p;
+    }
+    
+    inline EmiP2PState getP2PState() const {
+        if (!_conn) {
+            return EMI_P2P_STATE_NOT_ESTABLISHING;
+        }
+        else {
+            return _conn->getP2PState();
+        }
     }
 };
 

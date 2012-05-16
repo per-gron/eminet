@@ -556,6 +556,35 @@ public:
     EmiSequenceNumber getOtherHostInitialSequenceNumber() const {
         return _otherHostInitialSequenceNumber;
     }
+    
+    EmiP2PState getP2PState() const {
+        if (!_conn) {
+            return EMI_P2P_STATE_NOT_ESTABLISHING;
+        }
+        else if (EMI_CONNECTION_TYPE_P2P != _conn->getType()) {
+            return EMI_P2P_STATE_NOT_ESTABLISHING;
+        }
+        else if (0 != EmiAddressCmp::compare(_conn->getOriginalRemoteAddress(), _conn->getRemoteAddress())) {
+            // If the current remote address is not equal to the original
+            // remote address, that means that the P2P connection is
+            // established.
+            //
+            // Note that the connection can be established even if
+            // _natPunchthrough is not NULL, because _natPunchthrough is
+            // even after the P2P connection is established, until the P2P
+            // mediator connection is torn down.
+            return EMI_P2P_STATE_ESTABLISHED;
+        }
+        else if (_natPunchthrough) {
+            // Note that NULL != _natPunchthrough does not imply that the
+            // P2P state is EMI_P2P_STATE_ESTABLISHING, it can actually
+            // be EMI_P2P_STATE_ESTABLISHED, as described above.
+            return EMI_P2P_STATE_ESTABLISHING;
+        }
+        else {
+            return EMI_P2P_STATE_FAILED;
+        }
+    }
 };
 
 #endif

@@ -63,6 +63,14 @@ typedef enum {
     EMI_CONNECTION_TYPE_P2P
 } EmiConnectionType;
 
+typedef enum {
+    // This is the state for non-EMI_CONNECTION_TYPE_P2P connections
+    EMI_P2P_STATE_NOT_ESTABLISHING,
+    EMI_P2P_STATE_ESTABLISHING,
+    EMI_P2P_STATE_ESTABLISHED,
+    EMI_P2P_STATE_FAILED
+} EmiP2PState;
+
 typedef uint16_t EmiSequenceNumber;
 typedef uint8_t  EmiChannelQualifier;
 typedef uint16_t EmiTimestamp;
