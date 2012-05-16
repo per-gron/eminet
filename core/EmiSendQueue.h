@@ -108,7 +108,9 @@ private:
                 else {
                     curAck = _acks.find(msg->channelQualifier);
                 }
+                
                 _acksSentInThisTick.insert(msg->channelQualifier);
+                _acks.erase(msg->channelQualifier);
                 
                 bool hasAck = curAck != noAck;
                 pos += EM::writeMsg(_buf, /* buf */
@@ -145,6 +147,9 @@ private:
                                         NULL, /* data */
                                         0, /* dataLength */
                                         0 /* flags */);
+                    
+                    _acksSentInThisTick.insert(cq);
+                    _acks.erase(cq);
                 }
                 
                 ++ackIter;
@@ -211,10 +216,6 @@ public:
         _acksSentInThisTick.clear();
         
         bool somethingWasSent = flush(connTime, now);
-        
-        // Note that flush has to send all enqueued acks,
-        // otherwise this will make us forget to send acks.
-        _acks.clear();
         
         return somethingWasSent;
     }
