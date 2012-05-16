@@ -138,7 +138,7 @@ var EmiConnection = function(initiator, sockHandle, address, port, cb, p2pCookie
 Util.inherits(EmiConnection, Events.EventEmitter);
 
 [
-  'close', 'forceClose', 'closeOrForceClose', 'flush', 'send',
+  'close', 'forceClose', 'closeOrForceClose', 'send',
   'hasIssuedConnectionWarning', 'getSocket', 'getAddressType',
   'getLocalPort', 'getLocalAddress', 'getRemoteAddress',
   'getRemotePort', 'getInboundPort', 'isOpen', 'isOpening',

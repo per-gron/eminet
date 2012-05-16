@@ -48,7 +48,6 @@ private:
     static v8::Handle<v8::Value> Close(const v8::Arguments& args);
     static v8::Handle<v8::Value> ForceClose(const v8::Arguments& args);
     static v8::Handle<v8::Value> CloseOrForceClose(const v8::Arguments& args);
-    static v8::Handle<v8::Value> Flush(const v8::Arguments& args);
     static v8::Handle<v8::Value> Send(const v8::Arguments& args);
     
     static v8::Handle<v8::Value> HasIssuedConnectionWarning(const v8::Arguments& args);

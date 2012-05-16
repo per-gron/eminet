@@ -41,7 +41,6 @@ void EmiConnection::Init(Handle<Object> target) {
     X(Close,                      "close");
     X(ForceClose,                 "forceClose");
     X(CloseOrForceClose,          "closeOrForceClose");
-    X(Flush,                      "flush");
     X(Send,                       "send");
     X(HasIssuedConnectionWarning, "hasIssuedConnectionWarning");
     X(GetSocket,                  "getSocket");
@@ -129,17 +128,6 @@ Handle<Value> EmiConnection::CloseOrForceClose(const Arguments& args) {
     if (!ec->_conn.close(EmiNodeUtil::now(), err)) {
         ec->_conn.forceClose();
     }
-    
-    return scope.Close(Undefined());
-}
-
-Handle<Value> EmiConnection::Flush(const Arguments& args) {
-    HandleScope scope;
-    
-    ENSURE_ZERO_ARGS(args);
-    UNWRAP(EmiConnection, ec, args);
-    
-    ec->_conn.flush(EmiNodeUtil::now());
     
     return scope.Close(Undefined());
 }

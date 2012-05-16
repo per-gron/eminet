@@ -48,9 +48,6 @@
 // force close.
 - (void)close;
 
-// Delegates to EmiSendQueue
-- (BOOL)flush;
-
 // Convenience alias for sendWithData:channelQualifier:priority:
 - (BOOL)send:(NSData *)data error:(NSError **)errPtr;
 // Convenience alias for sendWithData:channelQualifier:priority:

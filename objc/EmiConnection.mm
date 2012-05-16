@@ -79,10 +79,6 @@
     }
 }
 
-- (BOOL)flush {
-    return ((EC *)_ec)->flush([self _now]);
-}
-
 - (BOOL)send:(NSData *)data error:(NSError **)errPtr {
     return [self send:data channelQualifier:EMI_CHANNEL_QUALIFIER_DEFAULT priority:EMI_PRIORITY_DEFAULT error:errPtr];
 }
