@@ -94,28 +94,15 @@ private:
         }
     }
     
-    // Returns NULL on error
-    const sockaddr_storage* otherAddress(const sockaddr_storage& address) const {
-        int idx = addressIndex(address);
-        if (-1 == idx) {
-            return NULL;
-        }
-        
-        const sockaddr_storage *addr(&_peers[0 == idx ? 1 : 0]);
-        
-        // Return NULL if the address is a nil address
-        if (EmiNetUtil::isNilAddress(*addr)) {
-            return NULL;
-        }
-        
-        return addr;
-    }
-    
+    // Sends data and makes it count towards the rate limit
     void sendData(const sockaddr_storage& inboundAddress,
-                  const sockaddr_storage& remoteAddress,
+                  int remoteAddressIndex,
                   const TemporaryData& data,
                   size_t offset,
                   size_t len) {
+        
+        const sockaddr_storage& remoteAddress(_peers[remoteAddressIndex]);
+        
         if (_rateLimit) {
             _bytesSentSinceRateLimitTimeout += len;
             if (_bytesSentSinceRateLimitTimeout > _rateLimit) {
@@ -123,9 +110,14 @@ private:
             }
         }
         
-        // TODO Fill timestamps
+        uint8_t *rawData = (uint8_t *)Binding::extractData(data)+offset;
         
-        _sock->sendData(inboundAddress, remoteAddress, Binding::extractData(data)+offset, len);
+        // Overwrite the timestamps with the ones that
+        // reflect the connection between the P2P mediator
+        // and the host we're sending to.
+        EmiMessage<Binding>::fillTimestamps(_times[remoteAddressIndex], rawData, len);
+        
+        _sock->sendData(inboundAddress, remoteAddress, rawData, len);
     }
     
     void sendSynRst(const sockaddr_storage& inboundAddress, int addrIdx) {
@@ -217,12 +209,19 @@ public:
                        const TemporaryData& data,
                        size_t offset,
                        size_t len) {
-        const sockaddr_storage *otherAddr = otherAddress(remoteAddress);
-        if (!otherAddr) {
+        int idx = addressIndex(remoteAddress);
+        if (-1 == idx) {
             return;
         }
         
-        sendData(inboundAddress, *otherAddr, data, offset, len);
+        const int otherAddrIdx(0 == idx ? 1 : 0);
+        const sockaddr_storage *otherAddr(&_peers[otherAddrIdx]);
+        
+        if (EmiNetUtil::isNilAddress(*otherAddr)) {
+            return;
+        }
+        
+        sendData(inboundAddress, otherAddrIdx, data, offset, len);
     }
     
     void gotOtherAddress(const sockaddr_storage& inboundAddress,
