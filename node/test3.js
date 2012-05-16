@@ -36,9 +36,11 @@ var connect = function(socket, cookie, name) {
       console.log(name+": P2P connection established (P2P state: "+conn.getP2PState()+")");
     })
     
+    conn.send(new Buffer("Hej 1"));
+    
     setTimeout(function() {
       console.log("Sending message from "+name);
-      conn.send(new Buffer("Hej"));
+      conn.send(new Buffer("Hej 2"));
     }, 2000);
   });
 };
