@@ -129,10 +129,10 @@ private:
             // We lost the connection to the P2P mediator.
             // There's not much we can do about it, and we
             // don't really care about it anyways.
-            _delegate.natPunchthroughFinished();
+            _delegate.natPunchthroughFinished(/*successs:*/true);
         }
         else {
-            _delegate.natPunchthroughFailed();
+            _delegate.natPunchthroughFinished(/*successs:*/false);
         }
     }
     
@@ -257,7 +257,7 @@ public:
             return;
         }
         
-        _delegate.natPunchthroughFinished();
+        _delegate.natPunchthroughFinished(/*success:*/true);
     }
     
 };

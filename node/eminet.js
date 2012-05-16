@@ -62,6 +62,10 @@ var connectionDisconnect = function(conn, reason) {
   conn && conn.emit('disconnect', reason);
 };
 
+var natPunchthroughFinished = function(conn, success) {
+  conn && conn.emit('p2p', success ? null : { error: 'Failed to establish P2P connection' });
+};
+
 var connectionError = function() {
   // TODO
   console.log("!!! Connection error", arguments);
@@ -78,6 +82,7 @@ EmiNetAddon.setCallbacks(
   connectionLost,
   connectionRegained,
   connectionDisconnect,
+  natPunchthroughFinished,
   connectionError
 );
 

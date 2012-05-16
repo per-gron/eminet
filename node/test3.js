@@ -28,6 +28,14 @@ var connect = function(socket, cookie, name) {
       console.log(name+" got message", buf.toString());
     });
     
+    conn.on('p2p', function(error) {
+      if (null !== err) {
+        return console.log(name+": Failed to establish P2P connection");
+      }
+      
+      console.log(name+": P2P connection established");
+    })
+    
     setTimeout(function() {
       console.log("Sending message from "+name);
       conn.send(new Buffer("Hej"));

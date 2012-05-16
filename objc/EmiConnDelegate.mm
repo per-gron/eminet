@@ -37,3 +37,16 @@ void EmiConnDelegate::emiConnRegained() {
 void EmiConnDelegate::emiConnDisconnect(EmiDisconnectReason reason) {
     [_conn.delegate emiConnectionDisconnect:_conn forReason:reason];
 }
+
+void EmiConnDelegate::emiNatPunchthroughFinished(bool success) {
+    if (success) {
+        if ([_conn.delegate respondsToSelector:@selector(emiP2PConnectionEstablished:)]) {
+            [_conn.delegate emiP2PConnectionEstablished:_conn];
+        }
+    }
+    else {
+        if ([_conn.delegate respondsToSelector:@selector(emiP2PConnectionNotEstablished:)]) {
+            [_conn.delegate emiP2PConnectionNotEstablished:_conn];
+        }
+    }
+}

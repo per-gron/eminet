@@ -55,6 +55,7 @@ public:
     static v8::Persistent<v8::Function> connectionLost;
     static v8::Persistent<v8::Function> connectionRegained;
     static v8::Persistent<v8::Function> connectionDisconnect;
+    static v8::Persistent<v8::Function> natPunchthroughFinished;
     static v8::Persistent<v8::Function> connectionError;
     
     inline ES& getSock() { return _sock; }

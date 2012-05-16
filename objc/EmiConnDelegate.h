@@ -24,6 +24,7 @@ public:
     void emiConnLost();
     void emiConnRegained();
     void emiConnDisconnect(EmiDisconnectReason reason);
+    void emiNatPunchthroughFinished(bool success);
     
     inline EmiConnection *getConn() { return _conn; }
 };

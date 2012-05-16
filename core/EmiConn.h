@@ -345,6 +345,9 @@ public:
     void emitMessage(EmiChannelQualifier channelQualifier, const TemporaryData& data, size_t offset, size_t size) {
         _delegate.emiConnMessage(channelQualifier, data, offset, size);
     }
+    void emitNatPunchthroughFinished(bool success) {
+        _delegate.emiNatPunchthroughFinished(success);
+    }
     
     bool close(EmiTimeInterval now, Error& err) {
         if (_conn) {

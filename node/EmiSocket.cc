@@ -33,6 +33,7 @@ Persistent<Function> EmiSocket::connectionMessage;
 Persistent<Function> EmiSocket::connectionLost;
 Persistent<Function> EmiSocket::connectionRegained;
 Persistent<Function> EmiSocket::connectionDisconnect;
+Persistent<Function> EmiSocket::natPunchthroughFinished;
 Persistent<Function> EmiSocket::connectionError;
 
 EmiSocket::EmiSocket(v8::Handle<v8::Object> jsHandle, const EmiSockConfig& sc) :
@@ -75,14 +76,15 @@ void EmiSocket::Init(Handle<Object> target) {
 Handle<Value> EmiSocket::SetCallbacks(const Arguments& args) {
     HandleScope scope;
     
-    ENSURE_NUM_ARGS(6, args);
+    ENSURE_NUM_ARGS(7, args);
     
     if (!args[0]->IsFunction() ||
         !args[1]->IsFunction() ||
         !args[2]->IsFunction() ||
         !args[3]->IsFunction() ||
         !args[4]->IsFunction() ||
-        !args[5]->IsFunction()) {
+        !args[5]->IsFunction() ||
+        !args[6]->IsFunction()) {
         THROW_TYPE_ERROR("Wrong arguments");
     }
   
@@ -96,7 +98,8 @@ Handle<Value> EmiSocket::SetCallbacks(const Arguments& args) {
     X(connectionLost, 2);
     X(connectionRegained, 3);
     X(connectionDisconnect, 4);
-    X(connectionError, 5);
+    X(natPunchthroughFinished, 5);
+    X(connectionError, 6);
     
 #undef X
     

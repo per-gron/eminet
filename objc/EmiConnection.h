@@ -20,6 +20,11 @@
 - (void)emiConnectionMessage:(EmiConnection *)connection
             channelQualifier:(EmiChannelQualifier)channelQualifier
                         data:(NSData *)data;
+
+@optional
+- (void)emiP2PConnectionEstablished:(EmiConnection *)connection;
+- (void)emiP2PConnectionNotEstablished:(EmiConnection *)connection;
+
 @end
 
 @interface EmiConnection : NSObject {

@@ -73,3 +73,15 @@ void EmiConnDelegate::emiConnDisconnect(EmiDisconnectReason reason) {
     };
     EmiSocket::connectionDisconnect->Call(Context::GetCurrent()->Global(), argc, argv);
 }
+
+void EmiConnDelegate::emiNatPunchthroughFinished(bool success) {
+    HandleScope scope;
+    
+    const unsigned argc = 3;
+    Handle<Value> argv[argc] = {
+        _conn._jsHandle.IsEmpty() ? Handle<Value>(Undefined()) : _conn._jsHandle,
+        _conn.handle_,
+        Boolean::New(success)
+    };
+    EmiSocket::natPunchthroughFinished->Call(Context::GetCurrent()->Global(), argc, argv);
+}

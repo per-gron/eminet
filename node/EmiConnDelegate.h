@@ -26,6 +26,7 @@ public:
     void emiConnLost();
     void emiConnRegained();
     void emiConnDisconnect(EmiDisconnectReason reason);
+    void emiNatPunchthroughFinished(bool success);
     
     inline EmiConnection& getConnection() { return _conn; }
     inline const EmiConnection& getConnection() const { return _conn; }

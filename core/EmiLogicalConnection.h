@@ -127,15 +127,13 @@ private:
     }
     
     // Invoked by EmiNatPunchthrough
-    inline void natPunchthroughFinished() {
+    inline void natPunchthroughFinished(bool success) {
         delete _natPunchthrough;
         _natPunchthrough = NULL;
-    }
-    
-    // Invoked by EmiNatPunchthrough
-    inline void natPunchthroughFailed() {
-        // TODO Notify the user of EmiNet that we failed to establish a P2P connection
-        natPunchthroughFinished();
+        
+        if (_conn) {
+            _conn->emitNatPunchthroughFinished(success);
+        }
     }
     
 public:
