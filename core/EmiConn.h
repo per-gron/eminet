@@ -388,8 +388,9 @@ public:
     }
     
     // Delegates to EmiSendQueue
-    bool flush(EmiTimeInterval now) {
-        return _sendQueue.flush(_time, now);
+    // Returns true if something was sent
+    bool tick(EmiTimeInterval now) {
+        return _sendQueue.tick(_time, now);
     }
     
     // Delegates to EmiLogicalConnection

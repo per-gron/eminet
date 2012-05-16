@@ -33,6 +33,7 @@ class EmiSendQueue {
     typedef std::vector<EM *> SendQueueVector;
     typedef typename std::vector<EM *>::iterator SendQueueVectorIter;
     typedef std::map<EmiChannelQualifier, EmiSequenceNumber> SendQueueAcksMap;
+    typedef typename SendQueueAcksMap::iterator SendQueueAcksMapIter;
     typedef std::set<EmiChannelQualifier> SendQueueAcksSet;
     typedef EmiConn<SockDelegate, ConnDelegate> EC;
     
@@ -41,6 +42,8 @@ class EmiSendQueue {
     SendQueueVector _queue;
     size_t _queueSize;
     SendQueueAcksMap _acks;
+    // This set is intended to ensure that only one ack is sent per channel per tick
+    SendQueueAcksSet _acksSentInThisTick;
     size_t _bufLength;
     uint8_t *_buf;
     bool _enqueueHeartbeat;
@@ -81,76 +84,38 @@ private:
         _conn.sendDatagram(_buf, tlen+plen);
     }
     
-public:
-    
-    EmiSendQueue(EC& conn) :
-    _conn(conn),
-    _enqueueHeartbeat(false),
-    _queueSize(0) {
-        _bufLength = conn.getEmiSock().config.mtu;
-        _buf = (uint8_t *)malloc(_bufLength);
-    }
-    virtual ~EmiSendQueue() {
-        clearQueue();
-        
-        _enqueueHeartbeat = false;
-        
-        if (NULL != _buf) {
-            _bufLength = 0;
-            free(_buf);
-            _buf = NULL;
-        }
-    }
-    
-    void enqueueHeartbeat() {
-        _enqueueHeartbeat = true;
-    }
-    
-    void sendHeartbeat(EmiConnTime& connTime, EmiTimeInterval now) {
-        if (_conn.isOpen()) {
-            const size_t bufLen = EMI_TIMESTAMP_LENGTH+1;
-            uint8_t buf[bufLen];
-            EM::fillTimestamps(connTime, buf, now);
-            buf[EMI_TIMESTAMP_LENGTH] = 0;
-            
-            _conn.sendDatagram(buf, bufLen);
-        }
-    }
-    
     // Returns true if something was sent
     bool flush(EmiConnTime& connTime, EmiTimeInterval now) {
         bool sentPacket = false;
         
         if (!_queue.empty() || !_acks.empty()) {
-            SendQueueAcksSet acksInThisPacket;
             size_t pos = 0;
             
             EM::fillTimestamps(connTime, _buf, now); pos += EMI_TIMESTAMP_LENGTH;
             
-            SendQueueAcksMap::iterator ackIter = _acks.begin();
-            SendQueueAcksMap::iterator ackEnd = _acks.end();
-            
-            SendQueueVectorIter iter = _queue.begin();
-            SendQueueVectorIter end = _queue.end();
+            /// Send the enqueued messages
+            SendQueueAcksMapIter noAck = _acks.end();
+            SendQueueVectorIter  iter  = _queue.begin();
+            SendQueueVectorIter  end   = _queue.end();
             while (iter != end) {
                 EM *msg = *iter;
                 
-                SendQueueAcksMap::iterator cur;
-                if (0 != acksInThisPacket.count(msg->channelQualifier)) {
+                SendQueueAcksMapIter curAck;
+                if (0 != _acksSentInThisTick.count(msg->channelQualifier)) {
                     // Only send an ack for a particular channel once per packet
-                    cur = ackEnd;
+                    curAck = noAck;
                 }
                 else {
-                    cur = _acks.find(msg->channelQualifier);
+                    curAck = _acks.find(msg->channelQualifier);
                 }
-                acksInThisPacket.insert(msg->channelQualifier);
+                _acksSentInThisTick.insert(msg->channelQualifier);
                 
-                bool hasAck = cur != ackEnd;
+                bool hasAck = curAck != noAck;
                 pos += EM::writeMsg(_buf, /* buf */
                                     _bufLength, /* bufSize */
                                     pos, /* offset */
                                     hasAck, /* hasAck */
-                                    hasAck && (*cur).second, /* ack */
+                                    hasAck && (*curAck).second, /* ack */
                                     msg->channelQualifier,
                                     msg->sequenceNumber,
                                     Binding::extractData(msg->data),
@@ -160,10 +125,14 @@ public:
                 ++iter;
             }
             
+            /// Send ACK messages without data for the acks that are
+            /// enqueued but was not sent along with actual data.
+            SendQueueAcksMapIter ackIter = _acks.begin();
+            SendQueueAcksMapIter ackEnd = _acks.end();
             while (ackIter != ackEnd) {
                 EmiChannelQualifier cq = (*ackIter).first;
                 
-                if (0 == acksInThisPacket.count(cq)) {
+                if (0 == _acksSentInThisTick.count(cq)) {
                     EmiSequenceNumber sn = (*ackIter).second;
                     
                     pos += EM::writeMsg(_buf, /* buf */
@@ -201,10 +170,59 @@ public:
         return sentPacket;
     }
     
+public:
+    
+    EmiSendQueue(EC& conn) :
+    _conn(conn),
+    _enqueueHeartbeat(false),
+    _queueSize(0) {
+        _bufLength = conn.getEmiSock().config.mtu;
+        _buf = (uint8_t *)malloc(_bufLength);
+    }
+    virtual ~EmiSendQueue() {
+        clearQueue();
+        
+        _enqueueHeartbeat = false;
+        
+        if (NULL != _buf) {
+            _bufLength = 0;
+            free(_buf);
+            _buf = NULL;
+        }
+    }
+    
+    void enqueueHeartbeat() {
+        _enqueueHeartbeat = true;
+    }
+    
+    void sendHeartbeat(EmiConnTime& connTime, EmiTimeInterval now) {
+        if (_conn.isOpen()) {
+            const size_t bufLen = EMI_TIMESTAMP_LENGTH+1;
+            uint8_t buf[bufLen];
+            EM::fillTimestamps(connTime, buf, now);
+            buf[EMI_TIMESTAMP_LENGTH] = 0;
+            
+            _conn.sendDatagram(buf, bufLen);
+        }
+    }
+    
+    // Returns true if something was sent
+    bool tick(EmiConnTime& connTime, EmiTimeInterval now) {
+        _acksSentInThisTick.clear();
+        
+        bool somethingWasSent = flush(connTime, now);
+        
+        // Note that flush has to send all enqueued acks,
+        // otherwise this will make us forget to send acks.
+        _acks.clear();
+        
+        return somethingWasSent;
+    }
+    
     // Returns true if at least 1 ack is now enqueued
     bool enqueueAck(EmiChannelQualifier channelQualifier, EmiSequenceNumber sequenceNumber) {
-        SendQueueAcksMap::iterator ackCur = _acks.find(channelQualifier);
-        SendQueueAcksMap::iterator ackEnd = _acks.end();
+        SendQueueAcksMapIter ackCur = _acks.find(channelQualifier);
+        SendQueueAcksMapIter ackEnd = _acks.end();
         
         if (ackCur == ackEnd) {
             _acks[channelQualifier] = sequenceNumber;

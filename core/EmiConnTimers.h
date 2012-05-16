@@ -42,8 +42,7 @@ private:
     static void tickTimeoutCallback(EmiTimeInterval now, Timer *timer, void *data) {
         EmiConnTimers *timers = (EmiConnTimers *)data;
         
-        
-        if (timers->_delegate.flush(now)) {
+        if (timers->_delegate.tick(now)) {
             timers->resetHeartbeatTimeout();
         }
     }
