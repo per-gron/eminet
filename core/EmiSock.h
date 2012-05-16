@@ -239,7 +239,7 @@ public:
         else {
             EmiMessageHeader::EmiParseMessageBlock block =
             ^ bool (const EmiMessageHeader& header, size_t dataOffset) {
-                size_t actualDataOffset = dataOffset+EMI_TIMESTAMP_LENGTH+offset;
+                size_t actualRawDataOffset = dataOffset+EMI_TIMESTAMP_LENGTH;
                 
 #define ENSURE_CONN_VAR(conn, msg)                                  \
                 do {                                                \
@@ -275,7 +275,7 @@ public:
                     if (synFlag && rstFlag && ackFlag) {
                         ENSURE_CONN("PRX-RST-SYN-ACK");
                         
-                        conn->gotPrxRstSynAck(now, rawData+actualDataOffset, header.length);
+                        conn->gotPrxRstSynAck(now, rawData+actualRawDataOffset, header.length);
                     }
                     if (!synFlag && rstFlag && ackFlag) {
                         // We want to accept PRX-RST-ACK packets from hosts other than the
@@ -295,7 +295,7 @@ public:
                                                             /*acceptPacketFromUnexpectedHost:*/true));
                         ENSURE_CONN_VAR(prxConn, "PRX-SYN");
                         
-                        prxConn->gotPrxSyn(remoteAddress, rawData+actualDataOffset, header.length);
+                        prxConn->gotPrxSyn(remoteAddress, rawData+actualRawDataOffset, header.length);
                     }
                     if (synFlag && !rstFlag && ackFlag) {
                         // We want to accept PRX-SYN-ACK packets from hosts other than the
@@ -305,7 +305,7 @@ public:
                                                             /*acceptPacketFromUnexpectedHost:*/true));
                         ENSURE_CONN_VAR(prxConn, "PRX-SYN-ACK");
                         
-                        prxConn->gotPrxSynAck(remoteAddress, rawData+actualDataOffset, header.length);
+                        prxConn->gotPrxSynAck(remoteAddress, rawData+actualRawDataOffset, header.length);
                     }
                     else {
                         err = "Invalid message flags";
@@ -409,7 +409,7 @@ public:
                     ENSURE_CONN("data");
                     
                     conn->gotTimestamp(now, rawData, len);
-                    conn->gotMessage(now, header, data, actualDataOffset, /*dontFlush:*/false);
+                    conn->gotMessage(now, header, data, offset+actualRawDataOffset, /*dontFlush:*/false);
                     
                     // gotMessage might have invoked third-party code, which might have
                     // forceClose-d the connection, which might have deallocated conn.

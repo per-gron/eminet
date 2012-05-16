@@ -272,13 +272,13 @@ public:
         sockaddr_storage addrs[2];
         
         const uint8_t *dataPtr = data+endpointPairLen;
-        for (int i=0; i<4; i++) {
+        for (int i=0; i<2; i++) {
             EmiNetUtil::makeAddress(family,
                                     dataPtr, ipLen,
                                     *((uint16_t *)(dataPtr+ipLen)),
                                     &addrs[i]);
             
-            data += ipLen+portLen;
+            dataPtr += ipLen+portLen;
         }
         
         

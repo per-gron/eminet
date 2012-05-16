@@ -291,7 +291,7 @@ public:
         int idx(addressIndex(address));
         ASSERT(-1 != idx);
         
-        _innerEndpoints[0 == idx ? 1 : 0] = innerAddress;
+        _innerEndpoints[idx] = innerAddress;
         
         // Stop re-sending the SYN-ACK that this PRX-ACK message is a response to
         _waitingForPrxAck[idx] = false;
@@ -333,12 +333,12 @@ public:
             uint8_t *bufCur = buf;
             
             EmiNetUtil::extractIp(_innerEndpoints[idx], bufCur, sizeof(buf)); bufCur += ipLen;
-            memcpy(buf+ipLen, &myInnerPort, portLen);                         bufCur += portLen;
+            memcpy(bufCur, &myInnerPort, portLen);                            bufCur += portLen;
             EmiNetUtil::extractIp(_peers[idx], bufCur, sizeof(buf));          bufCur += ipLen;
             memcpy(bufCur, &myOuterPort, portLen);                            bufCur += portLen;
             
             EmiNetUtil::extractIp(_innerEndpoints[otherIdx], bufCur, sizeof(buf)); bufCur += ipLen;
-            memcpy(buf+ipLen, &otherInnerPort, portLen);                           bufCur += portLen;
+            memcpy(bufCur, &otherInnerPort, portLen);                              bufCur += portLen;
             EmiNetUtil::extractIp(_peers[otherIdx], bufCur, sizeof(buf));          bufCur += ipLen;
             memcpy(bufCur, &otherOuterPort, portLen);                              bufCur += portLen;
         }
@@ -346,12 +346,12 @@ public:
         
         /// Prepare the message headers
         EmiFlags flags(EMI_PRX_FLAG | EMI_RST_FLAG | EMI_SYN_FLAG | EMI_ACK_FLAG);
-        EmiMessage<Binding>::template writeControlPacketWithData<128>(flags, buf, dataLen, ^(uint8_t *buf, size_t size) {
+        EmiMessage<Binding>::template writeControlPacketWithData<128>(flags, buf, dataLen, ^(uint8_t *packetBuf, size_t size) {
             /// Fill the timestamps
-            EmiMessage<Binding>::fillTimestamps(_times[idx], buf, size);
+            EmiMessage<Binding>::fillTimestamps(_times[idx], packetBuf, size);
             
             /// Actually send the packet
-            _sock->sendData(inboundAddress, _peers[idx], buf, size);
+            _sock->sendData(inboundAddress, _peers[idx], packetBuf, size);
         });
     }
 };
