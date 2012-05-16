@@ -65,10 +65,10 @@ typedef enum {
 
 typedef enum {
     // This is the state for non-EMI_CONNECTION_TYPE_P2P connections
-    EMI_P2P_STATE_NOT_ESTABLISHING,
-    EMI_P2P_STATE_ESTABLISHING,
-    EMI_P2P_STATE_ESTABLISHED,
-    EMI_P2P_STATE_FAILED
+    EMI_P2P_STATE_NOT_ESTABLISHING = 0,
+    EMI_P2P_STATE_ESTABLISHING     = 1,
+    EMI_P2P_STATE_ESTABLISHED      = 2,
+    EMI_P2P_STATE_FAILED           = 3
 } EmiP2PState;
 
 typedef uint16_t EmiSequenceNumber;

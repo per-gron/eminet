@@ -22,18 +22,18 @@ var connect = function(socket, cookie, name) {
       return console.log(name+' connection failed');
     }
     
-    console.log(name+" connected", arguments);
+    console.log(name+" connected (P2P state: "+conn.getP2PState()+")", arguments);
     
     conn.on('message', function(channelQualifier, buf) {
       console.log(name+" got message", buf.toString());
     });
     
     conn.on('p2p', function(error) {
-      if (null !== err) {
-        return console.log(name+": Failed to establish P2P connection");
+      if (null !== error) {
+        return console.log(name+": Failed to establish P2P connection (P2P state: "+conn.getP2PState()+")");
       }
       
-      console.log(name+": P2P connection established");
+      console.log(name+": P2P connection established (P2P state: "+conn.getP2PState()+")");
     })
     
     setTimeout(function() {

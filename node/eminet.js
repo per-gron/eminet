@@ -58,11 +58,11 @@ var connectionRegained = function(conn, connHandle) {
   conn && conn.emit('regained');
 };
 
-var connectionDisconnect = function(conn, reason) {
+var connectionDisconnect = function(conn, connHandle, reason) {
   conn && conn.emit('disconnect', reason);
 };
 
-var natPunchthroughFinished = function(conn, success) {
+var natPunchthroughFinished = function(conn, connHandle, success) {
   conn && conn.emit('p2p', success ? null : { error: 'Failed to establish P2P connection' });
 };
 
@@ -141,7 +141,8 @@ Util.inherits(EmiConnection, Events.EventEmitter);
   'close', 'forceClose', 'closeOrForceClose', 'flush', 'send',
   'hasIssuedConnectionWarning', 'getSocket', 'getAddressType',
   'getLocalPort', 'getLocalAddress', 'getRemoteAddress',
-  'getRemotePort', 'getInboundPort', 'isOpen', 'isOpening'
+  'getRemotePort', 'getInboundPort', 'isOpen', 'isOpening',
+  'getP2PState'
 ].forEach(function(name) {
   EmiConnection.prototype[name] = function() {
     return this._handle[name].apply(this._handle, arguments);

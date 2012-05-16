@@ -68,5 +68,6 @@
 @property (nonatomic, readonly, assign) uint16_t inboundPort;
 @property (nonatomic, readonly, assign) BOOL open;
 @property (nonatomic, readonly, assign) BOOL opening;
+@property (nonatomic, readonly, assign) EmiP2PState p2pState;
 
 @end

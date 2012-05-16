@@ -58,7 +58,8 @@ class EmiLogicalConnection {
     // them.
     int32_t _reliableHandshakeMsgSn; // -1 when it has no value
     
-    ENP *_natPunchthrough; // This is NULL except in the NAT punchthrough phase of P2P connections
+    ENP  *_natPunchthrough; // This is NULL except in the NAT punchthrough phase of P2P connections
+    bool  _natPunchthroughFailed;
     
 private:
     // Private copy constructor and assignment operator
@@ -117,6 +118,7 @@ private:
         _reliableHandshakeMsgSn = -1;
         
         _natPunchthrough = NULL;
+        _natPunchthroughFailed = false;
     }
     
     // Invoked by EmiNatPunchthrough
@@ -130,6 +132,8 @@ private:
     inline void natPunchthroughFinished(bool success) {
         delete _natPunchthrough;
         _natPunchthrough = NULL;
+        
+        _natPunchthroughFailed = !success;
         
         if (_conn) {
             _conn->emitNatPunchthroughFinished(success);
@@ -582,7 +586,7 @@ public:
             return EMI_P2P_STATE_ESTABLISHING;
         }
         else {
-            return EMI_P2P_STATE_FAILED;
+            return _natPunchthroughFailed ? EMI_P2P_STATE_FAILED : EMI_P2P_STATE_ESTABLISHING;
         }
     }
 };

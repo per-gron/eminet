@@ -53,6 +53,7 @@ void EmiConnection::Init(Handle<Object> target) {
     X(GetInboundPort,             "getInboundPort");
     X(IsOpen,                     "isOpen");
     X(IsOpening,                  "isOpening");
+    X(GetP2PState,                "getP2PState");
 #undef X
     
     constructor = Persistent<Function>::New(tpl->GetFunction());
@@ -311,4 +312,13 @@ Handle<Value> EmiConnection::IsOpening(const Arguments& args) {
     UNWRAP(EmiConnection, ec, args);
     
     return scope.Close(Boolean::New(ec->_conn.isOpening()));
+}
+
+Handle<Value> EmiConnection::GetP2PState(const Arguments& args) {
+    HandleScope scope;
+    
+    ENSURE_ZERO_ARGS(args);
+    UNWRAP(EmiConnection, ec, args);
+    
+    return scope.Close(Integer::New(ec->_conn.getP2PState()));
 }

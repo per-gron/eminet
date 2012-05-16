@@ -111,6 +111,10 @@
     return ((EC *)_ec)->isOpening();
 }
 
+- (EmiP2PState)p2pState {
+    return ((EC *)_ec)->getP2PState();
+}
+
 - (EC *)conn {
     return (EC *)_ec;
 }
