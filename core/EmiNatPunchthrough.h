@@ -129,7 +129,7 @@ private:
             // We lost the connection to the P2P mediator.
             // There's not much we can do about it, and we
             // don't really care about it anyways.
-            _delegate.natPunchthroughFinished(/*successs:*/true);
+            _delegate.natPunchthroughTeardownFinished();
         }
         else {
             _delegate.natPunchthroughFinished(/*successs:*/false);
@@ -249,6 +249,8 @@ public:
         
         /// Send a PRX-RST packet to the P2P mediator
         sendPrxRstPacket();
+        
+        _delegate.natPunchthroughFinished(/*success:*/true);
     }
     
     void gotPrxRstAck(const sockaddr_storage& remoteAddr) {
@@ -257,7 +259,7 @@ public:
             return;
         }
         
-        _delegate.natPunchthroughFinished(/*success:*/true);
+        _delegate.natPunchthroughTeardownFinished();
     }
     
 };

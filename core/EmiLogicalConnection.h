@@ -130,14 +130,17 @@ private:
     
     // Invoked by EmiNatPunchthrough
     inline void natPunchthroughFinished(bool success) {
-        delete _natPunchthrough;
-        _natPunchthrough = NULL;
-        
         _natPunchthroughFailed = !success;
         
         if (_conn) {
             _conn->emitNatPunchthroughFinished(success);
         }
+    }
+    
+    // Invoked by EmiNatPunchthrough
+    inline void natPunchthroughTeardownFinished() {
+        delete _natPunchthrough;
+        _natPunchthrough = NULL;
     }
     
 public:
