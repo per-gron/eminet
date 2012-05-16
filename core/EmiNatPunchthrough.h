@@ -252,7 +252,7 @@ public:
     }
     
     void gotPrxRstAck(const sockaddr_storage& remoteAddr) {
-        if (0 != memcmp(&remoteAddr, &_mediatorAddress, sizeof(remoteAddr))) {
+        if (0 != EmiAddressCmp::compare(remoteAddr, _mediatorAddress)) {
             // This packet came from an unexpected source. Ignore it.
             return;
         }
