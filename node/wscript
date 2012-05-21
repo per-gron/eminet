@@ -12,4 +12,4 @@ def configure(conf):
 def build(bld):
   obj = bld.new_task_gen('cxx', 'shlib', 'node_addon')
   obj.target = 'eminet'
-  obj.source = ['../core/EmiNetUtil.cc', '../core/EmiConnTime.cc', '../core/EmiMessageHeader.cc', 'slab_allocator.cc', 'eminet.cc', 'EmiSocket.cc', 'EmiConnection.cc', 'EmiConnDelegate.cc', 'EmiSockDelegate.cc', 'EmiConnectionParams.cc', 'EmiError.cc', 'EmiNodeUtil.cc', 'EmiBinding.cc', 'EmiP2PSocket.cc']
+  obj.source = ['../core/EmiNetUtil.cc', '../core/EmiConnTime.cc', '../core/EmiMessageHeader.cc', '../core/EmiPacketHeader.cc', 'slab_allocator.cc', 'eminet.cc', 'EmiSocket.cc', 'EmiConnection.cc', 'EmiConnDelegate.cc', 'EmiSockDelegate.cc', 'EmiConnectionParams.cc', 'EmiError.cc', 'EmiNodeUtil.cc', 'EmiBinding.cc', 'EmiP2PSocket.cc']

@@ -72,6 +72,8 @@ typedef enum {
 } EmiP2PState;
 
 typedef uint16_t EmiSequenceNumber;
+typedef int32_t  EmiPacketSequenceNumber; // Represents a 24 bit number. -1 means no value
+typedef uint16_t EmiRttSequenceNumber;
 typedef uint8_t  EmiChannelQualifier;
 typedef uint16_t EmiTimestamp;
 typedef uint8_t  EmiMessageFlags;
@@ -88,12 +90,12 @@ typedef enum {
 } EmiMessageFlag;
 
 typedef enum {
-    EMI_NAK_PACKET_FLAG            = 0x01,
-    EMI_LINK_CAPACITY_PACKET_FLAG  = 0x02,
-    EMI_PACKET_ARRIVAL_PACKET_FLAG = 0x04,
-    EMI_RTT_REQUEST_PACKET_FLAG    = 0x08,
-    EMI_RTT_RESPONSE_PACKET_FLAG   = 0x10,
-    EMI_FILLER_PACKET_FLAG         = 0x20
+    EMI_NAK_PACKET_FLAG           = 0x01,
+    EMI_LINK_CAPACITY_PACKET_FLAG = 0x02,
+    EMI_ARRIVAL_RATE_PACKET_FLAG  = 0x04,
+    EMI_RTT_REQUEST_PACKET_FLAG   = 0x08,
+    EMI_RTT_RESPONSE_PACKET_FLAG  = 0x10,
+    EMI_FILLER_PACKET_FLAG        = 0x20
 } EmiPacketFlag;
 
 #endif
