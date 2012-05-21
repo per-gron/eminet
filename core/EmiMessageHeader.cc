@@ -8,7 +8,7 @@
 
 #include "EmiMessageHeader.h"
 
-bool EmiMessageHeader::parseMessageHeader(const uint8_t *buf, size_t bufSize, EmiMessageHeader& header) {
+bool EmiMessageHeader::parse(const uint8_t *buf, size_t bufSize, EmiMessageHeader& header) {
     if (bufSize < EMI_HEADER_LENGTH) return false;
     
     uint8_t connByte = buf[0];
@@ -44,9 +44,9 @@ bool EmiMessageHeader::parseMessages(const uint8_t *buf, size_t bufSize, EmiPars
     
     while (offset + EMI_HEADER_LENGTH <= bufSize) {
         EmiMessageHeader header;
-        if (!EmiMessageHeader::parseMessageHeader(buf+offset, 
-                                                  bufSize-offset,
-                                                  header)) {
+        if (!EmiMessageHeader::parse(buf+offset, 
+                                     bufSize-offset,
+                                     header)) {
             return false;
         }
         

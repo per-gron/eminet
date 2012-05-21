@@ -378,9 +378,9 @@ public:
         }
         else {
             EmiMessageHeader header;
-            if (!EmiMessageHeader::parseMessageHeader(rawData+EMI_TIMESTAMP_LENGTH,
-                                                      len-EMI_TIMESTAMP_LENGTH,
-                                                      header)) {
+            if (!EmiMessageHeader::parse(rawData+EMI_TIMESTAMP_LENGTH,
+                                         len-EMI_TIMESTAMP_LENGTH,
+                                         header)) {
                 err = "Invalid message header";
                 goto error;
             }

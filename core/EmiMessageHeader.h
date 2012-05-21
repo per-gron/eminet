@@ -40,7 +40,7 @@ struct EmiMessageHeader {
     //
     // Note that this method does not check that the entire
     // message fits in the buffer, only that the header fits.
-    static bool parseMessageHeader(const uint8_t *buf, size_t bufSize, EmiMessageHeader& header);
+    static bool parse(const uint8_t *buf, size_t bufSize, EmiMessageHeader& header);
     
     // Returns true if the entire parse was successful
     static bool parseMessages(const uint8_t *buf, size_t bufSize, EmiParseMessageBlock block);
