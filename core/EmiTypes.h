@@ -71,12 +71,10 @@ typedef enum {
     EMI_P2P_STATE_FAILED           = 3
 } EmiP2PState;
 
-#define EMI_RTT_SEQUENCE_NUMBER_LENGTH (2)
 #define EMI_PACKET_SEQUENCE_NUMBER_LENGTH (3)
 
 typedef uint16_t EmiSequenceNumber;
 typedef int32_t  EmiPacketSequenceNumber; // Represents a 24 bit number. -1 means no value
-typedef uint16_t EmiRttSequenceNumber;
 typedef uint8_t  EmiChannelQualifier;
 typedef uint16_t EmiTimestamp;
 typedef uint8_t  EmiMessageFlags;

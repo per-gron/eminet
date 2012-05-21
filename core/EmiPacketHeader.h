@@ -19,13 +19,11 @@
 // condensed)
 struct EmiPacketHeader {
     EmiPacketFlags flags;
-    EmiTimestamp timestamp;
     EmiPacketSequenceNumber sequenceNumber;
     EmiPacketSequenceNumber nak; // Set if (flags & EMI_NAK_PACKET_FLAG)
     uint32_t linkCapacity; // Set if (flags & EMI_LINK_CAPACITY_PACKET_FLAG)
     uint32_t arrivalRate; // Set if (flags & EMI_ARRIVAL_RATE_PACKET_FLAG)
-    EmiRttSequenceNumber rttRequest; // Set if (flags & EMI_RTT_REQUEST_PACKET_FLAG)
-    EmiRttSequenceNumber rttResponse; // Set if (flags & EMI_RTT_RESPONSE_PACKET_FLAG)
+    EmiPacketSequenceNumber rttResponse; // Set if (flags & EMI_RTT_RESPONSE_PACKET_FLAG)
     
     // Returns true if the parse was successful
     //
@@ -35,6 +33,12 @@ struct EmiPacketHeader {
     // headerLength will be set to the header length. headerLength
     // can be NULL, in which case it's not set.
     static bool parse(const uint8_t *buf, size_t bufSize, EmiPacketHeader& header, size_t *headerLength);
+    
+    // Returns true if the write was successful
+    // 
+    // headerLength will be set to the header length. headerLength
+    // can be NULL, in which case it's not set.
+    static bool write(uint8_t *buf, size_t bufSize, const EmiPacketHeader& header, size_t *headerLength);
 };
 
 #endif

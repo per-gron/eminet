@@ -55,7 +55,7 @@ public:
     }
     
     // buf is assumed to be >= 3 bytes
-    inline static void set24(uint8_t *buf, int32_t num) {
+    inline static void write24(uint8_t *buf, int32_t num) {
         buf[0] = (num >> 0);
         buf[1] = (num >> 8);
         buf[2] = (num >> 16);
