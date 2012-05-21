@@ -76,9 +76,11 @@ private:
     
     void insert(Entry *entry) {
         size_t msgSize = EmiReceiverBuffer::bufferEntrySize(entry);
+        
         // Discard the message if it doesn't fit in the buffer
         if (_bufferSize + msgSize <= _size) {
             bool wasInserted = _tree.insert(entry).second;
+            
             // Only increment this._bufferSize if the message wasn't already in the buffer
             if (wasInserted) {
                 _bufferSize += msgSize;

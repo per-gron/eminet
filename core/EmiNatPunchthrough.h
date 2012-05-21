@@ -54,7 +54,7 @@ private:
     const sockaddr_storage _peerOuterAddr;
     
     void sendPrxRstPacket() {
-        EmiFlags flags(EMI_PRX_FLAG | EMI_RST_FLAG);
+        EmiMessageFlags flags(EMI_PRX_FLAG | EMI_RST_FLAG);
         EmiMessage<Binding>::writeControlPacket(flags, ^(uint8_t *buf, size_t size) {
             EmiMessage<Binding>::fillTimestamps(_time, buf, size);
             _delegate.sendNatPunchthroughPacket(_mediatorAddress, buf, size);
@@ -69,7 +69,7 @@ private:
                           hashBuf, sizeof(hashBuf));
         
         /// Prepare the message headers
-        EmiFlags flags(EMI_PRX_FLAG | EMI_SYN_FLAG);
+        EmiMessageFlags flags(EMI_PRX_FLAG | EMI_SYN_FLAG);
         EmiMessage<Binding>::template writeControlPacketWithData<128>(flags, hashBuf, sizeof(hashBuf), ^(uint8_t *buf,
                                                                                                          size_t size) {
             /// Fill the timestamps
@@ -106,7 +106,7 @@ private:
         hashForPrxSynAck(hashBuf, sizeof(hashBuf), _myEndpointPair, _myEndpointPairLength);
         
         /// Prepare the message headers
-        EmiFlags flags(EMI_PRX_FLAG | EMI_SYN_FLAG | EMI_ACK_FLAG);
+        EmiMessageFlags flags(EMI_PRX_FLAG | EMI_SYN_FLAG | EMI_ACK_FLAG);
         EmiMessage<Binding>::template writeControlPacketWithData<128>(flags, hashBuf, sizeof(hashBuf), ^(uint8_t *buf,
                                                                                                          size_t size) {
             /// Fill the timestamps

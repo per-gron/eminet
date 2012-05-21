@@ -405,9 +405,9 @@ public:
                 // message with this flag is an invalid flag, and counting it
                 // as relevant makes sure that it is interpreted as an invalid
                 // message.
-                EmiFlags relevantFlags = (header.flags & (EMI_PRX_FLAG | EMI_RST_FLAG |
-                                                          EMI_SYN_FLAG | EMI_ACK_FLAG |
-                                                          EMI_SACK_FLAG));
+                EmiMessageFlags relevantFlags = (header.flags & (EMI_PRX_FLAG | EMI_RST_FLAG |
+                                                                 EMI_SYN_FLAG | EMI_ACK_FLAG |
+                                                                 EMI_SACK_FLAG));
                 
                 if (EMI_SYN_FLAG == relevantFlags) {
                     // This is a connection open message.
@@ -454,7 +454,7 @@ public:
                         //
                         // In this case, we simply respond with a SYN-RST-ACK packet.
                         
-                        EmiFlags responseFlags(EMI_SYN_FLAG | EMI_RST_FLAG | EMI_ACK_FLAG);
+                        EmiMessageFlags responseFlags(EMI_SYN_FLAG | EMI_RST_FLAG | EMI_ACK_FLAG);
                         EmiMessage<Binding>::writeControlPacket(responseFlags, ^(uint8_t *buf, size_t size) {
                             _socket->sendData(inboundAddress, remoteAddress, buf, size);
                         });
@@ -489,7 +489,7 @@ public:
                     // Note that conn might very well be NULL, but it doesn't matter
                     removeConnection(conn);
                     
-                    EmiFlags responseFlags(EMI_PRX_FLAG | EMI_RST_FLAG | EMI_ACK_FLAG);
+                    EmiMessageFlags responseFlags(EMI_PRX_FLAG | EMI_RST_FLAG | EMI_ACK_FLAG);
                     EmiMessage<Binding>::writeControlPacket(responseFlags, ^(uint8_t *buf, size_t size) {
                         _socket->sendData(inboundAddress, remoteAddress, buf, size);
                     });

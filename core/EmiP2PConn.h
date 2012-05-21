@@ -344,7 +344,7 @@ public:
         
         
         /// Prepare the message headers
-        EmiFlags flags(EMI_PRX_FLAG | EMI_RST_FLAG | EMI_SYN_FLAG | EMI_ACK_FLAG);
+        EmiMessageFlags flags(EMI_PRX_FLAG | EMI_RST_FLAG | EMI_SYN_FLAG | EMI_ACK_FLAG);
         EmiMessage<Binding>::template writeControlPacketWithData<128>(flags, buf, dataLen, ^(uint8_t *packetBuf, size_t size) {
             /// Fill the timestamps
             EmiMessage<Binding>::fillTimestamps(_times[idx], packetBuf, size);

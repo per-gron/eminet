@@ -22,7 +22,7 @@ struct EmiMessageHeader;
 struct EmiMessageHeader {
     typedef bool (^EmiParseMessageBlock)(const EmiMessageHeader& header, size_t dataOffset);
     
-    EmiFlags flags;
+    EmiMessageFlags flags;
     EmiChannelQualifier channelQualifier;
     // This is int32_t and not EmiChannelQualifier because it has to be capable of
     // holding -1, which means that the header had no sequence number

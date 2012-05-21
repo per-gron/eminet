@@ -39,7 +39,7 @@ private:
     }
     
     // The caller is responsible for releasing the returned object
-    static EmiMessage *makeSynAndOrRstMessage(EmiFlags flags, EmiSequenceNumber sequenceNumber,
+    static EmiMessage *makeSynAndOrRstMessage(EmiMessageFlags flags, EmiSequenceNumber sequenceNumber,
                                               const uint8_t *data, size_t dataLen) {
         EmiMessage *msg;
         if (data) {
@@ -140,7 +140,7 @@ public:
     // holding -1, the special SYN/RST message channel as used by EmiSenderBuffer
     int32_t channelQualifier;
     EmiSequenceNumber sequenceNumber;
-    EmiFlags flags;
+    EmiMessageFlags flags;
     EmiPriority priority;
     const PersistentData data;
     
@@ -153,7 +153,7 @@ public:
                            EmiSequenceNumber sequenceNumber,
                            const uint8_t *data,
                            size_t dataLength,
-                           EmiFlags flags) {
+                           EmiMessageFlags flags) {
         size_t pos = offset;
         
         flags |= (hasAck ? EMI_ACK_FLAG : 0); // SYN/RST/ACK flags
@@ -186,7 +186,7 @@ public:
     }
     
     template<int BUF_SIZE>
-    static void writeControlPacketWithData(EmiFlags flags, const uint8_t *data, size_t dataLength,
+    static void writeControlPacketWithData(EmiMessageFlags flags, const uint8_t *data, size_t dataLength,
                                            EmiSequenceNumber sequenceNumber,
                                            SendSynRstAckPacketCallback callback) {
         uint8_t buf[BUF_SIZE];
@@ -214,17 +214,17 @@ public:
     }
     
     template<int BUF_SIZE>
-    static void writeControlPacketWithData(EmiFlags flags, const uint8_t *data, size_t dataLength,
+    static void writeControlPacketWithData(EmiMessageFlags flags, const uint8_t *data, size_t dataLength,
                                            SendSynRstAckPacketCallback callback) {
         writeControlPacketWithData<BUF_SIZE>(flags, data, dataLength, 0, callback);
     }
     
-    static void writeControlPacket(EmiFlags flags, EmiSequenceNumber sequenceNumber, SendSynRstAckPacketCallback callback) {
+    static void writeControlPacket(EmiMessageFlags flags, EmiSequenceNumber sequenceNumber, SendSynRstAckPacketCallback callback) {
         // BUF_SIZE=96 ought to be plenty
         writeControlPacketWithData<96>(flags, NULL, 0, sequenceNumber, callback);
     }
     
-    static void writeControlPacket(EmiFlags flags, SendSynRstAckPacketCallback callback) {
+    static void writeControlPacket(EmiMessageFlags flags, SendSynRstAckPacketCallback callback) {
         // BUF_SIZE=96 ought to be plenty
         writeControlPacketWithData<96>(flags, NULL, 0, callback);
     }

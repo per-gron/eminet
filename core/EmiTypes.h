@@ -74,7 +74,7 @@ typedef enum {
 typedef uint16_t EmiSequenceNumber;
 typedef uint8_t  EmiChannelQualifier;
 typedef uint16_t EmiTimestamp;
-typedef uint8_t  EmiFlags;
+typedef uint8_t  EmiMessageFlags;
 typedef uint8_t  EmiSplitId;
 typedef double   EmiTimeInterval;
 
