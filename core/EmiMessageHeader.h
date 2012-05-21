@@ -15,10 +15,9 @@
 #include <cstddef>
 #include <netinet/in.h>
 
-struct EmiMessageHeader;
-
-// A message header in a computation friendly format (the actual wire
-// format is more condensed)
+// A message header, as it is represented in the receiver side of things,
+// in a computation friendly format (the actual wire format is more
+// condensed)
 struct EmiMessageHeader {
     typedef bool (^EmiParseMessageBlock)(const EmiMessageHeader& header, size_t dataOffset);
     
