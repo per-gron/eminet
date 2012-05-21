@@ -18,6 +18,7 @@
 // in a computation friendly format (the actual wire format is more
 // condensed)
 class EmiPacketHeader {
+public:
     EmiPacketHeader();
     virtual ~EmiPacketHeader();
     
@@ -35,13 +36,22 @@ class EmiPacketHeader {
     //
     // headerLength will be set to the header length. headerLength
     // can be NULL, in which case it's not set.
-    static bool parse(const uint8_t *buf, size_t bufSize, EmiPacketHeader& header, size_t *headerLength);
+    static bool parse(const uint8_t *buf, size_t bufSize, EmiPacketHeader *header, size_t *headerLength);
     
     // Returns true if the write was successful
     // 
     // headerLength will be set to the header length. headerLength
     // can be NULL, in which case it's not set.
     static bool write(uint8_t *buf, size_t bufSize, const EmiPacketHeader& header, size_t *headerLength);
+    
+    // Writes an empty packet header to buf.
+    // 
+    // Returns true if the write was successful. This only fails if the
+    // buffer was too small.
+    // 
+    // headerLength will be set to the header length. headerLength
+    // can be NULL, in which case it's not set.
+    static bool writeEmpty(uint8_t *buf, size_t bufSize, size_t *headerLength);
 };
 
 #endif

@@ -12,7 +12,7 @@
 
 #include <cstring>
 
-inline static bool extractFlagsAndSize(EmiPacketFlags flags,
+inline static void extractFlagsAndSize(EmiPacketFlags flags,
                                        bool *hasSequenceNumber,
                                        bool *hasNak,
                                        bool *hasLinkCapacity,
@@ -47,7 +47,7 @@ rttResponse(0) {}
 
 EmiPacketHeader::~EmiPacketHeader() {}
 
-bool EmiPacketHeader::parse(const uint8_t *buf, size_t bufSize, EmiPacketHeader& header, size_t *headerLength) {
+bool EmiPacketHeader::parse(const uint8_t *buf, size_t bufSize, EmiPacketHeader *header, size_t *headerLength) {
     if (0 >= bufSize) {
         return false;
     }
@@ -70,37 +70,37 @@ bool EmiPacketHeader::parse(const uint8_t *buf, size_t bufSize, EmiPacketHeader&
         return false;
     }
     
-    header.flags = flags;
-    header.sequenceNumber = EmiNetUtil::read24(buf+sizeof(EmiPacketFlags));
-    header.nak = 0;
-    header.linkCapacity = 0;
-    header.arrivalRate = 0;
-    header.rttResponse = 0;
+    header->flags = flags;
+    header->sequenceNumber = EmiNetUtil::read24(buf+sizeof(EmiPacketFlags));
+    header->nak = 0;
+    header->linkCapacity = 0;
+    header->arrivalRate = 0;
+    header->rttResponse = 0;
     
-    const uint8_t *bufCur = buf+PACKET_MIN_SIZE;
+    const uint8_t *bufCur = buf+sizeof(header->flags);
     
     if (hasSequenceNumber) {
-        header.sequenceNumber = EmiNetUtil::read24(bufCur);
+        header->sequenceNumber = EmiNetUtil::read24(bufCur);
         bufCur += EMI_PACKET_SEQUENCE_NUMBER_LENGTH;
     }
     
     if (hasNak) {
-        header.nak = EmiNetUtil::read24(bufCur);
+        header->nak = EmiNetUtil::read24(bufCur);
         bufCur += EMI_PACKET_SEQUENCE_NUMBER_LENGTH;
     }
     
     if (hasLinkCapacity) {
-        header.linkCapacity = *((int32_t *)bufCur);
-        bufCur += sizeof(header.linkCapacity);
+        header->linkCapacity = *((int32_t *)bufCur);
+        bufCur += sizeof(header->linkCapacity);
     }
     
     if (hasArrivalRate) {
-        header.arrivalRate = *((int32_t *)bufCur);
-        bufCur += sizeof(header.arrivalRate);
+        header->arrivalRate = *((int32_t *)bufCur);
+        bufCur += sizeof(header->arrivalRate);
     }
     
     if (hasRttResponse) {
-        header.rttResponse = EmiNetUtil::read24(bufCur);
+        header->rttResponse = EmiNetUtil::read24(bufCur);
         bufCur += EMI_PACKET_SEQUENCE_NUMBER_LENGTH;
     }
     
@@ -165,4 +165,17 @@ bool EmiPacketHeader::write(uint8_t *buf, size_t bufSize, const EmiPacketHeader&
     if (headerLength) {
         *headerLength = expectedSize;
     }
+    
+    return true;
+}
+
+bool EmiPacketHeader::writeEmpty(uint8_t *buf, size_t bufSize, size_t *headerLength) {
+    if (0 >= bufSize) {
+        return false;
+    }
+    
+    *buf = 0;
+    *headerLength = 1;
+    
+    return true;
 }

@@ -12,6 +12,7 @@
 #include "EmiTypes.h"
 #include "EmiConnTime.h"
 #include "EmiNetUtil.h"
+#include "EmiPacketHeader.h"
 
 #include <cmath>
 #include <algorithm>
@@ -192,9 +193,9 @@ public:
                                            SendSynRstAckPacketCallback callback) {
         uint8_t buf[BUF_SIZE];
         
-        // Zero out the timestamp
-        size_t tlen = EMI_TIMESTAMP_LENGTH;
-        memset(buf, 0, tlen);
+        // Zero out the packet header
+        size_t tlen;
+        EmiPacketHeader::writeEmpty(buf, sizeof(buf), &tlen);
         
         // Propagate the actual packet data
         size_t plen;

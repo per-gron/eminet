@@ -124,7 +124,6 @@ private:
         EmiSequenceNumber otherHostSN = _initialSequenceNumbers[0 == addrIdx ? 1 : 0];
         
         EmiMessage<Binding>::writeControlPacket(EMI_SYN_FLAG | EMI_RST_FLAG, otherHostSN, ^(uint8_t *buf, size_t size) {
-            EmiMessage<Binding>::fillTimestamps(_times[addrIdx], buf, size);
             _sock->sendData(inboundAddress, _peers[addrIdx], buf, size);
         });
     }
@@ -269,7 +268,6 @@ public:
         EmiMessage<Binding>::writeControlPacket(EMI_PRX_FLAG, ^(uint8_t *buf, size_t size) {
             int idx(addressIndex(remoteAddress));
             ASSERT(-1 != idx);
-            EmiMessage<Binding>::fillTimestamps(_times[idx], buf, size);
             _sock->sendData(inboundAddress, remoteAddress, buf, size);
         });
     }
@@ -346,9 +344,6 @@ public:
         /// Prepare the message headers
         EmiMessageFlags flags(EMI_PRX_FLAG | EMI_RST_FLAG | EMI_SYN_FLAG | EMI_ACK_FLAG);
         EmiMessage<Binding>::template writeControlPacketWithData<128>(flags, buf, dataLen, ^(uint8_t *packetBuf, size_t size) {
-            /// Fill the timestamps
-            EmiMessage<Binding>::fillTimestamps(_times[idx], packetBuf, size);
-            
             /// Actually send the packet
             _sock->sendData(inboundAddress, _peers[idx], packetBuf, size);
         });

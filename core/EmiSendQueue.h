@@ -11,6 +11,7 @@
 
 #include "EmiMessage.h"
 #include "EmiNetUtil.h"
+#include "EmiPacketHeader.h"
 
 #include <arpa/inet.h>
 #include <vector>
@@ -65,23 +66,17 @@ private:
     }
     
     void sendMessageInSeparatePacket(const EM *msg) {
-        size_t tlen = EMI_TIMESTAMP_LENGTH;
-        memset(_buf, 0, tlen);
+        const uint8_t *data = Binding::extractData(msg->data);
+        size_t dataLen = Binding::extractLength(msg->data);
         
-        // Propagate the actual packet data
-        size_t plen;
-        plen = EM::writeMsg(_buf, /* buf */
-                            _bufLength, /* bufSize */
-                            tlen, /* offset */
-                            false, /* hasAck */
-                            0, /* ack */
-                            msg->channelQualifier,
-                            msg->sequenceNumber,
-                            Binding::extractData(msg->data),
-                            Binding::extractLength(msg->data),
-                            msg->flags);
-        
-        _conn.sendDatagram(_buf, tlen+plen);
+        EmiMessage<Binding>::template writeControlPacketWithData<128>(msg->flags, data, dataLen, ^(uint8_t *packetBuf, size_t size) {
+            // Actually send the packet
+            _conn.sendDatagram(packetBuf, size);
+        });
+    }
+    
+    void fillPacketHeaderData(EmiPacketHeader *packetHeader) {
+        // TODO
     }
     
     // Returns true if something was sent
@@ -89,9 +84,12 @@ private:
         bool sentPacket = false;
         
         if (!_queue.empty() || !_acks.empty()) {
-            size_t pos = 0;
+            EmiPacketHeader packetHeader;
+            fillPacketHeaderData(&packetHeader);
+            size_t packetHeaderLength;
+            EmiPacketHeader::write(_buf, _bufLength, packetHeader, &packetHeaderLength);
             
-            EM::fillTimestamps(connTime, _buf, now); pos += EMI_TIMESTAMP_LENGTH;
+            size_t pos = packetHeaderLength;
             
             /// Send the enqueued messages
             SendQueueAcksMapIter noAck = _acks.end();
@@ -155,7 +153,7 @@ private:
                 ++ackIter;
             }
             
-            if (EMI_TIMESTAMP_LENGTH != pos) {
+            if (packetHeaderLength != pos) {
                 ASSERT(pos <= _bufLength);
                 
                 _conn.sendDatagram(_buf, pos);
@@ -202,12 +200,14 @@ public:
     
     void sendHeartbeat(EmiConnTime& connTime, EmiTimeInterval now) {
         if (_conn.isOpen()) {
-            const size_t bufLen = EMI_TIMESTAMP_LENGTH+1;
-            uint8_t buf[bufLen];
-            EM::fillTimestamps(connTime, buf, now);
-            buf[EMI_TIMESTAMP_LENGTH] = 0;
+            EmiPacketHeader ph;
+            fillPacketHeaderData(&ph);
             
-            _conn.sendDatagram(buf, bufLen);
+            uint8_t buf[32];
+            size_t packetLength;
+            EmiPacketHeader::write(buf, sizeof(buf), ph, &packetLength);
+            
+            _conn.sendDatagram(buf, packetLength);
         }
     }
     

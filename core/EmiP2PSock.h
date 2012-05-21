@@ -17,6 +17,7 @@
 #include "EmiMessage.h"
 #include "EmiAddressCmp.h"
 #include "EmiUdpSocket.h"
+#include "EmiPacketHeader.h"
 
 #include <algorithm>
 #include <cmath>
@@ -365,32 +366,39 @@ public:
             conn->gotPacket(remoteAddress);
         }
         
-        if (EMI_TIMESTAMP_LENGTH+1 == len) {
+        EmiPacketHeader packetHeader;
+        size_t packetHeaderLength;
+        if (!EmiPacketHeader::parse(rawData, len, &packetHeader, &packetHeaderLength)) {
+            err = "Invalid packet header";
+            goto error;
+        }
+        
+        if (packetHeaderLength == len) {
             // This is a heartbeat packet. Just forward the packet (if we can)
             if (conn) {
                 conn->gotTimestamp(remoteAddress, now, rawData, len);
                 conn->forwardPacket(now, inboundAddress, remoteAddress, data, offset, len);
             }
         }
-        else if (len < EMI_TIMESTAMP_LENGTH + EMI_HEADER_LENGTH) {
+        else if (len < packetHeaderLength + EMI_HEADER_LENGTH) {
             err = "Packet too short";
             goto error;
         }
         else {
             EmiMessageHeader header;
-            if (!EmiMessageHeader::parse(rawData+EMI_TIMESTAMP_LENGTH,
-                                         len-EMI_TIMESTAMP_LENGTH,
+            if (!EmiMessageHeader::parse(rawData+packetHeaderLength,
+                                         len-packetHeaderLength,
                                          header)) {
                 err = "Invalid message header";
                 goto error;
             }
             
-            const uint8_t *msgData   = rawData+EMI_TIMESTAMP_LENGTH+header.headerLength;
+            const uint8_t *msgData   = rawData+packetHeaderLength+header.headerLength;
             const size_t   msgLength = header.length;
             
             bool isControlMessage = !!(header.flags & (EMI_PRX_FLAG | EMI_RST_FLAG | EMI_SYN_FLAG));
             
-            size_t expectedPacketLength = EMI_TIMESTAMP_LENGTH+header.headerLength+header.length;
+            size_t expectedPacketLength = packetHeaderLength+header.headerLength+header.length;
             bool isTheOnlyMessageInThisPacket = (len == expectedPacketLength);
             
             if (isControlMessage) {

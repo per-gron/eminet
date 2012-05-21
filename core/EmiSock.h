@@ -222,24 +222,31 @@ public:
         
         __block EC *conn(getConnectionForMessage(sock, remoteAddress));
         
+        EmiPacketHeader packetHeader;
+        size_t packetHeaderLength;
+        if (!EmiPacketHeader::parse(rawData, len, &packetHeader, &packetHeaderLength)) {
+            err = "Invalid packet header";
+            goto error;
+        }
+        
         if (conn) {
             conn->gotPacket();
         }
         
-        if (EMI_TIMESTAMP_LENGTH+1 == len) {
+        if (packetHeaderLength == len) {
             // This is a heartbeat packet
             if (conn) {
                 conn->gotTimestamp(now, rawData, len);
             }
         }
-        else if (len < EMI_TIMESTAMP_LENGTH + EMI_HEADER_LENGTH) {
+        else if (len < packetHeaderLength + EMI_HEADER_LENGTH) {
             err = "Packet too short";
             goto error;
         }
         else {
             EmiMessageHeader::EmiParseMessageBlock block =
             ^ bool (const EmiMessageHeader& header, size_t dataOffset) {
-                size_t actualRawDataOffset = dataOffset+EMI_TIMESTAMP_LENGTH;
+                size_t actualRawDataOffset = dataOffset+packetHeaderLength;
                 
 #define ENSURE_CONN_VAR(conn, msg)                                  \
                 do {                                                \
@@ -428,8 +435,8 @@ public:
                 return true;
             };
             
-            if (!EmiMessageHeader::parseMessages(rawData+EMI_TIMESTAMP_LENGTH,
-                                                 len-EMI_TIMESTAMP_LENGTH,
+            if (!EmiMessageHeader::parseMessages(rawData+packetHeaderLength,
+                                                 len-packetHeaderLength,
                                                  block)) {
                 goto error;
             }

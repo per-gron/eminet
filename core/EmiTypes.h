@@ -20,7 +20,6 @@
 #define EMI_DEFAULT_SENDER_BUFFER_SIZE   (8192)
 
 #define EMI_PACKET_SEQUENCE_NUMBER_LENGTH (3)
-#define EMI_TIMESTAMP_LENGTH (6)
 #define EMI_HEADER_LENGTH    (4)
 #define EMI_MIN_RTO          (0.25)
 #define EMI_MAX_RTO          (20.0)

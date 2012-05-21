@@ -56,7 +56,6 @@ private:
     void sendPrxRstPacket() {
         EmiMessageFlags flags(EMI_PRX_FLAG | EMI_RST_FLAG);
         EmiMessage<Binding>::writeControlPacket(flags, ^(uint8_t *buf, size_t size) {
-            EmiMessage<Binding>::fillTimestamps(_time, buf, size);
             _delegate.sendNatPunchthroughPacket(_mediatorAddress, buf, size);
         });
     }
@@ -72,9 +71,6 @@ private:
         EmiMessageFlags flags(EMI_PRX_FLAG | EMI_SYN_FLAG);
         EmiMessage<Binding>::template writeControlPacketWithData<128>(flags, hashBuf, sizeof(hashBuf), ^(uint8_t *buf,
                                                                                                          size_t size) {
-            /// Fill the timestamps
-            EmiMessage<Binding>::fillTimestamps(_time, buf, size);
-            
             /// Actually send the packet(s)
             _delegate.sendNatPunchthroughPacket(_peerInnerAddr, buf, size);
             
@@ -109,9 +105,6 @@ private:
         EmiMessageFlags flags(EMI_PRX_FLAG | EMI_SYN_FLAG | EMI_ACK_FLAG);
         EmiMessage<Binding>::template writeControlPacketWithData<128>(flags, hashBuf, sizeof(hashBuf), ^(uint8_t *buf,
                                                                                                          size_t size) {
-            /// Fill the timestamps
-            EmiMessage<Binding>::fillTimestamps(_time, buf, size);
-            
             /// Actually send the packet
             _delegate.sendNatPunchthroughPacket(remoteAddr, buf, size);
         });
