@@ -12,29 +12,40 @@
 
 #include <cstring>
 
-static const size_t PACKET_MIN_SIZE = sizeof(EmiPacketFlags) + EMI_PACKET_SEQUENCE_NUMBER_LENGTH;
-
-inline bool extractFlagsAndSize(EmiPacketFlags flags,
-                                bool *hasNak,
-                                bool *hasLinkCapacity,
-                                bool *hasArrivalRate, 
-                                bool *hasRttRequest,
-                                bool *hasRttResponse,
-                                size_t *expectedSize) {
-    *hasNak          = !!(flags & EMI_NAK_PACKET_FLAG);
-    *hasLinkCapacity = !!(flags & EMI_LINK_CAPACITY_PACKET_FLAG);
-    *hasArrivalRate  = !!(flags & EMI_ARRIVAL_RATE_PACKET_FLAG);
-    *hasRttRequest   = !!(flags & EMI_RTT_REQUEST_PACKET_FLAG);
-    *hasRttResponse  = !!(flags & EMI_RTT_RESPONSE_PACKET_FLAG);
+inline static bool extractFlagsAndSize(EmiPacketFlags flags,
+                                       bool *hasSequenceNumber,
+                                       bool *hasNak,
+                                       bool *hasLinkCapacity,
+                                       bool *hasArrivalRate, 
+                                       bool *hasRttRequest,
+                                       bool *hasRttResponse,
+                                       size_t *expectedSize) {
+    *hasSequenceNumber = !!(flags & EMI_SEQUENCE_NUMBER_PACKET_FLAG);
+    *hasNak            = !!(flags & EMI_NAK_PACKET_FLAG);
+    *hasLinkCapacity   = !!(flags & EMI_LINK_CAPACITY_PACKET_FLAG);
+    *hasArrivalRate    = !!(flags & EMI_ARRIVAL_RATE_PACKET_FLAG);
+    *hasRttRequest     = !!(flags & EMI_RTT_REQUEST_PACKET_FLAG);
+    *hasRttResponse    = !!(flags & EMI_RTT_RESPONSE_PACKET_FLAG);
     
     // 1 for the flags byte
-    *expectedSize = PACKET_MIN_SIZE;
+    *expectedSize = sizeof(EmiPacketFlags);
     
-    *expectedSize += (hasNak          ? EMI_PACKET_SEQUENCE_NUMBER_LENGTH : 0);
-    *expectedSize += (hasLinkCapacity ? sizeof(uint32_t) : 0);
-    *expectedSize += (hasArrivalRate  ? sizeof(uint32_t) : 0);
-    *expectedSize += (hasRttResponse  ? EMI_PACKET_SEQUENCE_NUMBER_LENGTH : 0);
+    *expectedSize += (hasSequenceNumber ? EMI_PACKET_SEQUENCE_NUMBER_LENGTH : 0);
+    *expectedSize += (hasNak            ? EMI_PACKET_SEQUENCE_NUMBER_LENGTH : 0);
+    *expectedSize += (hasLinkCapacity   ? sizeof(uint32_t) : 0);
+    *expectedSize += (hasArrivalRate    ? sizeof(uint32_t) : 0);
+    *expectedSize += (hasRttResponse    ? EMI_PACKET_SEQUENCE_NUMBER_LENGTH : 0);
 }
+
+EmiPacketHeader::EmiPacketHeader() :
+flags(0),
+sequenceNumber(0),
+nak(0),
+linkCapacity(0),
+arrivalRate(0),
+rttResponse(0) {}
+
+EmiPacketHeader::~EmiPacketHeader() {}
 
 bool EmiPacketHeader::parse(const uint8_t *buf, size_t bufSize, EmiPacketHeader& header, size_t *headerLength) {
     if (0 >= bufSize) {
@@ -43,9 +54,11 @@ bool EmiPacketHeader::parse(const uint8_t *buf, size_t bufSize, EmiPacketHeader&
     
     EmiPacketFlags flags = *buf;
     
-    bool hasNak, hasLinkCapacity, hasArrivalRate, hasRttRequest, hasRttResponse;
+    bool hasSequenceNumber, hasNak, hasLinkCapacity;
+    bool hasArrivalRate, hasRttRequest, hasRttResponse;
     size_t expectedSize;
     extractFlagsAndSize(flags,
+                        &hasSequenceNumber,
                         &hasNak,
                         &hasLinkCapacity,
                         &hasArrivalRate, 
@@ -65,6 +78,11 @@ bool EmiPacketHeader::parse(const uint8_t *buf, size_t bufSize, EmiPacketHeader&
     header.rttResponse = 0;
     
     const uint8_t *bufCur = buf+PACKET_MIN_SIZE;
+    
+    if (hasSequenceNumber) {
+        header.sequenceNumber = EmiNetUtil::read24(bufCur);
+        bufCur += EMI_PACKET_SEQUENCE_NUMBER_LENGTH;
+    }
     
     if (hasNak) {
         header.nak = EmiNetUtil::read24(bufCur);
@@ -98,9 +116,11 @@ bool EmiPacketHeader::write(uint8_t *buf, size_t bufSize, const EmiPacketHeader&
         return false;
     }
     
-    bool hasNak, hasLinkCapacity, hasArrivalRate, hasRttRequest, hasRttResponse;
+    bool hasSequenceNumber, hasNak, hasLinkCapacity;
+    bool hasArrivalRate, hasRttRequest, hasRttResponse;
     size_t expectedSize;
     extractFlagsAndSize(header.flags,
+                        &hasSequenceNumber,
                         &hasNak,
                         &hasLinkCapacity,
                         &hasArrivalRate, 
@@ -114,9 +134,13 @@ bool EmiPacketHeader::write(uint8_t *buf, size_t bufSize, const EmiPacketHeader&
     
     memset(buf, 0, expectedSize);
     buf[0] = header.flags;
-    EmiNetUtil::write24(buf+sizeof(header.flags), header.sequenceNumber);
     
-    uint8_t *bufCur = buf+PACKET_MIN_SIZE;
+    uint8_t *bufCur = buf+sizeof(EmiPacketFlags);
+    
+    if (hasSequenceNumber) {
+        EmiNetUtil::write24(bufCur, header.sequenceNumber);
+        bufCur += EMI_PACKET_SEQUENCE_NUMBER_LENGTH;
+    }
     
     if (hasNak) {
         EmiNetUtil::write24(bufCur, header.nak);

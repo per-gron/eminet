@@ -186,7 +186,8 @@ public:
     }
     
     template<int BUF_SIZE>
-    static void writeControlPacketWithData(EmiMessageFlags flags, const uint8_t *data, size_t dataLength,
+    static void writeControlPacketWithData(EmiMessageFlags flags,
+                                           const uint8_t *data, size_t dataLength,
                                            EmiSequenceNumber sequenceNumber,
                                            SendSynRstAckPacketCallback callback) {
         uint8_t buf[BUF_SIZE];

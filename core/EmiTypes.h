@@ -19,6 +19,7 @@
 #define EMI_DEFAULT_RECEIVER_BUFFER_SIZE (2048)
 #define EMI_DEFAULT_SENDER_BUFFER_SIZE   (8192)
 
+#define EMI_PACKET_SEQUENCE_NUMBER_LENGTH (3)
 #define EMI_TIMESTAMP_LENGTH (6)
 #define EMI_HEADER_LENGTH    (4)
 #define EMI_MIN_RTO          (0.25)
@@ -71,8 +72,6 @@ typedef enum {
     EMI_P2P_STATE_FAILED           = 3
 } EmiP2PState;
 
-#define EMI_PACKET_SEQUENCE_NUMBER_LENGTH (3)
-
 typedef uint16_t EmiSequenceNumber;
 typedef int32_t  EmiPacketSequenceNumber; // Represents a 24 bit number. -1 means no value
 typedef uint8_t  EmiChannelQualifier;
@@ -91,11 +90,12 @@ typedef enum {
 } EmiMessageFlag;
 
 typedef enum {
-    EMI_NAK_PACKET_FLAG           = 0x01,
-    EMI_LINK_CAPACITY_PACKET_FLAG = 0x02,
-    EMI_ARRIVAL_RATE_PACKET_FLAG  = 0x04,
-    EMI_RTT_REQUEST_PACKET_FLAG   = 0x08,
-    EMI_RTT_RESPONSE_PACKET_FLAG  = 0x10
+    EMI_SEQUENCE_NUMBER_PACKET_FLAG = 0x01,
+    EMI_NAK_PACKET_FLAG             = 0x02,
+    EMI_LINK_CAPACITY_PACKET_FLAG   = 0x04,
+    EMI_ARRIVAL_RATE_PACKET_FLAG    = 0x08,
+    EMI_RTT_REQUEST_PACKET_FLAG     = 0x10,
+    EMI_RTT_RESPONSE_PACKET_FLAG    = 0x20
 } EmiPacketFlag;
 
 #endif

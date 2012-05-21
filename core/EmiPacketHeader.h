@@ -17,9 +17,12 @@
 // A message header, as it is represented in the receiver side of things,
 // in a computation friendly format (the actual wire format is more
 // condensed)
-struct EmiPacketHeader {
+class EmiPacketHeader {
+    EmiPacketHeader();
+    virtual ~EmiPacketHeader();
+    
     EmiPacketFlags flags;
-    EmiPacketSequenceNumber sequenceNumber;
+    EmiPacketSequenceNumber sequenceNumber; // Set if (flags & EMI_SEQUENCE_NUMBER_PACKET_FLAG)
     EmiPacketSequenceNumber nak; // Set if (flags & EMI_NAK_PACKET_FLAG)
     uint32_t linkCapacity; // Set if (flags & EMI_LINK_CAPACITY_PACKET_FLAG)
     uint32_t arrivalRate; // Set if (flags & EMI_ARRIVAL_RATE_PACKET_FLAG)
