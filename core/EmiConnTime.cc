@@ -65,11 +65,18 @@ void EmiConnTime::gotPacket(const EmiPacketHeader& header, EmiTimeInterval now) 
 bool EmiConnTime::rttRequest(EmiTimeInterval now, EmiPacketSequenceNumber sequenceNumber) {
     EmiTimeInterval rto = getRto();
     
+    EmiTimeInterval timeSinceLastRttRequest = now-_rttRequestTime;
+    
     // We will send an RTT request at most once per RTO. This makes
     // it highly unlikely to send a new RTT request while an older
     // RTT request response is still on its way to to this host.
+    //
+    // Also, in case we're on a low-RTT connection, we don't want to
+    // send RTT requests too often, so we limit ourselves to sending
+    // them at most once per tick.
     if (-1 == _rttRequestSequenceNumber ||
-        now-_rttRequestTime > rto) {
+        (timeSinceLastRttRequest > rto &&
+         timeSinceLastRttRequest > EMI_TICK_TIME)) {
         _rttRequestTime = now;
         _rttRequestSequenceNumber = sequenceNumber;
         
