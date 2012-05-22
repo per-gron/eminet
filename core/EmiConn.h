@@ -16,6 +16,7 @@
 #include "EmiSendQueue.h"
 #include "EmiLogicalConnection.h"
 #include "EmiMessage.h"
+#include "EmiDataArrivalRate.h"
 #include "EmiConnTime.h"
 #include "EmiP2PData.h"
 #include "EmiConnTimers.h"
@@ -58,6 +59,7 @@ class EmiConn {
     EmiSenderBuffer<Binding> _senderBuffer;
     ERB _receiverBuffer;
     ESQ _sendQueue;
+    EmiDataArrivalRate _dataArrivalRate;
     EmiConnTime _time;
     
     ECT _timers;
@@ -121,6 +123,7 @@ public:
     _senderBuffer(_emisock.config.senderBufferSize),
     _receiverBuffer(_emisock.config.receiverBufferSize, *this),
     _sendQueue(*this),
+    _dataArrivalRate(),
     _time(),
     _timers(*this, _time),
     _forceCloseTimer(NULL) {
@@ -159,9 +162,10 @@ public:
         }
     }
     
-    void gotPacket(const EmiPacketHeader& packetHeader, EmiTimeInterval now) {
+    void gotPacket(EmiTimeInterval now, const EmiPacketHeader& packetHeader, size_t packetLength) {
         _timers.resetConnectionTimeout();
         _time.gotPacket(packetHeader, now);
+        _dataArrivalRate.gotPacket(now, packetLength);
         
         if (packetHeader.flags & EMI_RTT_REQUEST_PACKET_FLAG) {
             _sendQueue.enqueueRttResponse(packetHeader.sequenceNumber, now);
@@ -204,7 +208,7 @@ public:
             _timers.updateRtoTimeout();
         }
         
-        _sendQueue.enqueueMessage(msg, _time, now);
+        _sendQueue.enqueueMessage(msg, _dataArrivalRate, _time, now);
         _timers.ensureTickTimeout();
         
         return true;
@@ -394,7 +398,7 @@ public:
     // Delegates to EmiSendQueue
     // Returns true if something was sent
     bool tick(EmiTimeInterval now) {
-        return _sendQueue.tick(_time, now);
+        return _sendQueue.tick(_dataArrivalRate, _time, now);
     }
     
     // Delegates to EmiLogicalConnection

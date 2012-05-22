@@ -32,8 +32,8 @@ inline static void extractFlagsAndSize(EmiPacketFlags flags,
     
     *expectedSize += (*hasSequenceNumber ? EMI_PACKET_SEQUENCE_NUMBER_LENGTH : 0);
     *expectedSize += (*hasNak            ? EMI_PACKET_SEQUENCE_NUMBER_LENGTH : 0);
-    *expectedSize += (*hasLinkCapacity   ? sizeof(uint32_t) : 0);
-    *expectedSize += (*hasArrivalRate    ? sizeof(uint32_t) : 0);
+    *expectedSize += (*hasLinkCapacity   ? sizeof(float) : 0);
+    *expectedSize += (*hasArrivalRate    ? sizeof(float) : 0);
     *expectedSize += (*hasRttResponse    ? EMI_PACKET_SEQUENCE_NUMBER_LENGTH+sizeof(uint8_t) : 0);
 }
 
@@ -74,8 +74,8 @@ bool EmiPacketHeader::parse(const uint8_t *buf, size_t bufSize, EmiPacketHeader 
     header->flags = flags;
     header->sequenceNumber = EmiNetUtil::read24(buf+sizeof(EmiPacketFlags));
     header->nak = 0;
-    header->linkCapacity = 0;
-    header->arrivalRate = 0;
+    header->linkCapacity = 0.0f;
+    header->arrivalRate = 0.0f;
     header->rttResponse = 0;
     header->rttResponseDelay = 0;
     
@@ -92,12 +92,14 @@ bool EmiPacketHeader::parse(const uint8_t *buf, size_t bufSize, EmiPacketHeader 
     }
     
     if (hasLinkCapacity) {
-        header->linkCapacity = ntohl(*((int32_t *)bufCur));
+        uint32_t linkCapacityInt = ntohl(*reinterpret_cast<const uint32_t *>(bufCur));
+        header->linkCapacity = *reinterpret_cast<float *>(&linkCapacityInt);
         bufCur += sizeof(header->linkCapacity);
     }
     
     if (hasArrivalRate) {
-        header->arrivalRate = ntohl(*((int32_t *)bufCur));
+        uint32_t arrivalRateInt = ntohl(*reinterpret_cast<const uint32_t *>(bufCur));
+        header->arrivalRate = *reinterpret_cast<float *>(&arrivalRateInt);
         bufCur += sizeof(header->arrivalRate);
     }
     
@@ -153,12 +155,12 @@ bool EmiPacketHeader::write(uint8_t *buf, size_t bufSize, const EmiPacketHeader&
     }
     
     if (hasLinkCapacity) {
-        *((int32_t *)bufCur) = htonl(header.linkCapacity);
+        *((int32_t *)bufCur) = htonl(*reinterpret_cast<const uint32_t *>(&header.linkCapacity));
         bufCur += sizeof(header.linkCapacity);
     }
     
     if (hasArrivalRate) {
-        *((int32_t *)bufCur) = htonl(header.arrivalRate);
+        *((int32_t *)bufCur) = htonl(*reinterpret_cast<const uint32_t *>(&header.arrivalRate));
         bufCur += sizeof(header.arrivalRate);
     }
     

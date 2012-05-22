@@ -12,6 +12,7 @@
 #include "EmiMessage.h"
 #include "EmiNetUtil.h"
 #include "EmiPacketHeader.h"
+#include "EmiDataArrivalRate.h"
 
 #include <arpa/inet.h>
 #include <vector>
@@ -78,7 +79,10 @@ private:
         });
     }
     
-    void fillPacketHeaderData(EmiTimeInterval now, EmiConnTime& connTime, EmiPacketHeader& packetHeader) {
+    void fillPacketHeaderData(EmiTimeInterval now,
+                              EmiDataArrivalRate& dataArrivalRate,
+                              EmiConnTime& connTime,
+                              EmiPacketHeader& packetHeader) {
         packetHeader.flags |= EMI_SEQUENCE_NUMBER_PACKET_FLAG;
         packetHeader.sequenceNumber = _packetSequenceNumber;
         _packetSequenceNumber = (_packetSequenceNumber+1) & EMI_PACKET_SEQUENCE_NUMBER_MASK;
@@ -88,6 +92,13 @@ private:
         // is being transmitted.
         if (connTime.rttRequest(now, packetHeader.sequenceNumber)) {
             packetHeader.flags |= EMI_RTT_REQUEST_PACKET_FLAG;
+            
+            // Since we already have code that makes sure to send RTT requests
+            // reasonably often, we piggyback on that to easily decide when to
+            // calculate and send data arrival rate info: Whenever we send
+            // RTT requests.
+            packetHeader.flags |= EMI_ARRIVAL_RATE_PACKET_FLAG;
+            packetHeader.arrivalRate = dataArrivalRate.calculate();
         }
         
         // Fill the packet header with a RTT response if we've been requested to do so
@@ -107,12 +118,14 @@ private:
     }
     
     // Returns true if something was sent
-    bool flush(EmiConnTime& connTime, EmiTimeInterval now) {
+    bool flush(EmiDataArrivalRate& dataArrivalRate,
+               EmiConnTime& connTime,
+               EmiTimeInterval now) {
         bool sentPacket = false;
         
         if (!_queue.empty() || !_acks.empty()) {
             EmiPacketHeader packetHeader;
-            fillPacketHeaderData(now, connTime, packetHeader);
+            fillPacketHeaderData(now, dataArrivalRate, connTime, packetHeader);
             size_t packetHeaderLength;
             EmiPacketHeader::write(_buf, _bufLength, packetHeader, &packetHeaderLength);
             
@@ -190,7 +203,7 @@ private:
         
         if (!sentPacket && _enqueueHeartbeat) {
             // Send heartbeat
-            sendHeartbeat(connTime, now);
+            sendHeartbeat(dataArrivalRate, connTime, now);
             sentPacket = true;
         }
         
@@ -228,10 +241,12 @@ public:
         _enqueueHeartbeat = true;
     }
     
-    void sendHeartbeat(EmiConnTime& connTime, EmiTimeInterval now) {
+    void sendHeartbeat(EmiDataArrivalRate& dataArrivalRate,
+                       EmiConnTime& connTime,
+                       EmiTimeInterval now) {
         if (_conn.isOpen()) {
             EmiPacketHeader ph;
-            fillPacketHeaderData(now, connTime, ph);
+            fillPacketHeaderData(now, dataArrivalRate, connTime, ph);
             
             uint8_t buf[32];
             size_t packetLength;
@@ -242,10 +257,12 @@ public:
     }
     
     // Returns true if something was sent
-    bool tick(EmiConnTime& connTime, EmiTimeInterval now) {
+    bool tick(EmiDataArrivalRate& dataArrivalRate,
+              EmiConnTime& connTime,
+              EmiTimeInterval now) {
         _acksSentInThisTick.clear();
         
-        bool somethingWasSent = flush(connTime, now);
+        bool somethingWasSent = flush(dataArrivalRate, connTime, now);
         
         return somethingWasSent;
     }
@@ -270,7 +287,10 @@ public:
         _rttResponseRegisterTime = now;
     }
     
-    void enqueueMessage(EM *msg, EmiConnTime& connTime, EmiTimeInterval now) {
+    void enqueueMessage(EM *msg,
+                        EmiDataArrivalRate& dataArrivalRate,
+                        EmiConnTime& connTime,
+                        EmiTimeInterval now) {
         if (msg->flags & (EMI_PRX_FLAG | EMI_RST_FLAG | EMI_SYN_FLAG)) {
             // This is a control message, one that cannot be bundled with
             // other messages. We might just as well send it right away.
@@ -283,7 +303,7 @@ public:
             size_t msgSize = msg->approximateSize();
             
             if (_queueSize + msgSize >= _bufLength) { // _bufLength is the MTU of the EmiSocket
-                flush(connTime, now);
+                flush(dataArrivalRate, connTime, now);
             }
             
             msg->retain();

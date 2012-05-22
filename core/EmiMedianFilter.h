@@ -12,7 +12,10 @@
 #include <algorithm>
 #include <cmath>
 
-template<typename Element, int BUFFER_SIZE = 64, float TOLERANCE = 8.0f>
+// This class implements a simple algorithm for a non-linear
+// median filter, as used for calculating packet arrival rate
+// and link capacity in the UDT congestion control algorithm.
+template<typename Element, int BUFFER_SIZE = 64, int TOLERANCE = 8>
 class EmiMedianFilter {
     
     Element _elms[BUFFER_SIZE];
@@ -20,8 +23,11 @@ class EmiMedianFilter {
     
 public:
     explicit EmiMedianFilter(Element defaultValue) :
-    _elms(defaultValue),
-    _frontIdx(0) {}
+    _frontIdx(0) {
+        std::fill(_elms, _elms+BUFFER_SIZE, defaultValue);
+    }
+    
+    virtual ~EmiMedianFilter() {}
     
     inline void pushValue(Element value) {
         _elms[_frontIdx] = value;

@@ -15,6 +15,8 @@
 
 class EmiPacketHeader;
 
+// This class is responsible for calculating the RTO of
+// a connection.
 class EmiConnTime {
     // Note that _rto is not completely logically named. It does not
     // contain the value that getRto returns, only a partially computed
