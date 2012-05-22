@@ -72,7 +72,7 @@ private:
         const uint8_t *data = Binding::extractData(msg->data);
         size_t dataLen = Binding::extractLength(msg->data);
         
-        EmiMessage<Binding>::template writeControlPacketWithData<128>(msg->flags, data, dataLen, ^(uint8_t *packetBuf, size_t size) {
+        EmiMessage<Binding>::template writeControlPacketWithData<128>(msg->flags, data, dataLen, msg->sequenceNumber, ^(uint8_t *packetBuf, size_t size) {
             // Actually send the packet
             _conn.sendDatagram(packetBuf, size);
         });

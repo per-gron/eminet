@@ -81,6 +81,7 @@ private:
             SockDelegate::connectionOpened(_connectionOpenedCallbackCookie, error, reason, *_conn);
         }
     }
+    
     void releaseReliableHandshakeMsg(EmiTimeInterval now) {
         if (-1 != _reliableHandshakeMsgSn) {
             _conn->deregisterReliableMessages(now, -1, _reliableHandshakeMsgSn);
@@ -145,6 +146,8 @@ private:
     
 public:
     
+    // This constructor is invoked for connections where
+    // this side is the server side.
     EmiLogicalConnection(EC *connection, 
                          ReceiverBuffer& receiverBuffer,
                          EmiTimeInterval now,
@@ -162,6 +165,9 @@ public:
         Error err;
         ASSERT(sendInitMessage(now, err));
     }
+    
+    // This constructor is invoked for connections where
+    // this side is the client side and for P2P connections.
     EmiLogicalConnection(EC *connection,
                          ReceiverBuffer& receiverBuffer,
                          EmiTimeInterval now,

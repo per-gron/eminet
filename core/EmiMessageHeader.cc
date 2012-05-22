@@ -30,7 +30,7 @@ bool EmiMessageHeader::parse(const uint8_t *buf, size_t bufSize, EmiMessageHeade
     
     header.flags = connByte;
     header.channelQualifier = buf[1];
-    header.sequenceNumber = (length || synFlag) ? ntohs(*((uint16_t *)(buf+4))) : -1;
+    header.sequenceNumber = (length || (synFlag && !prxFlag)) ? ntohs(*((uint16_t *)(buf+4))) : -1;
     header.splitId = length ? buf[6] : -1;
     header.headerLength = headerLength;
     header.length = length;

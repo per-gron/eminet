@@ -166,7 +166,8 @@ public:
         *((uint8_t*)  (buf+pos)) = flags; pos += 1;
         *((uint8_t*)  (buf+pos)) = std::max(0, channelQualifier); pos += 1; // Channel qualifier. cq == -1 means SYN/RST message
         *((uint16_t*) (buf+pos)) = htons(dataLength); pos += 2;
-        if (0 != dataLength || flags & EMI_SYN_FLAG) {
+        if (0 != dataLength ||
+            ((flags & EMI_SYN_FLAG) && !(flags & EMI_PRX_FLAG))) {
             *((uint16_t*) (buf+pos)) = htons(sequenceNumber); pos += 2;
         }
         if (0 != dataLength) {
