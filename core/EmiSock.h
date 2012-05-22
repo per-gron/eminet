@@ -230,7 +230,7 @@ public:
         }
         
         if (conn) {
-            conn->gotPacket(packetHeader);
+            conn->gotPacket(packetHeader, now);
         }
         
         if (packetHeaderLength == len) {

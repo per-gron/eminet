@@ -40,6 +40,7 @@ class EmiSendQueue {
     
     EC& _conn;
     
+    EmiPacketSequenceNumber _packetSequenceNumber;
     SendQueueVector _queue;
     size_t _queueSize;
     SendQueueAcksMap _acks;
@@ -75,8 +76,14 @@ private:
         });
     }
     
-    void fillPacketHeaderData(EmiPacketHeader *packetHeader) {
-        // TODO
+    void fillPacketHeaderData(EmiTimeInterval now, EmiConnTime& connTime, EmiPacketHeader& packetHeader) {
+        packetHeader.flags |= EMI_SEQUENCE_NUMBER_PACKET_FLAG;
+        packetHeader.sequenceNumber = _packetSequenceNumber;
+        _packetSequenceNumber = (_packetSequenceNumber+1) & EMI_PACKET_SEQUENCE_NUMBER_MASK;
+        
+        if (connTime.rttRequest(now, packetHeader.sequenceNumber)) {
+            packetHeader.flags |= EMI_RTT_REQUEST_PACKET_FLAG;
+        }
     }
     
     // Returns true if something was sent
@@ -85,7 +92,7 @@ private:
         
         if (!_queue.empty() || !_acks.empty()) {
             EmiPacketHeader packetHeader;
-            fillPacketHeaderData(&packetHeader);
+            fillPacketHeaderData(now, connTime, packetHeader);
             size_t packetHeaderLength;
             EmiPacketHeader::write(_buf, _bufLength, packetHeader, &packetHeaderLength);
             
@@ -177,6 +184,7 @@ public:
     
     EmiSendQueue(EC& conn) :
     _conn(conn),
+    _packetSequenceNumber(arc4random() & EMI_PACKET_SEQUENCE_NUMBER_MASK),
     _enqueueHeartbeat(false),
     _queueSize(0) {
         _bufLength = conn.getEmiSock().config.mtu;
@@ -201,7 +209,7 @@ public:
     void sendHeartbeat(EmiConnTime& connTime, EmiTimeInterval now) {
         if (_conn.isOpen()) {
             EmiPacketHeader ph;
-            fillPacketHeaderData(&ph);
+            fillPacketHeaderData(now, connTime, ph);
             
             uint8_t buf[32];
             size_t packetLength;

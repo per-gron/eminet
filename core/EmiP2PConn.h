@@ -196,13 +196,15 @@ public:
         }
     }
     
-    void gotPacket(const sockaddr_storage& address, const EmiPacketHeader& packetHeader) {
+    void gotPacket(const sockaddr_storage& address,
+                   const EmiPacketHeader& packetHeader,
+                   EmiTimeInterval now) {
         int idx(addressIndex(address));
         ASSERT(-1 != idx);
         
         resetConnectionTimeout(idx);
         
-        _times[idx].gotPacket(packetHeader);
+        _times[idx].gotPacket(packetHeader, now);
     }
     
     void forwardPacket(EmiTimeInterval now,

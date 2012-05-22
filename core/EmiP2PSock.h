@@ -367,7 +367,7 @@ public:
         }
         
         if (conn) {
-            conn->gotPacket(remoteAddress, packetHeader);
+            conn->gotPacket(remoteAddress, packetHeader, now);
         }
         
         if (packetHeaderLength == len) {

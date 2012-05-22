@@ -159,8 +159,9 @@ public:
         }
     }
     
-    void gotPacket(const EmiPacketHeader& packetHeader) {
+    void gotPacket(const EmiPacketHeader& packetHeader, EmiTimeInterval now) {
         _timers.resetConnectionTimeout();
+        _time.gotPacket(packetHeader, now);
     }
     
     // Delegates to EmiSendQueue
