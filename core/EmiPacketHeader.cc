@@ -30,11 +30,11 @@ inline static void extractFlagsAndSize(EmiPacketFlags flags,
     // 1 for the flags byte
     *expectedSize = sizeof(EmiPacketFlags);
     
-    *expectedSize += (hasSequenceNumber ? EMI_PACKET_SEQUENCE_NUMBER_LENGTH : 0);
-    *expectedSize += (hasNak            ? EMI_PACKET_SEQUENCE_NUMBER_LENGTH : 0);
-    *expectedSize += (hasLinkCapacity   ? sizeof(uint32_t) : 0);
-    *expectedSize += (hasArrivalRate    ? sizeof(uint32_t) : 0);
-    *expectedSize += (hasRttResponse    ? EMI_PACKET_SEQUENCE_NUMBER_LENGTH : 0);
+    *expectedSize += (*hasSequenceNumber ? EMI_PACKET_SEQUENCE_NUMBER_LENGTH : 0);
+    *expectedSize += (*hasNak            ? EMI_PACKET_SEQUENCE_NUMBER_LENGTH : 0);
+    *expectedSize += (*hasLinkCapacity   ? sizeof(uint32_t) : 0);
+    *expectedSize += (*hasArrivalRate    ? sizeof(uint32_t) : 0);
+    *expectedSize += (*hasRttResponse    ? EMI_PACKET_SEQUENCE_NUMBER_LENGTH+sizeof(uint8_t) : 0);
 }
 
 EmiPacketHeader::EmiPacketHeader() :
