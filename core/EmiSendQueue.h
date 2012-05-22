@@ -41,6 +41,8 @@ class EmiSendQueue {
     EC& _conn;
     
     EmiPacketSequenceNumber _packetSequenceNumber;
+    EmiPacketSequenceNumber _rttResponseSequenceNumber;
+    EmiTimeInterval _rttResponseRegisterTime;
     SendQueueVector _queue;
     size_t _queueSize;
     SendQueueAcksMap _acks;
@@ -81,8 +83,26 @@ private:
         packetHeader.sequenceNumber = _packetSequenceNumber;
         _packetSequenceNumber = (_packetSequenceNumber+1) & EMI_PACKET_SEQUENCE_NUMBER_MASK;
         
+        // Note that we only send RTT requests if a packet would be sent anyways.
+        // This ensures that RTT data is sent only once per heartbeat if no data
+        // is being transmitted.
         if (connTime.rttRequest(now, packetHeader.sequenceNumber)) {
             packetHeader.flags |= EMI_RTT_REQUEST_PACKET_FLAG;
+        }
+        
+        // Fill the packet header with a RTT response if we've been requested to do so
+        if (-1 != _rttResponseSequenceNumber) {
+            packetHeader.flags |= EMI_RTT_RESPONSE_PACKET_FLAG;
+            packetHeader.rttResponse = _rttResponseSequenceNumber;
+            
+            EmiTimeInterval delay = (now-_rttResponseRegisterTime)*1000;
+            if (delay < 0) delay = 0;
+            if (delay > EMI_PACKET_HEADER_MAX_RESPONSE_DELAY) delay = EMI_PACKET_HEADER_MAX_RESPONSE_DELAY;
+            
+            packetHeader.rttResponseDelay = (uint8_t) std::floor(delay);
+            
+            _rttResponseSequenceNumber = -1;
+            _rttResponseRegisterTime = 0;
         }
     }
     
@@ -185,6 +205,8 @@ public:
     EmiSendQueue(EC& conn) :
     _conn(conn),
     _packetSequenceNumber(arc4random() & EMI_PACKET_SEQUENCE_NUMBER_MASK),
+    _rttResponseSequenceNumber(-1),
+    _rttResponseRegisterTime(0),
     _enqueueHeartbeat(false),
     _queueSize(0) {
         _bufLength = conn.getEmiSock().config.mtu;
@@ -241,6 +263,11 @@ public:
         }
         
         return !_acks.empty();
+    }
+    
+    void enqueueRttResponse(EmiPacketSequenceNumber sequenceNumber, EmiTimeInterval now) {
+        _rttResponseSequenceNumber = sequenceNumber;
+        _rttResponseRegisterTime = now;
     }
     
     void enqueueMessage(EM *msg, EmiConnTime& connTime, EmiTimeInterval now) {

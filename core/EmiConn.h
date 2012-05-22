@@ -162,6 +162,11 @@ public:
     void gotPacket(const EmiPacketHeader& packetHeader, EmiTimeInterval now) {
         _timers.resetConnectionTimeout();
         _time.gotPacket(packetHeader, now);
+        
+        if (packetHeader.flags & EMI_RTT_REQUEST_PACKET_FLAG) {
+            _sendQueue.enqueueRttResponse(packetHeader.sequenceNumber, now);
+            _timers.ensureTickTimeout();
+        }
     }
     
     // Delegates to EmiSendQueue

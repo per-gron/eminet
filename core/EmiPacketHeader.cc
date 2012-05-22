@@ -43,7 +43,8 @@ sequenceNumber(0),
 nak(0),
 linkCapacity(0),
 arrivalRate(0),
-rttResponse(0) {}
+rttResponse(0),
+rttResponseDelay(0) {}
 
 EmiPacketHeader::~EmiPacketHeader() {}
 
@@ -76,6 +77,7 @@ bool EmiPacketHeader::parse(const uint8_t *buf, size_t bufSize, EmiPacketHeader 
     header->linkCapacity = 0;
     header->arrivalRate = 0;
     header->rttResponse = 0;
+    header->rttResponseDelay = 0;
     
     const uint8_t *bufCur = buf+sizeof(header->flags);
     
@@ -90,18 +92,21 @@ bool EmiPacketHeader::parse(const uint8_t *buf, size_t bufSize, EmiPacketHeader 
     }
     
     if (hasLinkCapacity) {
-        header->linkCapacity = *((int32_t *)bufCur);
+        header->linkCapacity = ntohl(*((int32_t *)bufCur));
         bufCur += sizeof(header->linkCapacity);
     }
     
     if (hasArrivalRate) {
-        header->arrivalRate = *((int32_t *)bufCur);
+        header->arrivalRate = ntohl(*((int32_t *)bufCur));
         bufCur += sizeof(header->arrivalRate);
     }
     
     if (hasRttResponse) {
         header->rttResponse = EmiNetUtil::read24(bufCur);
         bufCur += EMI_PACKET_SEQUENCE_NUMBER_LENGTH;
+        
+        header->rttResponseDelay = *bufCur;
+        bufCur += sizeof(header->rttResponseDelay);
     }
     
     if (headerLength) {
@@ -148,18 +153,21 @@ bool EmiPacketHeader::write(uint8_t *buf, size_t bufSize, const EmiPacketHeader&
     }
     
     if (hasLinkCapacity) {
-        *((int32_t *)bufCur) = header.linkCapacity;
+        *((int32_t *)bufCur) = htonl(header.linkCapacity);
         bufCur += sizeof(header.linkCapacity);
     }
     
     if (hasArrivalRate) {
-        *((int32_t *)bufCur) = header.arrivalRate;
+        *((int32_t *)bufCur) = htonl(header.arrivalRate);
         bufCur += sizeof(header.arrivalRate);
     }
     
     if (hasRttResponse) {
         EmiNetUtil::write24(bufCur, header.rttResponse);
         bufCur += EMI_PACKET_SEQUENCE_NUMBER_LENGTH;
+        
+        *bufCur = header.rttResponseDelay;
+        bufCur += sizeof(header.rttResponseDelay);
     }
     
     if (headerLength) {

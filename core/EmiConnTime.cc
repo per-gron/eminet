@@ -51,13 +51,23 @@ void EmiConnTime::gotPacket(const EmiPacketHeader& header, EmiTimeInterval now) 
     
     if (header.flags & EMI_RTT_RESPONSE_PACKET_FLAG &&
         header.rttResponse == _rttRequestSequenceNumber) {
-        gotRttResponse(now - _rttRequestTime);
+        EmiTimeInterval rtt = now - _rttRequestTime - header.rttResponseDelay/1000.0;
+        
+        if (0 > rtt) {
+            // This can happen if the other host sends a bogus rttResponseDelay
+            rtt = 0;
+        }
+        
+        gotRttResponse(rtt);
     }
 }
 
 bool EmiConnTime::rttRequest(EmiTimeInterval now, EmiPacketSequenceNumber sequenceNumber) {
     EmiTimeInterval rto = getRto();
     
+    // We will send an RTT request at most once per RTO. This makes
+    // it highly unlikely to send a new RTT request while an older
+    // RTT request response is still on its way to to this host.
     if (-1 == _rttRequestSequenceNumber ||
         now-_rttRequestTime > rto) {
         _rttRequestTime = now;
