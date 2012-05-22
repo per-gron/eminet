@@ -19,7 +19,6 @@ public:
     EmiSockConfig() :
     mtu(EMI_DEFAULT_MTU),
     heartbeatFrequency(EMI_DEFAULT_HEARTBEAT_FREQUENCY),
-    tickFrequency(EMI_DEFAULT_TICK_FREQUENCY),
     connectionTimeout(EMI_DEFAULT_CONNECTION_TIMEOUT),
     heartbeatsBeforeConnectionWarning(EMI_DEFAULT_HEARTBEATS_BEFORE_CONNECTION_WARNING),
     receiverBufferSize(EMI_DEFAULT_RECEIVER_BUFFER_SIZE),
@@ -32,7 +31,6 @@ public:
     
     size_t mtu;
     float heartbeatFrequency;
-    float tickFrequency;
     EmiTimeInterval connectionTimeout;
     float heartbeatsBeforeConnectionWarning;
     size_t receiverBufferSize;

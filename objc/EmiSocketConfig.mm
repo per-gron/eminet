@@ -94,14 +94,6 @@ typedef EmiSocketConfigSC SC;
     ((SC *)_sc)->mtu = MTU;
 }
 
-- (float)tickFrequency {
-    return ((SC *)_sc)->tickFrequency;
-}
-
-- (void)setTickFrequency:(float)tickFrequency {
-    ((SC *)_sc)->tickFrequency = tickFrequency;
-}
-
 - (float)heartbeatFrequency {
     return ((SC *)_sc)->heartbeatFrequency;
 }

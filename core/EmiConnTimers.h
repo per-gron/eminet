@@ -117,7 +117,7 @@ public:
     void ensureTickTimeout() {
         if (!Binding::timerIsActive(_tickTimer)) {
             Binding::scheduleTimer(_tickTimer, tickTimeoutCallback, this,
-                                   1/_delegate.getEmiSock().config.tickFrequency,
+                                   EMI_TICK_TIME,
                                    /*repeating:*/false);
         }
     }

@@ -202,10 +202,6 @@ withFilterContext:(id)filterContext {
     return ((S *)_sock)->config.mtu;
 }
 
-- (float)tickFrequency {
-    return ((S *)_sock)->config.tickFrequency;
-}
-
 - (float)heartbeatFrequency {
     return ((S *)_sock)->config.heartbeatFrequency;
 }

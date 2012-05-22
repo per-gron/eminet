@@ -196,11 +196,13 @@ public:
         }
     }
     
-    void gotPacket(const sockaddr_storage& address) {
+    void gotPacket(const sockaddr_storage& address, const EmiPacketHeader& packetHeader) {
         int idx(addressIndex(address));
         ASSERT(-1 != idx);
         
         resetConnectionTimeout(idx);
+        
+        _times[idx].gotPacket(packetHeader);
     }
     
     void forwardPacket(EmiTimeInterval now,
@@ -252,15 +254,6 @@ public:
         }
         else {
             return _initialSequenceNumbers[idx] != sequenceNumber;
-        }
-    }
-    
-    void gotTimestamp(const sockaddr_storage& address, EmiTimeInterval now, const uint8_t *data, size_t len) {
-        int idx(addressIndex(address));
-        if (-1 != idx) {
-            // Since these P2P connections don't have a proper heartbeat frequency,
-            // we tell EmiConnTime that it is 3. It is a good enough default.
-            _times[idx].gotTimestamp(/*heartbeatFrequency:*/3, now, data, len);
         }
     }
     

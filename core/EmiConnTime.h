@@ -13,15 +13,16 @@
 
 #include <cstddef>
 
+class EmiPacketHeader;
+
 class EmiConnTime {
-    EmiTimeInterval _initTime; // -1 if not set
-    EmiTimestamp _largestReceivedTime;
-    bool _hasReceivedTime;
-    EmiTimeInterval _gotLargestReceivedTimeAt;
-    
+    // Note that _rto is not completely logically named. It does not
+    // contain the value that getRto returns, only a partially computed
+    // value. See getRto's implementation for details.
     EmiTimeInterval _rto;
     EmiTimeInterval _srtt; // -1 if not set
     EmiTimeInterval _rttvar; // -1 if not set
+    int _expCount; // Number of rto timeouts since last received packet
     
 public:
     EmiConnTime();
@@ -29,13 +30,9 @@ public:
     void swap(EmiConnTime& other);
     
     void onRtoTimeout();
-    void gotTimestamp(float heartbeatFrequency, EmiTimeInterval now, const void *buf, size_t bufSize);
-    EmiTimeInterval getCurrentTime(EmiTimeInterval now);
+    void gotPacket(const EmiPacketHeader& header);
     
     EmiTimeInterval getRto() const;
-    EmiTimestamp getLargestReceivedTime() const;
-    bool hasReceivedTime() const;
-    EmiTimeInterval gotLargestReceivedTimeAt() const;
 };
 
 #endif

@@ -21,6 +21,8 @@
 #include "EmiConnTimers.h"
 #include "EmiUdpSocket.h"
 
+class EmiPacketHeader;
+
 template<class SockDelegate, class ConnDelegate>
 class EmiConn {
     typedef typename SockDelegate::Binding   Binding;
@@ -157,12 +159,8 @@ public:
         }
     }
     
-    void gotPacket() {
+    void gotPacket(const EmiPacketHeader& packetHeader) {
         _timers.resetConnectionTimeout();
-    }
-    
-    void gotTimestamp(EmiTimeInterval now, const uint8_t *data, size_t len) {
-        _time.gotTimestamp(_emisock.config.heartbeatFrequency, now, data, len);
     }
     
     // Delegates to EmiSendQueue

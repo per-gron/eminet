@@ -13,7 +13,6 @@ using namespace v8;
 #define EXPAND_SYMS                                        \
   EXPAND_SYM(mtu);                                         \
   EXPAND_SYM(heartbeatFrequency);                          \
-  EXPAND_SYM(tickFrequency);                               \
   EXPAND_SYM(heartbeatsBeforeConnectionWarning);           \
   EXPAND_SYM(connectionTimeout);                           \
   EXPAND_SYM(receiverBufferSize);                          \
@@ -139,7 +138,6 @@ Handle<Value> EmiSocket::New(const Arguments& args) {
     
     READ_CONFIG(sc, mtu,                               IsNumber,  size_t,          Uint32Value);
     READ_CONFIG(sc, heartbeatFrequency,                IsNumber,  float,           NumberValue);
-    READ_CONFIG(sc, tickFrequency,                     IsNumber,  float,           NumberValue);
     READ_CONFIG(sc, heartbeatsBeforeConnectionWarning, IsNumber,  float,           NumberValue);
     READ_CONFIG(sc, connectionTimeout,                 IsNumber,  EmiTimeInterval, NumberValue);
     READ_CONFIG(sc, senderBufferSize,                  IsNumber,  size_t,          Uint32Value);

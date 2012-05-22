@@ -23,7 +23,6 @@ private:
     
     static v8::Persistent<v8::String> mtuSymbol;
     static v8::Persistent<v8::String> heartbeatFrequencySymbol;
-    static v8::Persistent<v8::String> tickFrequencySymbol;
     static v8::Persistent<v8::String> heartbeatsBeforeConnectionWarningSymbol;
     static v8::Persistent<v8::String> connectionTimeoutSymbol;
     static v8::Persistent<v8::String> receiverBufferSizeSymbol;

@@ -215,8 +215,6 @@ private:
             _conns.insert(std::make_pair(remoteAddress, conn));
         }
         
-        conn->gotTimestamp(remoteAddress, now, rawData, len);
-        
         // Regardless of whether we had an EmiP2PConn object set up
         // for this address, we want to reply to the host with an
         // acknowledgement that we have received the SYN message.
@@ -236,8 +234,6 @@ private:
             // Invalid packet
             return;
         }
-        
-        conn->gotTimestamp(remoteAddress, now, rawData, len);
         
         sockaddr_storage innerAddress;
         
@@ -362,9 +358,6 @@ public:
         const uint8_t *rawData(Binding::extractData(data)+offset);
         
         Conn *conn = findConn(remoteAddress);
-        if (conn) {
-            conn->gotPacket(remoteAddress);
-        }
         
         EmiPacketHeader packetHeader;
         size_t packetHeaderLength;
@@ -373,10 +366,13 @@ public:
             goto error;
         }
         
+        if (conn) {
+            conn->gotPacket(remoteAddress, packetHeader);
+        }
+        
         if (packetHeaderLength == len) {
             // This is a heartbeat packet. Just forward the packet (if we can)
             if (conn) {
-                conn->gotTimestamp(remoteAddress, now, rawData, len);
                 conn->forwardPacket(now, inboundAddress, remoteAddress, data, offset, len);
             }
         }
@@ -451,7 +447,6 @@ public:
                         // we haven't yet received confirmation from the other
                         // host that it has received the RST message, so we
                         // forward it.
-                        conn->gotTimestamp(remoteAddress, now, rawData, len);
                         conn->forwardPacket(now, inboundAddress, remoteAddress, data, offset, len);
                     }
                     else {
@@ -511,7 +506,6 @@ public:
                 // This is not a control message, so we don't care about its
                 // contents. Just forward it.
                 if (conn) {
-                    conn->gotTimestamp(remoteAddress, now, rawData, len);
                     conn->forwardPacket(now, inboundAddress, remoteAddress, data, offset, len);
                 }
             }

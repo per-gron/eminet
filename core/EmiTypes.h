@@ -13,7 +13,6 @@
 
 #define EMI_DEFAULT_MTU                  (576)
 #define EMI_DEFAULT_HEARTBEAT_FREQUENCY  (0.3)
-#define EMI_DEFAULT_TICK_FREQUENCY       (10)
 #define EMI_DEFAULT_HEARTBEATS_BEFORE_CONNECTION_WARNING (2.5)
 #define EMI_DEFAULT_CONNECTION_TIMEOUT   (30)
 #define EMI_DEFAULT_RECEIVER_BUFFER_SIZE (2048)
@@ -21,7 +20,8 @@
 
 #define EMI_PACKET_SEQUENCE_NUMBER_LENGTH (3)
 #define EMI_HEADER_LENGTH    (4)
-#define EMI_MIN_RTO          (0.25)
+#define EMI_TICK_TIME        (0.1)
+#define EMI_MIN_RTO          (0.1)
 #define EMI_MAX_RTO          (20.0)
 #define EMI_INIT_RTO         (1.0)
 

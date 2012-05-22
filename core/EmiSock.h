@@ -230,14 +230,14 @@ public:
         }
         
         if (conn) {
-            conn->gotPacket();
+            conn->gotPacket(packetHeader);
         }
         
         if (packetHeaderLength == len) {
-            // This is a heartbeat packet
-            if (conn) {
-                conn->gotTimestamp(now, rawData, len);
-            }
+            // This is a heartbeat packet.
+            //
+            // We don't need to do anything here; all necessary processing
+            // has already been done in the call to gotPacket.
         }
         else if (len < packetHeaderLength + EMI_HEADER_LENGTH) {
             err = "Packet too short";
@@ -345,8 +345,6 @@ public:
                         _serverConns.insert(std::make_pair(AddressKey(remoteAddress), conn));
                     }
                     
-                    conn->gotTimestamp(now, rawData, len);
-                    
                     if (conn->opened(inboundAddress, now, header.sequenceNumber)) {
                         _delegate.gotConnection(*conn);
                     }
@@ -363,11 +361,6 @@ public:
                                 condition, it is part of normal operation \
                                 of the protocol.)");
                         
-                        // With this packet type, we do not invoke gotTimestamp:
-                        // on the connection object, because the timestamps might be bogus
-                        // (since the other host might have forgot about the connection
-                        // and thus the data required to send proper timestamps)
-                        
                         conn->gotSynRstAck();
                         conn = NULL;
                     }
@@ -378,7 +371,6 @@ public:
                         ENSURE_CONN("SYN-RST");
                         ENSURE(conn->isOpening(), "Got SYN-RST message for open connection");
                         
-                        conn->gotTimestamp(now, rawData, len);
                         if (!conn->gotSynRst(now, inboundAddress, header.sequenceNumber)) {
                             err = "Failed to process SYN-RST message";
                             return false;
@@ -406,7 +398,6 @@ public:
                     // connection timeout cycle, just to make sure that the other
                     // host gets our SYN-RST-ACK response.
                     if (conn) {
-                        conn->gotTimestamp(now, rawData, len);
                         conn->gotRst();
                         conn = NULL;
                     }
@@ -415,7 +406,6 @@ public:
                     // This is a data message
                     ENSURE_CONN("data");
                     
-                    conn->gotTimestamp(now, rawData, len);
                     conn->gotMessage(now, header, data, offset+actualRawDataOffset, /*dontFlush:*/false);
                     
                     // gotMessage might have invoked third-party code, which might have

@@ -22,7 +22,6 @@
 @property (nonatomic, assign) BOOL acceptConnections;
 @property (nonatomic, assign) uint16_t serverPort;
 @property (nonatomic, assign) NSUInteger MTU;
-@property (nonatomic, assign) float tickFrequency;
 @property (nonatomic, assign) float heartbeatFrequency;
 
 @end
