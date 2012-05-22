@@ -230,20 +230,6 @@ public:
         // BUF_SIZE=96 ought to be plenty
         writeControlPacketWithData<96>(flags, NULL, 0, callback);
     }
-    
-    static void fillTimestamps(EmiConnTime& connTime, void *data, EmiTimeInterval now) {
-        uint16_t *buf = (uint16_t *)data;
-        
-        buf[0] = htons(floor(connTime.getCurrentTime(now)*1000));
-        if (connTime.hasReceivedTime()) {
-            buf[1] = htons(connTime.getLargestReceivedTime());
-            buf[2] = htons(floor((now - connTime.gotLargestReceivedTimeAt())*1000));
-        }
-        else {
-            buf[1] = htons(0);
-            buf[2] = htons(0);
-        }
-    }
 };
 
 #endif

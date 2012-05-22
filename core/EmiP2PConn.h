@@ -68,6 +68,12 @@ private:
     bool                   _firstPeerHadComplementaryCookie;
     sockaddr_storage       _peers[2];
     sockaddr_storage       _innerEndpoints[2];
+    // EmiP2PConn itself is transparent with regards to timing; for
+    // the peers it seems like they are communicating directly with
+    // each other (but with a slightly slower and lossier connection).
+    //
+    // EmiP2PConn "eavesdrops" on the connection to both peers to
+    // infer RTO/RTT times.
     EmiConnTime            _times[2];
     bool                   _waitingForPrxAck[2];
     // We need to store the inbound address for the SYN-RST packets for rtoTimeout
@@ -111,11 +117,6 @@ private:
         }
         
         uint8_t *rawData = (uint8_t *)Binding::extractData(data)+offset;
-        
-        // Overwrite the timestamps with the ones that
-        // reflect the connection between the P2P mediator
-        // and the host we're sending to.
-        EmiMessage<Binding>::fillTimestamps(_times[remoteAddressIndex], rawData, len);
         
         _sock->sendData(inboundAddress, remoteAddress, rawData, len);
     }
