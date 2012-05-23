@@ -47,6 +47,20 @@ public:
         return res > 0 ? a : b;
     }
     
+    inline static int32_t cyclicDifference24(int32_t a, int32_t b) {
+        return (a>=b ? a-b : 0xffffff-b+a) & 0xffffff;
+    }
+    
+    inline static int32_t cyclicDifference24Signed(int32_t a, int32_t b) {
+        int32_t res = cyclicDifference24(a, b);
+        return res > 0x7fffff ? res-0xffffff : res;
+    }
+    
+    inline static int32_t cyclicMax24(int32_t a, int32_t b) {
+        int32_t res = cyclicDifference24Signed(a, b);
+        return res > 0 ? a : b;
+    }
+    
     // buf is assumed to be >= 3 bytes
     inline static int32_t read24(const uint8_t *buf) {
         return ((buf[0] << 0) +
