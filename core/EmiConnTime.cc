@@ -79,7 +79,6 @@ bool EmiConnTime::rttRequest(EmiTimeInterval now, EmiPacketSequenceNumber sequen
          timeSinceLastRttRequest > EMI_TICK_TIME)) {
         _rttRequestTime = now;
         _rttRequestSequenceNumber = sequenceNumber;
-        
         return true;
     }
     else {
@@ -100,4 +99,13 @@ EmiTimeInterval EmiConnTime::getRto() const {
     rto = std::min(EMI_MAX_RTO, rto);
     
     return rto;
+}
+
+EmiTimeInterval EmiConnTime::getNak() const {
+    if (-1 == _srtt || -1 == _rttvar) {
+        return 1;
+    }
+    else {
+        return 4*_srtt + _rttvar + EMI_TICK_TIME;
+    }
 }

@@ -52,6 +52,7 @@ class EmiSendQueue {
     size_t _bufLength;
     uint8_t *_buf;
     bool _enqueueHeartbeat;
+    EmiPacketSequenceNumber _enqueuedNak;
     
 private:
     // Private copy constructor and assignment operator
@@ -114,6 +115,11 @@ private:
             
             _rttResponseSequenceNumber = -1;
             _rttResponseRegisterTime = 0;
+        }
+        
+        if (-1 != _enqueuedNak) {
+            packetHeader.flags |= EMI_NAK_PACKET_FLAG;
+            packetHeader.nak = _enqueuedNak;
         }
     }
     
@@ -221,6 +227,7 @@ public:
     _rttResponseSequenceNumber(-1),
     _rttResponseRegisterTime(0),
     _enqueueHeartbeat(false),
+    _enqueuedNak(-1),
     _queueSize(0) {
         _bufLength = conn.getEmiSock().config.mtu;
         _buf = (uint8_t *)malloc(_bufLength);
@@ -239,6 +246,10 @@ public:
     
     void enqueueHeartbeat() {
         _enqueueHeartbeat = true;
+    }
+    
+    void enqueueNak(EmiPacketSequenceNumber nak) {
+        _enqueuedNak = nak;
     }
     
     void sendHeartbeat(EmiDataArrivalRate& dataArrivalRate,

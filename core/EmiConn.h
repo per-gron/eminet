@@ -276,6 +276,9 @@ public:
     inline void enqueueHeartbeat() {
         _sendQueue.enqueueHeartbeat();
     }
+    inline void enqueueNak(EmiPacketSequenceNumber nak) {
+        _sendQueue.enqueueNak(nak);
+    }
     inline bool senderBufferIsEmpty() const {
         return _senderBuffer.empty();
     }

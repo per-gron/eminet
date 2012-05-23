@@ -12,6 +12,7 @@
 #include "EmiSockConfig.h"
 #include "EmiConnTime.h"
 #include "EmiRtoTimer.h"
+#include "EmiLossList.h"
 
 template<class Binding, class Delegate>
 class EmiConnTimers {
@@ -26,7 +27,9 @@ class EmiConnTimers {
     Delegate &_delegate;
     
     EmiConnTime _time;
+    EmiLossList _lossList;
     
+    Timer *_nakTimer;
     Timer *_tickTimer;
     Timer *_heartbeatTimer;
     ERT    _rtoTimer;
@@ -41,9 +44,22 @@ private:
         return 1/sc.heartbeatFrequency * sc.heartbeatsBeforeConnectionWarning;
     }
     
+    static void nakTimeoutCallback(EmiTimeInterval now, Timer *timer, void *data) {
+        EmiConnTimers *timers = (EmiConnTimers *)data;
+        
+        EmiPacketSequenceNumber nak = timers->_lossList.calculateNak(now, timers->_time.getRto());
+        
+        if (-1 != nak) {
+            timers->_delegate.enqueueNak(nak);
+            timers->ensureTickTimeout();
+        }
+        timers->ensureNakTimeout();
+    }
+    
     static void tickTimeoutCallback(EmiTimeInterval now, Timer *timer, void *data) {
         EmiConnTimers *timers = (EmiConnTimers *)data;
         
+        // Tick returns true if a packet was sent
         if (timers->_delegate.tick(now)) {
             timers->resetHeartbeatTimeout();
         }
@@ -88,7 +104,9 @@ public:
     EmiConnTimers(Delegate& delegate) :
     _delegate(delegate),
     _time(),
+    _lossList(),
     _sentDataSinceLastHeartbeat(false),
+    _nakTimer(Binding::makeTimer()),
     _tickTimer(Binding::makeTimer()),
     _heartbeatTimer(Binding::makeTimer()),
     _rtoTimer(timeBeforeConnectionWarning(delegate),
@@ -97,6 +115,7 @@ public:
               *this) {}
     
     virtual ~EmiConnTimers() {
+        Binding::freeTimer(_nakTimer);
         Binding::freeTimer(_tickTimer);
         Binding::freeTimer(_heartbeatTimer);
     }
@@ -108,6 +127,7 @@ public:
     
     void gotPacket(const EmiPacketHeader& header, EmiTimeInterval now) {
         _time.gotPacket(header, now);
+        _lossList.gotPacket(now, header.sequenceNumber);
         _rtoTimer.resetConnectionTimeout();
     }
     
@@ -122,12 +142,23 @@ public:
         }
     }
     
+    void ensureNakTimeout() {
+        // Don't send NAKs until we've got a response from the remote host
+        if (!_delegate.isOpening() &&
+            !Binding::timerIsActive(_nakTimer)) {
+            Binding::scheduleTimer(_nakTimer, nakTimeoutCallback,
+                                   this, _time.getNak(),
+                                   /*repeating:*/false);
+        }
+    }
+    
     void ensureTickTimeout() {
         if (!Binding::timerIsActive(_tickTimer)) {
             Binding::scheduleTimer(_tickTimer, tickTimeoutCallback, this,
                                    EMI_TICK_TIME,
                                    /*repeating:*/false);
         }
+        ensureNakTimeout();
     }
     
     inline void updateRtoTimeout() {

@@ -48,6 +48,7 @@ public:
     bool rttRequest(EmiTimeInterval now, EmiPacketSequenceNumber sequenceNumber);
     
     EmiTimeInterval getRto() const;
+    EmiTimeInterval getNak() const;
 };
 
 #endif
