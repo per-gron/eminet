@@ -39,7 +39,15 @@ es2.on('connection', function(socket) {
 });
 
 var open = function(msg) {
+  var callbackWasInvoked = false;
+  
   es.connect('127.0.0.1', 2345, function(err, socket) {
+    if (callbackWasInvoked) {
+      console.log("Callback has already been invoked!", err, socket);
+      throw new Error("Callback has already been invoked!");
+    }
+    callbackWasInvoked = true;
+    
     if (err) {
       // TODO This callback seems to be called more than once per call to connect, first with success, then with errors.
       console.log("ERR:", err);
@@ -77,14 +85,14 @@ var open = function(msg) {
 };
 
 open('a');
-//open('b');
-//open('c');
-//open('d');
-//open('1');
-//open('2');
-//open('3');
-//open('4');
-//open('A');
-//open('B');
-//open('C');
-//open('D');
+open('b');
+open('c');
+open('d');
+open('1');
+open('2');
+open('3');
+open('4');
+open('A');
+open('B');
+open('C');
+open('D');
