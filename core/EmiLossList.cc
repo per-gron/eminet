@@ -22,8 +22,6 @@ void EmiLossList::gotPacket(EmiTimeInterval now, EmiPacketSequenceNumber sequenc
         ((_newestSequenceNumber+1) & EMI_PACKET_SEQUENCE_NUMBER_MASK) == sequenceNumber) {
         // We received the expected sequence number.
         // No need to do anything with the loss set.
-        _newestSequenceNumber = sequenceNumber;
-        _newestSequenceNumberTime = now;
     }
     else if (/* Like _newestSequenceNumber > sequenceNumber, but supports sequence number cycling */
              EmiNetUtil::cyclicDifference24Signed(_newestSequenceNumber, sequenceNumber) > 0) {
@@ -80,6 +78,9 @@ void EmiLossList::gotPacket(EmiTimeInterval now, EmiPacketSequenceNumber sequenc
                             (sequenceNumber-1) & EMI_PACKET_SEQUENCE_NUMBER_MASK);
         _lossSet.insert(lpr);
     }
+    
+    _newestSequenceNumber = sequenceNumber;
+    _newestSequenceNumberTime = now;
 }
 
 EmiPacketSequenceNumber EmiLossList::calculateNak(EmiTimeInterval now, EmiTimeInterval rtt) {
@@ -91,20 +92,18 @@ EmiPacketSequenceNumber EmiLossList::calculateNak(EmiTimeInterval now, EmiTimeIn
         
         if (lpr.lastFeedbackTime + rtt*(2+lpr.numFeedbacks) > now) {
             // Bingo! We found the LostPacket we wanted.
-            EmiPacketSequenceNumber nak = lpr.oldestSequenceNumber;
-            
-            // Remove all older LostPackets in _lossSet
-            ++iter;
-            if (iter != end) {
-                _lossSet.erase(_lossSet.begin(), _lossSet.find(*iter));
-            }
-            
-            // Replace lp with a new object with incremented
-            // numFeedbacks and oldestSequenceNumber
             LostPacketRange newLpr(lpr);
             newLpr.numFeedbacks++;
             newLpr.oldestSequenceNumber = (newLpr.oldestSequenceNumber+1) & EMI_PACKET_SEQUENCE_NUMBER_MASK;
-            _lossSet.erase(lpr);
+            newLpr.lastFeedbackTime = now;
+            EmiPacketSequenceNumber nak = lpr.oldestSequenceNumber;
+            
+            // Remove all LostPackets that are older or as old as lpr in _lossSet
+            _lossSet.erase(_lossSet.begin(), ++_lossSet.find(*iter));
+            
+            // Replace lp with a new object with incremented
+            // numFeedbacks and oldestSequenceNumber, and updated
+            // lastFeedbackTime
             if (/* Like newLpr.oldestSequenceNumber <= newLpr.newestSequenceNumber,
                    but supports sequence number cycling */
                 EmiNetUtil::cyclicDifference24Signed(newLpr.oldestSequenceNumber,
