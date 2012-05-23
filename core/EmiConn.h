@@ -17,7 +17,6 @@
 #include "EmiLogicalConnection.h"
 #include "EmiMessage.h"
 #include "EmiDataArrivalRate.h"
-#include "EmiConnTime.h"
 #include "EmiP2PData.h"
 #include "EmiConnTimers.h"
 #include "EmiUdpSocket.h"
@@ -60,7 +59,6 @@ class EmiConn {
     ERB _receiverBuffer;
     ESQ _sendQueue;
     EmiDataArrivalRate _dataArrivalRate;
-    EmiConnTime _time;
     
     ECT _timers;
     typename Binding::Timer *_forceCloseTimer;
@@ -124,8 +122,7 @@ public:
     _receiverBuffer(_emisock.config.receiverBufferSize, *this),
     _sendQueue(*this),
     _dataArrivalRate(),
-    _time(),
-    _timers(*this, _time),
+    _timers(*this),
     _forceCloseTimer(NULL) {
         EmiNetUtil::anyAddr(0, AF_INET, &_localAddress);
     }
@@ -163,8 +160,7 @@ public:
     }
     
     void gotPacket(EmiTimeInterval now, const EmiPacketHeader& packetHeader, size_t packetLength) {
-        _timers.resetConnectionTimeout();
-        _time.gotPacket(packetHeader, now);
+        _timers.gotPacket(packetHeader, now);
         _dataArrivalRate.gotPacket(now, packetLength);
         
         if (packetHeader.flags & EMI_RTT_REQUEST_PACKET_FLAG) {
@@ -208,7 +204,7 @@ public:
             _timers.updateRtoTimeout();
         }
         
-        _sendQueue.enqueueMessage(msg, _dataArrivalRate, _time, now);
+        _sendQueue.enqueueMessage(msg, _dataArrivalRate, _timers.getTime(), now);
         _timers.ensureTickTimeout();
         
         return true;
@@ -317,7 +313,7 @@ public:
                           const uint8_t *data,
                           size_t len) {
         if (_conn) {
-            _conn->gotPrxSynAck(remoteAddr, data, len, _timers, &_remoteAddress, &_time);
+            _conn->gotPrxSynAck(remoteAddr, data, len, _timers, &_remoteAddress, &_timers.getTime());
         }
     }
     inline void gotPrxRstAck(const sockaddr_storage& remoteAddr) {
@@ -398,7 +394,7 @@ public:
     // Delegates to EmiSendQueue
     // Returns true if something was sent
     bool tick(EmiTimeInterval now) {
-        return _sendQueue.tick(_dataArrivalRate, _time, now);
+        return _sendQueue.tick(_dataArrivalRate, _timers.getTime(), now);
     }
     
     // Delegates to EmiLogicalConnection

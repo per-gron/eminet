@@ -25,6 +25,8 @@ class EmiConnTimers {
     
     Delegate &_delegate;
     
+    EmiConnTime _time;
+    
     Timer *_tickTimer;
     Timer *_heartbeatTimer;
     ERT    _rtoTimer;
@@ -83,14 +85,15 @@ private:
     }
 
 public:
-    EmiConnTimers(Delegate& delegate, EmiConnTime& time) :
+    EmiConnTimers(Delegate& delegate) :
     _delegate(delegate),
+    _time(),
     _sentDataSinceLastHeartbeat(false),
     _tickTimer(Binding::makeTimer()),
     _heartbeatTimer(Binding::makeTimer()),
     _rtoTimer(timeBeforeConnectionWarning(delegate),
               _delegate.getEmiSock().config.connectionTimeout,
-              time,
+              _time,
               *this) {}
     
     virtual ~EmiConnTimers() {
@@ -101,6 +104,11 @@ public:
     
     void sentPacket() {
         _sentDataSinceLastHeartbeat = true;
+    }
+    
+    void gotPacket(const EmiPacketHeader& header, EmiTimeInterval now) {
+        _time.gotPacket(header, now);
+        _rtoTimer.resetConnectionTimeout();
     }
     
     void resetHeartbeatTimeout() {
@@ -134,8 +142,12 @@ public:
         return _rtoTimer.issuedConnectionWarning();
     }
     
-    inline void resetConnectionTimeout() {
-        _rtoTimer.resetConnectionTimeout();
+    inline EmiConnTime& getTime() {
+        return _time;
+    }
+    
+    inline const EmiConnTime& getTime() const {
+        return _time;
     }
 };
 

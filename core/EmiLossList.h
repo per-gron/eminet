@@ -62,10 +62,16 @@ public:
     EmiLossList();
     virtual ~EmiLossList();
     
+    // Amortized complexity of this method is at worst O(log n) where
+    // n is the size of _lossSet. When all packets arrive exactly once
+    // and in order, complexity is O(1).
     void gotPacket(EmiTimeInterval now, EmiPacketSequenceNumber sequenceNumber);
     
     // Should be called on NAK timeouts. Calculates the current value
     // to send as NAK. Returns -1 if no NAK should be sent.
+    //
+    // This method is potentially rather slow. It's intended to be
+    // invoked exactly once per NAK timeout.
     //
     // Note that this method is not free of side effects; it increases
     // the numFeedbacks field of the LostPacketRange object in question.
