@@ -265,6 +265,8 @@ public:
         _delegate.emiConnLost();
     }
     void rtoTimeout(EmiTimeInterval now, EmiTimeInterval rtoWhenRtoTimerWasScheduled) {
+        _congestionControl.onRto();
+        
         _senderBuffer.eachCurrentMessage(now, rtoWhenRtoTimerWasScheduled, ^(EmiMessage<Binding> *msg) {
             Error err;
             // Reliable is set to false, because if the message is reliable, it is

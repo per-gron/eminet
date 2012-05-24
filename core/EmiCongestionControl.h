@@ -17,7 +17,10 @@ class EmiPacketHeader;
 class EmiCongestionControl {
     
     size_t _congestionWindow;
-    float  _sendingRate; // A sending rate of 0 means that we're in the slow start phase
+    // A sending period of 0 means that we're in the slow start phase
+    float  _sendingPeriod;
+    // TODO Actually update this variable
+    size_t _totalDataSentInSlowStart;
     
     EmiLinkCapacity    _linkCapacity;
     EmiDataArrivalRate _dataArrivalRate;
@@ -26,11 +29,19 @@ class EmiCongestionControl {
     EmiSequenceNumber _newestSeenSequenceNumber;
     EmiSequenceNumber _newestSentSequenceNumber;
     
+    float _remoteLinkCapacity;
+    float _remoteDataArrivalRate;
+    
+    void onAck();
+    void onNak();
+    
 public:
     EmiCongestionControl();
     virtual ~EmiCongestionControl();
     
     void gotPacket(EmiTimeInterval now, const EmiPacketHeader& packetHeader, size_t packetLength);
+    
+    void onRto();
     
     // This method is intended to be called once per tick. It returns
     // the newest seen sequence number, or -1 if no sequence number
