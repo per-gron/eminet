@@ -1,9 +1,12 @@
 var EmiNet = require('./eminet');
 
-var es = EmiNet.open({ fabricatedPacketDropRate: 0.2 }),
+var packetLoss = 0.0;
+var packetLossPerSocket = 1-Math.sqrt(1-packetLoss);
+
+var es = EmiNet.open({ fabricatedPacketDropRate: packetLossPerSocket }),
     es2 = EmiNet.open({
       acceptConnections: true, port: 2345,
-      fabricatedPacketDropRate: 0.2,
+      fabricatedPacketDropRate: packetLossPerSocket,
       rateLimit: 1000
     });
 
@@ -85,14 +88,15 @@ var open = function(msg) {
 };
 
 open('a');
-open('b');
-open('c');
-open('d');
-open('1');
-open('2');
-open('3');
-open('4');
-open('A');
-open('B');
-open('C');
-open('D');
+//open('b');
+//open('c');
+//open('d');
+//open('1');
+//open('2');
+//open('3');
+//open('4');
+//open('A');
+//open('B');
+//open('C');
+//open('D');
+//
