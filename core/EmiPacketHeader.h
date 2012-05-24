@@ -26,6 +26,7 @@ public:
     
     EmiPacketFlags flags;
     EmiPacketSequenceNumber sequenceNumber; // Set if (flags & EMI_SEQUENCE_NUMBER_PACKET_FLAG)
+    EmiPacketSequenceNumber ack; // Set if (flags & EMI_ACK_PACKET_FLAG)
     EmiPacketSequenceNumber nak; // Set if (flags & EMI_NAK_PACKET_FLAG)
     float linkCapacity; // Set if (flags & EMI_LINK_CAPACITY_PACKET_FLAG)
     float arrivalRate; // Set if (flags & EMI_ARRIVAL_RATE_PACKET_FLAG)
