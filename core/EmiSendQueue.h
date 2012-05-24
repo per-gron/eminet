@@ -313,6 +313,10 @@ public:
         return !_acks.empty();
     }
     
+    inline EmiPacketSequenceNumber lastSentSequenceNumber() const {
+        return _packetSequenceNumber;
+    }
+    
     void enqueueRttResponse(EmiPacketSequenceNumber sequenceNumber, EmiTimeInterval now) {
         _rttResponseSequenceNumber = sequenceNumber;
         _rttResponseRegisterTime = now;

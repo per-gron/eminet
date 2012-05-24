@@ -19,6 +19,7 @@
 #include "EmiCongestionControl.h"
 #include "EmiP2PData.h"
 #include "EmiConnTimers.h"
+#include "EmiConnTime.h"
 #include "EmiUdpSocket.h"
 
 class EmiPacketHeader;
@@ -162,7 +163,9 @@ public:
     
     void gotPacket(EmiTimeInterval now, const EmiPacketHeader& packetHeader, size_t packetLength) {
         _timers.gotPacket(packetHeader, now);
-        _congestionControl.gotPacket(now, packetHeader, packetLength);
+        _congestionControl.gotPacket(now, _timers.getTime().getRtt(),
+                                     _sendQueue.lastSentSequenceNumber(),
+                                     packetHeader, packetLength);
         
         if (packetHeader.flags & EMI_RTT_REQUEST_PACKET_FLAG) {
             _sendQueue.enqueueRttResponse(packetHeader.sequenceNumber, now);

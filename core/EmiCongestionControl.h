@@ -17,29 +17,44 @@ class EmiPacketHeader;
 class EmiCongestionControl {
     
     size_t _congestionWindow;
-    // A sending period of 0 means that we're in the slow start phase
-    float  _sendingPeriod;
+    // A sending rate of 0 means that we're in the slow start phase
+    float  _sendingRate;
     // TODO Actually update this variable
     size_t _totalDataSentInSlowStart;
     
     EmiLinkCapacity    _linkCapacity;
     EmiDataArrivalRate _dataArrivalRate;
     
+    // The average number of NAKs in a congestion period.
+    float _avgNakCount;
+    // The number of NAKs in the current congestion period.
+    int _nakCount;
+    // The number of times the rate has been decreased in this
+    // congestion period
+    int _decCount;
+    int _decRandom;
+    // The biggest sequence number when last time the
+    // packet sending rate is decreased. Initially -1
+    EmiPacketSequenceNumber _lastDecSeq;
+    
     // State for knowing which ACKs to send and when
-    EmiSequenceNumber _newestSeenSequenceNumber;
-    EmiSequenceNumber _newestSentSequenceNumber;
+    EmiPacketSequenceNumber _newestSeenSequenceNumber;
+    EmiPacketSequenceNumber _newestSentSequenceNumber;
     
     float _remoteLinkCapacity;
     float _remoteDataArrivalRate;
     
-    void onAck();
-    void onNak();
+    void onAck(EmiTimeInterval rtt);
+    void onNak(EmiPacketSequenceNumber nak,
+               EmiPacketSequenceNumber largestSNSoFar);
     
 public:
     EmiCongestionControl();
     virtual ~EmiCongestionControl();
     
-    void gotPacket(EmiTimeInterval now, const EmiPacketHeader& packetHeader, size_t packetLength);
+    void gotPacket(EmiTimeInterval now, EmiTimeInterval rtt,
+                   EmiPacketSequenceNumber largestSNSoFar,
+                   const EmiPacketHeader& packetHeader, size_t packetLength);
     
     void onRto();
     
@@ -47,7 +62,7 @@ public:
     // the newest seen sequence number, or -1 if no sequence number
     // has been seen or if the newest sequence number seen has already
     // been returned once by this method.
-    EmiSequenceNumber ack();
+    EmiPacketSequenceNumber ack();
     
     inline float linkCapacity() const {
         return _linkCapacity.calculate();
@@ -55,6 +70,10 @@ public:
     
     inline float dataArrivalRate() const {
         return _dataArrivalRate.calculate();
+    }
+    
+    inline float getSendingRate() const {
+        return _sendingRate;
     }
 };
 

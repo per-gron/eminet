@@ -47,6 +47,10 @@ public:
     // should make sure to actually send the RTT request.
     bool rttRequest(EmiTimeInterval now, EmiPacketSequenceNumber sequenceNumber);
     
+    inline EmiTimeInterval getRtt() const {
+        return _srtt;
+    }
+    
     EmiTimeInterval getRto() const;
     EmiTimeInterval getNak() const;
 };
