@@ -52,6 +52,7 @@ class EmiSendQueue {
     size_t _bufLength;
     uint8_t *_buf;
     bool _enqueueHeartbeat;
+    bool _enqueuePacketAck; // This helps to make sure that we only send one packet ACK per tick
     EmiPacketSequenceNumber _enqueuedNak;
     
 private:
@@ -88,6 +89,21 @@ private:
         packetHeader.sequenceNumber = _packetSequenceNumber;
         _packetSequenceNumber = (_packetSequenceNumber+1) & EMI_PACKET_SEQUENCE_NUMBER_MASK;
         
+        if (_enqueuePacketAck) {
+            _enqueuePacketAck = false;
+            
+            EmiPacketSequenceNumber ack = congestionControl.ack();
+            if (-1 != ack) {
+                packetHeader.flags |= EMI_ACK_PACKET_FLAG;
+                packetHeader.ack = ack;
+            }
+        }
+        
+        if (-1 != _enqueuedNak) {
+            packetHeader.flags |= EMI_NAK_PACKET_FLAG;
+            packetHeader.nak = _enqueuedNak;
+        }
+        
         // Note that we only send RTT requests if a packet would be sent anyways.
         // This ensures that RTT data is sent only once per heartbeat if no data
         // is being transmitted.
@@ -121,11 +137,6 @@ private:
             
             _rttResponseSequenceNumber = -1;
             _rttResponseRegisterTime = 0;
-        }
-        
-        if (-1 != _enqueuedNak) {
-            packetHeader.flags |= EMI_NAK_PACKET_FLAG;
-            packetHeader.nak = _enqueuedNak;
         }
     }
     
@@ -233,6 +244,7 @@ public:
     _rttResponseSequenceNumber(-1),
     _rttResponseRegisterTime(0),
     _enqueueHeartbeat(false),
+    _enqueuePacketAck(false),
     _enqueuedNak(-1),
     _queueSize(0) {
         _bufLength = conn.getEmiSock().config.mtu;
@@ -277,6 +289,8 @@ public:
     bool tick(EmiCongestionControl& congestionControl,
               EmiConnTime& connTime,
               EmiTimeInterval now) {
+        _enqueuePacketAck = true;
+        
         _acksSentInThisTick.clear();
         
         bool somethingWasSent = flush(congestionControl, connTime, now);

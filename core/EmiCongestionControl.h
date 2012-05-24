@@ -22,11 +22,21 @@ class EmiCongestionControl {
     EmiLinkCapacity    _linkCapacity;
     EmiDataArrivalRate _dataArrivalRate;
     
+    // State for knowing which ACKs to send and when
+    EmiSequenceNumber _newestSeenSequenceNumber;
+    EmiSequenceNumber _newestSentSequenceNumber;
+    
 public:
     EmiCongestionControl();
     virtual ~EmiCongestionControl();
     
     void gotPacket(EmiTimeInterval now, const EmiPacketHeader& packetHeader, size_t packetLength);
+    
+    // This method is intended to be called once per tick. It returns
+    // the newest seen sequence number, or -1 if no sequence number
+    // has been seen or if the newest sequence number seen has already
+    // been returned once by this method.
+    EmiSequenceNumber ack();
     
     inline float linkCapacity() const {
         return _linkCapacity.calculate();
