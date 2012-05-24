@@ -9,7 +9,7 @@
 #include "EmiDataArrivalRate.h"
 
 EmiDataArrivalRate::EmiDataArrivalRate() :
-_lastPacket(-1),
+_lastPacketTime(-1),
 _medianFilter(1) {}
 
 EmiDataArrivalRate::~EmiDataArrivalRate() {}

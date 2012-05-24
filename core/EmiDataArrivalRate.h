@@ -17,7 +17,7 @@
 // algorithm.
 class EmiDataArrivalRate {
     
-    EmiTimeInterval        _lastPacket;
+    EmiTimeInterval        _lastPacketTime;
     // The values this filter handles are in the unit of
     // bytes per second
     EmiMedianFilter<float> _medianFilter;
@@ -30,10 +30,10 @@ public:
     // Call this when a packet has been received. This
     // method is fast.
     inline void gotPacket(EmiTimeInterval now, size_t packetLength) {
-        if (-1 != _lastPacket) {
-            _medianFilter.pushValue(packetLength/(now-_lastPacket));
+        if (-1 != _lastPacketTime) {
+            _medianFilter.pushValue(packetLength/(now-_lastPacketTime));
         }
-        _lastPacket = now;
+        _lastPacketTime = now;
     }
     
     // Calculates the current data arrival rate, in
