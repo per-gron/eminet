@@ -157,6 +157,13 @@ void EmiCongestionControl::onRto() {
     _sendingRate /= 2;
 }
 
+void EmiCongestionControl::onDataSent(size_t size) {
+    if (0 == _sendingRate) {
+        // We're in slow start mode
+        _totalDataSentInSlowStart += size;
+    }
+}
+
 EmiPacketSequenceNumber EmiCongestionControl::ack() {
     if (_newestSeenSequenceNumber == _newestSentSequenceNumber) {
         return -1;

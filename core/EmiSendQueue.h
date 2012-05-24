@@ -71,13 +71,21 @@ private:
         _queueSize = 0;
     }
     
-    void sendMessageInSeparatePacket(const EM *msg) {
+    void sendDatagram(EmiCongestionControl& congestionControl,
+                      const uint8_t *buf, size_t bufSize) {
+        congestionControl.onDataSent(bufSize);
+        _conn.sendDatagram(buf, bufSize);
+    }
+    
+    void sendMessageInSeparatePacket(EmiCongestionControl& congestionControl, const EM *msg) {
         const uint8_t *data = Binding::extractData(msg->data);
         size_t dataLen = Binding::extractLength(msg->data);
         
+        __block EmiCongestionControl& cc(congestionControl);
+        
         EmiMessage<Binding>::template writeControlPacketWithData<128>(msg->flags, data, dataLen, msg->sequenceNumber, ^(uint8_t *packetBuf, size_t size) {
             // Actually send the packet
-            _conn.sendDatagram(packetBuf, size);
+            sendDatagram(cc, packetBuf, size);
         });
     }
     
@@ -219,7 +227,7 @@ private:
             if (packetHeaderLength != pos) {
                 ASSERT(pos <= _bufLength);
                 
-                _conn.sendDatagram(_buf, pos);
+                sendDatagram(congestionControl, _buf, pos);
                 sentPacket = true;
             }
         }
@@ -281,7 +289,7 @@ public:
             size_t packetLength;
             EmiPacketHeader::write(buf, sizeof(buf), ph, &packetLength);
             
-            _conn.sendDatagram(buf, packetLength);
+            sendDatagram(congestionControl, buf, packetLength);
         }
     }
     
@@ -329,7 +337,7 @@ public:
         if (msg->flags & (EMI_PRX_FLAG | EMI_RST_FLAG | EMI_SYN_FLAG)) {
             // This is a control message, one that cannot be bundled with
             // other messages. We might just as well send it right away.
-            sendMessageInSeparatePacket(msg);
+            sendMessageInSeparatePacket(congestionControl, msg);
         }
         else {
             // Only EMI_PRIORITY_HIGH messages are implemented

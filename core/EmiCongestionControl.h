@@ -14,6 +14,8 @@
 
 class EmiPacketHeader;
 
+// This class implements the main congestion control algorithm.
+// It is based on the design of UDT.
 class EmiCongestionControl {
     
     size_t _congestionWindow;
@@ -57,6 +59,7 @@ public:
                    const EmiPacketHeader& packetHeader, size_t packetLength);
     
     void onRto();
+    void onDataSent(size_t size);
     
     // This method is intended to be called once per tick. It returns
     // the newest seen sequence number, or -1 if no sequence number
