@@ -17,8 +17,9 @@
 void EmiCongestionControl::onAck(EmiTimeInterval rtt) {
     if (0 == _sendingRate) {
         // We're in the slow start phase
-        _congestionWindow = std::max(EMI_MIN_CONGESTION_WINDOW, _totalDataSentInSlowStart);
+        _congestionWindow = _totalDataSentInSlowStart;
         
+        _congestionWindow = std::max(EMI_MIN_CONGESTION_WINDOW, _congestionWindow);
         _congestionWindow = std::min(EMI_MAX_CONGESTION_WINDOW, _congestionWindow);
     }
     else {
@@ -42,10 +43,10 @@ void EmiCongestionControl::onNak(EmiPacketSequenceNumber nak,
     if (0 == _sendingRate) {
         // We're in the slow start phase.
         
-        if (-1 != _remoteLinkCapacity ||
-            -1 != _remoteDataArrivalRate) {
+        if (-1 == _remoteLinkCapacity ||
+            -1 == _remoteDataArrivalRate) {
             // We got a NAK, but we have not yet received
-            // data about the link capacity or the arrival
+            // data about the link capacity and the arrival
             // rate. Ignore this packet.
             return;
         }
@@ -66,7 +67,7 @@ void EmiCongestionControl::onNak(EmiPacketSequenceNumber nak,
             static const float SMOOTH = 0.125;
             _avgNakCount = (1-SMOOTH)*_avgNakCount + SMOOTH*_nakCount;
             _nakCount = 1;
-            _decRandom = ((arc4random() >> 5) % (((int)std::ceil(_avgNakCount))-1)) + 1;
+            _decRandom = (arc4random() % (((int)std::floor(_avgNakCount))+1)) + 1;
             _decCount = 1;
             _lastDecSeq = largestSNSoFar;
         }
