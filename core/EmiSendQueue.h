@@ -13,6 +13,7 @@
 #include "EmiNetUtil.h"
 #include "EmiPacketHeader.h"
 #include "EmiDataArrivalRate.h"
+#include "EmiLinkCapacity.h"
 
 #include <arpa/inet.h>
 #include <vector>
@@ -82,6 +83,7 @@ private:
     
     void fillPacketHeaderData(EmiTimeInterval now,
                               EmiDataArrivalRate& dataArrivalRate,
+                              EmiLinkCapacity& linkCapacity,
                               EmiConnTime& connTime,
                               EmiPacketHeader& packetHeader) {
         packetHeader.flags |= EMI_SEQUENCE_NUMBER_PACKET_FLAG;
@@ -100,6 +102,12 @@ private:
             // RTT requests.
             packetHeader.flags |= EMI_ARRIVAL_RATE_PACKET_FLAG;
             packetHeader.arrivalRate = dataArrivalRate.calculate();
+            
+            // Ditto with link capacity; sending it whenever we send RTT
+            // requests relieves us from having to cook up some separate logic
+            // as to when to send that data.
+            packetHeader.flags |= EMI_LINK_CAPACITY_PACKET_FLAG;
+            packetHeader.linkCapacity = linkCapacity.calculate();
         }
         
         // Fill the packet header with a RTT response if we've been requested to do so
@@ -125,13 +133,14 @@ private:
     
     // Returns true if something was sent
     bool flush(EmiDataArrivalRate& dataArrivalRate,
+               EmiLinkCapacity& linkCapacity,
                EmiConnTime& connTime,
                EmiTimeInterval now) {
         bool sentPacket = false;
         
         if (!_queue.empty() || !_acks.empty()) {
             EmiPacketHeader packetHeader;
-            fillPacketHeaderData(now, dataArrivalRate, connTime, packetHeader);
+            fillPacketHeaderData(now, dataArrivalRate, linkCapacity, connTime, packetHeader);
             size_t packetHeaderLength;
             EmiPacketHeader::write(_buf, _bufLength, packetHeader, &packetHeaderLength);
             
@@ -209,7 +218,7 @@ private:
         
         if (!sentPacket && _enqueueHeartbeat) {
             // Send heartbeat
-            sendHeartbeat(dataArrivalRate, connTime, now);
+            sendHeartbeat(dataArrivalRate, linkCapacity, connTime, now);
             sentPacket = true;
         }
         
@@ -253,11 +262,12 @@ public:
     }
     
     void sendHeartbeat(EmiDataArrivalRate& dataArrivalRate,
+                       EmiLinkCapacity& linkCapacity,
                        EmiConnTime& connTime,
                        EmiTimeInterval now) {
         if (_conn.isOpen()) {
             EmiPacketHeader ph;
-            fillPacketHeaderData(now, dataArrivalRate, connTime, ph);
+            fillPacketHeaderData(now, dataArrivalRate, linkCapacity, connTime, ph);
             
             uint8_t buf[32];
             size_t packetLength;
@@ -269,11 +279,12 @@ public:
     
     // Returns true if something was sent
     bool tick(EmiDataArrivalRate& dataArrivalRate,
+              EmiLinkCapacity& linkCapacity,
               EmiConnTime& connTime,
               EmiTimeInterval now) {
         _acksSentInThisTick.clear();
         
-        bool somethingWasSent = flush(dataArrivalRate, connTime, now);
+        bool somethingWasSent = flush(dataArrivalRate, linkCapacity, connTime, now);
         
         return somethingWasSent;
     }
@@ -300,6 +311,7 @@ public:
     
     void enqueueMessage(EM *msg,
                         EmiDataArrivalRate& dataArrivalRate,
+                        EmiLinkCapacity& linkCapacity,
                         EmiConnTime& connTime,
                         EmiTimeInterval now) {
         if (msg->flags & (EMI_PRX_FLAG | EMI_RST_FLAG | EMI_SYN_FLAG)) {
@@ -314,7 +326,7 @@ public:
             size_t msgSize = msg->approximateSize();
             
             if (_queueSize + msgSize >= _bufLength) { // _bufLength is the MTU of the EmiSocket
-                flush(dataArrivalRate, connTime, now);
+                flush(dataArrivalRate, linkCapacity, connTime, now);
             }
             
             msg->retain();

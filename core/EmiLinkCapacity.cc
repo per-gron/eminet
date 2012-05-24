@@ -14,7 +14,11 @@ EmiLinkCapacity::EmiLinkCapacity() :
 _lastPacket(-1),
 _lastPacketTime(0),
 _lastPacketSize(0),
-_medianFilter(1) {}
+// Start with 512 B/s. That should be a sufficiently
+// conservative initial choice, while avoiding to
+// confuse the congestion control algorithm with a
+// much too low value (such as 0 or 1)
+_medianFilter(512) {}
 
 EmiLinkCapacity::~EmiLinkCapacity() {}
 
