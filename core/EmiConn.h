@@ -16,8 +16,7 @@
 #include "EmiSendQueue.h"
 #include "EmiLogicalConnection.h"
 #include "EmiMessage.h"
-#include "EmiDataArrivalRate.h"
-#include "EmiLinkCapacity.h"
+#include "EmiCongestionControl.h"
 #include "EmiP2PData.h"
 #include "EmiConnTimers.h"
 #include "EmiUdpSocket.h"
@@ -59,8 +58,8 @@ class EmiConn {
     EmiSenderBuffer<Binding> _senderBuffer;
     ERB _receiverBuffer;
     ESQ _sendQueue;
-    EmiDataArrivalRate _dataArrivalRate;
-    EmiLinkCapacity    _linkCapacity;
+    
+    EmiCongestionControl _congestionControl;
     
     ECT _timers;
     typename Binding::Timer *_forceCloseTimer;
@@ -123,8 +122,7 @@ public:
     _senderBuffer(_emisock.config.senderBufferSize),
     _receiverBuffer(_emisock.config.receiverBufferSize, *this),
     _sendQueue(*this),
-    _dataArrivalRate(),
-    _linkCapacity(),
+    _congestionControl(),
     _timers(*this),
     _forceCloseTimer(NULL) {
         EmiNetUtil::anyAddr(0, AF_INET, &_localAddress);
@@ -164,8 +162,7 @@ public:
     
     void gotPacket(EmiTimeInterval now, const EmiPacketHeader& packetHeader, size_t packetLength) {
         _timers.gotPacket(packetHeader, now);
-        _dataArrivalRate.gotPacket(now, packetLength);
-        _linkCapacity.gotPacket(now, packetHeader.sequenceNumber, packetLength);
+        _congestionControl.gotPacket(now, packetHeader, packetLength);
         
         if (packetHeader.flags & EMI_RTT_REQUEST_PACKET_FLAG) {
             _sendQueue.enqueueRttResponse(packetHeader.sequenceNumber, now);
@@ -208,7 +205,7 @@ public:
             _timers.updateRtoTimeout();
         }
         
-        _sendQueue.enqueueMessage(msg, _dataArrivalRate, _linkCapacity, _timers.getTime(), now);
+        _sendQueue.enqueueMessage(msg, _congestionControl, _timers.getTime(), now);
         _timers.ensureTickTimeout();
         
         return true;
@@ -401,7 +398,7 @@ public:
     // Delegates to EmiSendQueue
     // Returns true if something was sent
     bool tick(EmiTimeInterval now) {
-        return _sendQueue.tick(_dataArrivalRate, _linkCapacity, _timers.getTime(), now);
+        return _sendQueue.tick(_congestionControl, _timers.getTime(), now);
     }
     
     // Delegates to EmiLogicalConnection
