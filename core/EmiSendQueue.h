@@ -85,8 +85,14 @@ private:
     }
     
     void sendDatagram(EmiCongestionControl& congestionControl,
-                      const uint8_t *buf, size_t bufSize) {
+                      const uint8_t *buf, size_t bufSize,
+                      bool packetHasSequenceNumber) {
         congestionControl.onDataSent(_packetSequenceNumber, bufSize);
+        
+        if (packetHasSequenceNumber) {
+            _packetSequenceNumber = (_packetSequenceNumber+1) & EMI_PACKET_SEQUENCE_NUMBER_MASK;
+        }
+        
         _conn.sendDatagram(buf, bufSize);
     }
     
@@ -98,7 +104,7 @@ private:
         
         EmiMessage<Binding>::template writeControlPacketWithData<128>(msg->flags, data, dataLen, msg->sequenceNumber, ^(uint8_t *packetBuf, size_t size) {
             // Actually send the packet
-            sendDatagram(cc, packetBuf, size);
+            sendDatagram(cc, packetBuf, size, /*packetHasSequenceNumber:*/false);
         });
     }
     
@@ -108,7 +114,6 @@ private:
                               EmiPacketHeader& packetHeader) {
         packetHeader.flags |= EMI_SEQUENCE_NUMBER_PACKET_FLAG;
         packetHeader.sequenceNumber = _packetSequenceNumber;
-        _packetSequenceNumber = (_packetSequenceNumber+1) & EMI_PACKET_SEQUENCE_NUMBER_MASK;
         
         if (_enqueuePacketAck) {
             _enqueuePacketAck = false;
@@ -191,20 +196,23 @@ private:
                 curAck = _acks.find(msg->channelQualifier);
             }
             
+            bool hasAck = curAck != noAck;
+            
+            size_t msgSize = EM::writeMsg(_buf, /* buf */
+                                          _bufLength, /* bufSize */
+                                          pos, /* offset */
+                                          hasAck, /* hasAck */
+                                          hasAck && (*curAck).second, /* ack */
+                                          msg->channelQualifier,
+                                          msg->sequenceNumber,
+                                          Binding::extractData(msg->data),
+                                          Binding::extractLength(msg->data),
+                                          msg->flags);
+            
+            pos += msgSize;
+            
             _acksSentInThisTick.insert(msg->channelQualifier);
             _acks.erase(msg->channelQualifier);
-            
-            bool hasAck = curAck != noAck;
-            pos += EM::writeMsg(_buf, /* buf */
-                                _bufLength, /* bufSize */
-                                pos, /* offset */
-                                hasAck, /* hasAck */
-                                hasAck && (*curAck).second, /* ack */
-                                msg->channelQualifier,
-                                msg->sequenceNumber,
-                                Binding::extractData(msg->data),
-                                Binding::extractLength(msg->data),
-                                msg->flags);
             
             ++iter;
         }
@@ -240,7 +248,7 @@ private:
         if (packetHeaderLength != pos) {
             ASSERT(pos <= _bufLength);
             
-            sendDatagram(congestionControl, _buf, pos);
+            sendDatagram(congestionControl, _buf, pos, /*packetHasSequenceNumber:*/true);
             _bytesSentSinceLastTick += pos;
             
             clearQueue(_queue.begin(), iter);
@@ -294,7 +302,7 @@ public:
         EmiPacketHeader::write(buf, sizeof(buf), ph, &packetLength);
         
         if (_conn.isOpen()) {
-            sendDatagram(congestionControl, buf, packetLength);
+            sendDatagram(congestionControl, buf, packetLength, /*packetHasSequenceNumber:*/true);
         }
         
         return packetLength;
