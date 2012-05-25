@@ -55,7 +55,7 @@ class EmiSendQueue {
     bool _enqueueHeartbeat;
     bool _enqueuePacketAck; // This helps to make sure that we only send one packet ACK per tick
     EmiPacketSequenceNumber _enqueuedNak;
-    bool _packetSentSinceLastTick;
+    size_t _bytesSentSinceLastTick;
     
 private:
     // Private copy constructor and assignment operator
@@ -239,19 +239,11 @@ private:
                 ASSERT(pos <= _bufLength);
                 
                 sendDatagram(congestionControl, _buf, pos);
-                _packetSentSinceLastTick = true;
+                _bytesSentSinceLastTick += pos;
                 
                 clearQueue(_queue.begin(), iter);
             }
         }
-        
-        if (!_packetSentSinceLastTick && _enqueueHeartbeat) {
-            // Send heartbeat
-            sendHeartbeat(congestionControl, connTime, now);
-            _packetSentSinceLastTick = true;
-        }
-        
-        _enqueueHeartbeat = false;
     }
     
 public:
@@ -264,7 +256,7 @@ public:
     _enqueueHeartbeat(false),
     _enqueuePacketAck(false),
     _enqueuedNak(-1),
-    _packetSentSinceLastTick(false),
+    _bytesSentSinceLastTick(0),
     _queueSize(0) {
         _bufLength = conn.getEmiSock().config.mtu - EMI_PACKET_HEADER_MAX_LENGTH - EMI_UDP_HEADER_SIZE;
         _buf = (uint8_t *)malloc(_bufLength);
@@ -289,19 +281,22 @@ public:
         _enqueuedNak = nak;
     }
     
-    void sendHeartbeat(EmiCongestionControl& congestionControl,
-                       EmiConnTime& connTime,
-                       EmiTimeInterval now) {
+    // Returns the number of bytes sent
+    size_t sendHeartbeat(EmiCongestionControl& congestionControl,
+                         EmiConnTime& connTime,
+                         EmiTimeInterval now) {
+        EmiPacketHeader ph;
+        fillPacketHeaderData(now, congestionControl, connTime, ph);
+        
+        uint8_t buf[32];
+        size_t packetLength;
+        EmiPacketHeader::write(buf, sizeof(buf), ph, &packetLength);
+        
         if (_conn.isOpen()) {
-            EmiPacketHeader ph;
-            fillPacketHeaderData(now, congestionControl, connTime, ph);
-            
-            uint8_t buf[32];
-            size_t packetLength;
-            EmiPacketHeader::write(buf, sizeof(buf), ph, &packetLength);
-            
             sendDatagram(congestionControl, buf, packetLength);
         }
+        
+        return packetLength;
     }
     
     // Returns true if something has been sent since the last tick
@@ -314,8 +309,16 @@ public:
         
         flush(congestionControl, connTime, now);
         
-        bool somethingHasBeenSentInThisTick = _packetSentSinceLastTick;
-        _packetSentSinceLastTick = false;
+        if (0 == _bytesSentSinceLastTick && _enqueueHeartbeat) {
+            // Send heartbeat
+            size_t heartbeatSize = sendHeartbeat(congestionControl, connTime, now);
+            _bytesSentSinceLastTick += heartbeatSize;
+            _enqueueHeartbeat = false;
+        }
+        
+        bool somethingHasBeenSentInThisTick = (0 != _bytesSentSinceLastTick);
+        _bytesSentSinceLastTick = 0;
+        
         return somethingHasBeenSentInThisTick;
     }
     
