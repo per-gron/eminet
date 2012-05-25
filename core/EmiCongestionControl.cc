@@ -14,13 +14,20 @@
 #include <algorithm>
 #include <cmath>
 
+void EmiCongestionControl::endSlowStartPhase() {
+    _sendingRate = _remoteDataArrivalRate;
+}
+
 void EmiCongestionControl::onAck(EmiTimeInterval rtt) {
     if (0 == _sendingRate) {
         // We're in the slow start phase
-        _congestionWindow = _totalDataSentInSlowStart;
+        _congestionWindow = std::max(EMI_MIN_CONGESTION_WINDOW, _totalDataSentInSlowStart);
         
-        _congestionWindow = std::max(EMI_MIN_CONGESTION_WINDOW, _congestionWindow);
-        _congestionWindow = std::min(EMI_MAX_CONGESTION_WINDOW, _congestionWindow);
+        if (_congestionWindow >= EMI_MAX_CONGESTION_WINDOW) {
+            _congestionWindow = EMI_MAX_CONGESTION_WINDOW;
+            
+            endSlowStartPhase();
+        }
     }
     else {
         // We're not in the slow start phase
@@ -39,6 +46,7 @@ void EmiCongestionControl::onAck(EmiTimeInterval rtt) {
         _sendingRate += inc/EMI_TICK_TIME;
         
         _congestionWindow = _remoteDataArrivalRate * (rtt + EMI_TICK_TIME) + EMI_MIN_CONGESTION_WINDOW;
+        _congestionWindow = std::min(EMI_MAX_CONGESTION_WINDOW, _congestionWindow);
     }
 }
 
@@ -55,8 +63,7 @@ void EmiCongestionControl::onNak(EmiPacketSequenceNumber nak,
             return;
         }
         
-        // End the slow start phase
-        _sendingRate = _remoteDataArrivalRate;
+        endSlowStartPhase();
     }
     else {
         // We're not in the slow start phase

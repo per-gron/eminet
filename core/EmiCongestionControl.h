@@ -21,7 +21,6 @@ class EmiCongestionControl {
     size_t _congestionWindow;
     // A sending rate of 0 means that we're in the slow start phase
     float  _sendingRate;
-    // TODO Actually update this variable
     size_t _totalDataSentInSlowStart;
     
     EmiLinkCapacity    _linkCapacity;
@@ -45,6 +44,8 @@ class EmiCongestionControl {
     
     float _remoteLinkCapacity;
     float _remoteDataArrivalRate;
+    
+    void endSlowStartPhase();
     
     void onAck(EmiTimeInterval rtt);
     void onNak(EmiPacketSequenceNumber nak,
@@ -75,6 +76,7 @@ public:
         return _dataArrivalRate.calculate();
     }
     
+    // A return value of 0 means that we're in the slow start phase.
     inline float getSendingRate() const {
         return _sendingRate;
     }
