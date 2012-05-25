@@ -376,7 +376,7 @@ public:
                 conn->forwardPacket(now, inboundAddress, remoteAddress, data, offset, len);
             }
         }
-        else if (len < packetHeaderLength + EMI_HEADER_LENGTH) {
+        else if (len < packetHeaderLength + EMI_MESSAGE_HEADER_MIN_LENGTH) {
             err = "Packet too short";
             goto error;
         }

@@ -129,7 +129,7 @@ public:
     size_t approximateSize() const {
         // + 2 for the possibility of adding ACK data to the message
         // + 3 for the sequence number and split id
-        return EMI_HEADER_LENGTH + Binding::extractLength(data) + 2 + 3;
+        return EMI_MESSAGE_HEADER_MIN_LENGTH + Binding::extractLength(data) + 2 + 3;
     }
     
     // THIS FIELD IS INTENDED TO BE USED ONLY BY EmiSenderBuffer!

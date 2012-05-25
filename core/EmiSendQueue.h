@@ -254,7 +254,7 @@ public:
     _enqueuedNak(-1),
     _packetSentSinceLastTick(false),
     _queueSize(0) {
-        _bufLength = conn.getEmiSock().config.mtu;
+        _bufLength = conn.getEmiSock().config.mtu - EMI_PACKET_HEADER_MAX_LENGTH - EMI_UDP_HEADER_SIZE;
         _buf = (uint8_t *)malloc(_bufLength);
     }
     virtual ~EmiSendQueue() {
@@ -347,7 +347,8 @@ public:
             
             size_t msgSize = msg->approximateSize();
             
-            if (_queueSize + msgSize >= _bufLength) { // _bufLength is the MTU of the EmiSocket
+            // _bufLength is the MSS (max segment size) of the EmiSocket
+            if (_queueSize + msgSize >= _bufLength) {
                 flush(congestionControl, connTime, now);
             }
             

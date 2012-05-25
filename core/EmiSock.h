@@ -239,7 +239,7 @@ public:
             // We don't need to do anything here; all necessary processing
             // has already been done in the call to gotPacket.
         }
-        else if (len < packetHeaderLength + EMI_HEADER_LENGTH) {
+        else if (len < packetHeaderLength + EMI_MESSAGE_HEADER_MIN_LENGTH) {
             err = "Packet too short";
             goto error;
         }

@@ -9,7 +9,7 @@
 #include "EmiMessageHeader.h"
 
 bool EmiMessageHeader::parse(const uint8_t *buf, size_t bufSize, EmiMessageHeader& header) {
-    if (bufSize < EMI_HEADER_LENGTH) return false;
+    if (bufSize < EMI_MESSAGE_HEADER_MIN_LENGTH) return false;
     
     uint8_t connByte = buf[0];
     uint16_t length = ntohs(*((uint16_t *)(buf+2)));
@@ -24,7 +24,7 @@ bool EmiMessageHeader::parse(const uint8_t *buf, size_t bufSize, EmiMessageHeade
     bool messageHasAckData = ackFlag && !(rstFlag && synFlag) && !prxFlag;
     
     size_t lengthOffset = length ? 3 : (synFlag ? 2 : 0);
-    size_t headerLength = EMI_HEADER_LENGTH + lengthOffset + (messageHasAckData ? 2 : 0);
+    size_t headerLength = EMI_MESSAGE_HEADER_MIN_LENGTH + lengthOffset + (messageHasAckData ? 2 : 0);
     
     if (headerLength > bufSize) return false;
     
@@ -42,7 +42,7 @@ bool EmiMessageHeader::parse(const uint8_t *buf, size_t bufSize, EmiMessageHeade
 bool EmiMessageHeader::parseMessages(const uint8_t *buf, size_t bufSize, EmiParseMessageBlock block) {
     size_t offset = 0;
     
-    while (offset + EMI_HEADER_LENGTH <= bufSize) {
+    while (offset + EMI_MESSAGE_HEADER_MIN_LENGTH <= bufSize) {
         EmiMessageHeader header;
         if (!EmiMessageHeader::parse(buf+offset, 
                                      bufSize-offset,
