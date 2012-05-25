@@ -208,7 +208,17 @@ public:
             _timers.updateRtoTimeout();
         }
         
-        _sendQueue.enqueueMessage(msg, _congestionControl, _timers.getTime(), now);
+        Error enqueueError;
+        if (!_sendQueue.enqueueMessage(msg, _congestionControl, _timers.getTime(), now, enqueueError)) {
+            // This failing is not a catastrophic failure; if the message is not reliable
+            // the system should allow for it to be lost anyway, and if the message is
+            // reliable, it will be re-inserted into the send queue on the applicable RTO
+            // timeout.
+            
+            // For now, we'll do nothing here. In the future, it might be a good idea to
+            // improve this by telling the client of EmiNet that this happened.
+        }
+        
         _timers.ensureTickTimeout();
         
         return true;
@@ -401,7 +411,7 @@ public:
     }
     
     // Delegates to EmiSendQueue
-    // Returns true if something was sent
+    // Returns true if something has been sent since the last tick
     bool tick(EmiTimeInterval now) {
         return _sendQueue.tick(_congestionControl, _timers.getTime(), now);
     }

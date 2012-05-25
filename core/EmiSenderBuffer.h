@@ -17,8 +17,8 @@
 
 template<class Binding>
 class EmiSenderBuffer {
-    typedef typename Binding::Error        Error;
-    typedef EmiMessage<Binding>            EM;
+    typedef typename Binding::Error Error;
+    typedef EmiMessage<Binding>     EM;
     typedef void (^EmiSenderBufferIteratorBlock)(EM *message);
     
     struct EmiSenderBufferNextMsgTreeCmp {

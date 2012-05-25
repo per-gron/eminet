@@ -59,7 +59,7 @@ private:
     static void tickTimeoutCallback(EmiTimeInterval now, Timer *timer, void *data) {
         EmiConnTimers *timers = (EmiConnTimers *)data;
         
-        // Tick returns true if a packet was sent
+        // Tick returns true if a packet has been sent since the last tick
         if (timers->_delegate.tick(now)) {
             timers->resetHeartbeatTimeout();
         }

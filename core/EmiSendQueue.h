@@ -29,6 +29,7 @@ class EmiConn;
 template<class SockDelegate, class ConnDelegate>
 class EmiSendQueue {
     typedef typename SockDelegate::Binding   Binding;
+    typedef typename Binding::Error          Error;
     typedef typename Binding::PersistentData PersistentData;
     typedef EmiMessage<Binding>              EM;
     
@@ -54,6 +55,7 @@ class EmiSendQueue {
     bool _enqueueHeartbeat;
     bool _enqueuePacketAck; // This helps to make sure that we only send one packet ACK per tick
     EmiPacketSequenceNumber _enqueuedNak;
+    bool _packetSentSinceLastTick;
     
 private:
     // Private copy constructor and assignment operator
@@ -149,11 +151,9 @@ private:
     }
     
     // Returns true if something was sent
-    bool flush(EmiCongestionControl& congestionControl,
+    void flush(EmiCongestionControl& congestionControl,
                EmiConnTime& connTime,
                EmiTimeInterval now) {
-        bool sentPacket = false;
-        
         if (!_queue.empty() || !_acks.empty()) {
             EmiPacketHeader packetHeader;
             fillPacketHeaderData(now, congestionControl, connTime, packetHeader);
@@ -228,20 +228,18 @@ private:
                 ASSERT(pos <= _bufLength);
                 
                 sendDatagram(congestionControl, _buf, pos);
-                sentPacket = true;
+                _packetSentSinceLastTick = true;
             }
         }
         
-        if (!sentPacket && _enqueueHeartbeat) {
+        if (!_packetSentSinceLastTick && _enqueueHeartbeat) {
             // Send heartbeat
             sendHeartbeat(congestionControl, connTime, now);
-            sentPacket = true;
+            _packetSentSinceLastTick = true;
         }
         
         clearQueue();
         _enqueueHeartbeat = false;
-        
-        return sentPacket;
     }
     
 public:
@@ -254,6 +252,7 @@ public:
     _enqueueHeartbeat(false),
     _enqueuePacketAck(false),
     _enqueuedNak(-1),
+    _packetSentSinceLastTick(false),
     _queueSize(0) {
         _bufLength = conn.getEmiSock().config.mtu;
         _buf = (uint8_t *)malloc(_bufLength);
@@ -293,7 +292,7 @@ public:
         }
     }
     
-    // Returns true if something was sent
+    // Returns true if something has been sent since the last tick
     bool tick(EmiCongestionControl& congestionControl,
               EmiConnTime& connTime,
               EmiTimeInterval now) {
@@ -301,9 +300,11 @@ public:
         
         _acksSentInThisTick.clear();
         
-        bool somethingWasSent = flush(congestionControl, connTime, now);
+        flush(congestionControl, connTime, now);
         
-        return somethingWasSent;
+        bool somethingHasBeenSentInThisTick = _packetSentSinceLastTick;
+        _packetSentSinceLastTick = false;
+        return somethingHasBeenSentInThisTick;
     }
     
     // Returns true if at least 1 ack is now enqueued
@@ -330,10 +331,11 @@ public:
         _rttResponseRegisterTime = now;
     }
     
-    void enqueueMessage(EM *msg,
+    bool enqueueMessage(EM *msg,
                         EmiCongestionControl& congestionControl,
                         EmiConnTime& connTime,
-                        EmiTimeInterval now) {
+                        EmiTimeInterval now,
+                        Error& err) {
         if (msg->flags & (EMI_PRX_FLAG | EMI_RST_FLAG | EMI_SYN_FLAG)) {
             // This is a control message, one that cannot be bundled with
             // other messages. We might just as well send it right away.
@@ -353,6 +355,8 @@ public:
             _queue.push_back(msg);
             _queueSize += msgSize;
         }
+        
+        return true;
     }
 };
 
