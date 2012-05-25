@@ -208,6 +208,8 @@ public:
             _timers.updateRtoTimeout();
         }
         
+        _timers.ensureTickTimeout();
+        
         Error enqueueError;
         if (!_sendQueue.enqueueMessage(msg, _congestionControl, _timers.getTime(), now, enqueueError)) {
             // This failing is not a catastrophic failure; if the message is not reliable
@@ -218,8 +220,6 @@ public:
             // For now, we'll do nothing here. In the future, it might be a good idea to
             // improve this by telling the client of EmiNet that this happened.
         }
-        
-        _timers.ensureTickTimeout();
         
         return true;
     }

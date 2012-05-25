@@ -166,12 +166,16 @@ private:
         }
     }
     
-    void flush(EmiCongestionControl& congestionControl,
+    // Returns true if a packet was sent
+    bool flush(EmiCongestionControl& congestionControl,
                EmiConnTime& connTime,
                EmiTimeInterval now) {
         if (_queue.empty() && _acks.empty()) {
-            return;
+            return false;
         }
+        
+        size_t allowedSize = std::min(_bufLength,
+                                      congestionControl.tickAllowance() - _bytesSentSinceLastTick);
         
         EmiPacketHeader packetHeader;
         fillPacketHeaderData(now, congestionControl, connTime, packetHeader);
@@ -186,6 +190,11 @@ private:
         SendQueueDequeIter   end   = _queue.end();
         while (iter != end) {
             EM *msg = *iter;
+            // We need to increment iter here, because we might break
+            // out of the loop early, and there is code later on that
+            // relies on iter being after the last message that was
+            // saved to the packet to be sent.
+            ++iter;
             
             SendQueueAcksMapIter curAck;
             if (0 != _acksSentInThisTick.count(msg->channelQualifier)) {
@@ -209,12 +218,23 @@ private:
                                           Binding::extractLength(msg->data),
                                           msg->flags);
             
-            pos += msgSize;
+            if (pos+msgSize > allowedSize) {
+                // The message got too big.
+                break;
+            }
             
+            // Do the actual side effects to save the packet data.
+            //
+            // We need to do this after the potential break above.
+            //
+            // Up until now, this loop iteration did not perform
+            // any side effects: saving the message to the buffer
+            // does not count since we did not actually increment
+            // pos. Code below will assume that that data is undefined
+            // garbage unless we increment pos.
+            pos += msgSize;
             _acksSentInThisTick.insert(msg->channelQualifier);
             _acks.erase(msg->channelQualifier);
-            
-            ++iter;
         }
         
         /// Send ACK messages without data for the acks that are
@@ -227,17 +247,26 @@ private:
             if (0 == _acksSentInThisTick.count(cq)) {
                 EmiSequenceNumber sn = (*ackIter).second;
                 
-                pos += EM::writeMsg(_buf, /* buf */
-                                    _bufLength, /* bufSize */
-                                    pos, /* offset */
-                                    true, /* hasAck */
-                                    sn, /* ack */
-                                    cq, /* channelQualifier */
-                                    0, /* sequenceNumber */
-                                    NULL, /* data */
-                                    0, /* dataLength */
-                                    0 /* flags */);
+                size_t msgSize = EM::writeMsg(_buf, /* buf */
+                                              _bufLength, /* bufSize */
+                                              pos, /* offset */
+                                              true, /* hasAck */
+                                              sn, /* ack */
+                                              cq, /* channelQualifier */
+                                              0, /* sequenceNumber */
+                                              NULL, /* data */
+                                              0, /* dataLength */
+                                              0 /* flags */);
                 
+                if (pos+msgSize > allowedSize) {
+                    // The message got too big.
+                    break;
+                }
+                
+                // Do the actual side effects. Like the previous loop,
+                // we need to do all lasting side effects after the
+                // potential break above.
+                pos += msgSize;
                 _acksSentInThisTick.insert(cq);
                 _acks.erase(cq);
             }
@@ -252,6 +281,13 @@ private:
             _bytesSentSinceLastTick += pos;
             
             clearQueue(_queue.begin(), iter);
+            
+            // Return true to signify that a packet was sent
+            return true;
+        }
+        else {
+            // Return false to signify that no packet was sent
+            return false;
         }
     }
     
@@ -316,7 +352,10 @@ public:
         
         _acksSentInThisTick.clear();
         
-        flush(congestionControl, connTime, now);
+        // Send packets until we can't send any more packets,
+        // either because of congestion control, or because there
+        // is nothing more to send.
+        while (flush(congestionControl, connTime, now));
         
         if (0 == _bytesSentSinceLastTick && _enqueueHeartbeat) {
             // Send heartbeat
@@ -363,6 +402,8 @@ public:
         if (msg->flags & (EMI_PRX_FLAG | EMI_RST_FLAG | EMI_SYN_FLAG)) {
             // This is a control message, one that cannot be bundled with
             // other messages. We might just as well send it right away.
+            //
+            // Control messages are not congestion controlled.
             sendMessageInSeparatePacket(congestionControl, msg);
         }
         else {
