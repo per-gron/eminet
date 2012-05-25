@@ -161,88 +161,89 @@ private:
         }
     }
     
-    // Returns true if something was sent
     void flush(EmiCongestionControl& congestionControl,
                EmiConnTime& connTime,
                EmiTimeInterval now) {
-        if (!_queue.empty() || !_acks.empty()) {
-            EmiPacketHeader packetHeader;
-            fillPacketHeaderData(now, congestionControl, connTime, packetHeader);
-            size_t packetHeaderLength;
-            EmiPacketHeader::write(_buf, _bufLength, packetHeader, &packetHeaderLength);
+        if (_queue.empty() && _acks.empty()) {
+            return;
+        }
+        
+        EmiPacketHeader packetHeader;
+        fillPacketHeaderData(now, congestionControl, connTime, packetHeader);
+        size_t packetHeaderLength;
+        EmiPacketHeader::write(_buf, _bufLength, packetHeader, &packetHeaderLength);
+        
+        size_t pos = packetHeaderLength;
+        
+        /// Send the enqueued messages
+        SendQueueAcksMapIter noAck = _acks.end();
+        SendQueueDequeIter   iter  = _queue.begin(); // Note: iter is used below this loop
+        SendQueueDequeIter   end   = _queue.end();
+        while (iter != end) {
+            EM *msg = *iter;
             
-            size_t pos = packetHeaderLength;
+            SendQueueAcksMapIter curAck;
+            if (0 != _acksSentInThisTick.count(msg->channelQualifier)) {
+                // Only send an ack for a particular channel once per packet
+                curAck = noAck;
+            }
+            else {
+                curAck = _acks.find(msg->channelQualifier);
+            }
             
-            /// Send the enqueued messages
-            SendQueueAcksMapIter noAck = _acks.end();
-            SendQueueDequeIter   iter  = _queue.begin(); // Note: iter is used below this loop
-            SendQueueDequeIter   end   = _queue.end();
-            while (iter != end) {
-                EM *msg = *iter;
+            _acksSentInThisTick.insert(msg->channelQualifier);
+            _acks.erase(msg->channelQualifier);
+            
+            bool hasAck = curAck != noAck;
+            pos += EM::writeMsg(_buf, /* buf */
+                                _bufLength, /* bufSize */
+                                pos, /* offset */
+                                hasAck, /* hasAck */
+                                hasAck && (*curAck).second, /* ack */
+                                msg->channelQualifier,
+                                msg->sequenceNumber,
+                                Binding::extractData(msg->data),
+                                Binding::extractLength(msg->data),
+                                msg->flags);
+            
+            ++iter;
+        }
+        
+        /// Send ACK messages without data for the acks that are
+        /// enqueued but was not sent along with actual data.
+        SendQueueAcksMapIter ackIter = _acks.begin();
+        SendQueueAcksMapIter ackEnd = _acks.end();
+        while (ackIter != ackEnd) {
+            EmiChannelQualifier cq = (*ackIter).first;
+            
+            if (0 == _acksSentInThisTick.count(cq)) {
+                EmiSequenceNumber sn = (*ackIter).second;
                 
-                SendQueueAcksMapIter curAck;
-                if (0 != _acksSentInThisTick.count(msg->channelQualifier)) {
-                    // Only send an ack for a particular channel once per packet
-                    curAck = noAck;
-                }
-                else {
-                    curAck = _acks.find(msg->channelQualifier);
-                }
-                
-                _acksSentInThisTick.insert(msg->channelQualifier);
-                _acks.erase(msg->channelQualifier);
-                
-                bool hasAck = curAck != noAck;
                 pos += EM::writeMsg(_buf, /* buf */
                                     _bufLength, /* bufSize */
                                     pos, /* offset */
-                                    hasAck, /* hasAck */
-                                    hasAck && (*curAck).second, /* ack */
-                                    msg->channelQualifier,
-                                    msg->sequenceNumber,
-                                    Binding::extractData(msg->data),
-                                    Binding::extractLength(msg->data),
-                                    msg->flags);
+                                    true, /* hasAck */
+                                    sn, /* ack */
+                                    cq, /* channelQualifier */
+                                    0, /* sequenceNumber */
+                                    NULL, /* data */
+                                    0, /* dataLength */
+                                    0 /* flags */);
                 
-                ++iter;
+                _acksSentInThisTick.insert(cq);
+                _acks.erase(cq);
             }
             
-            /// Send ACK messages without data for the acks that are
-            /// enqueued but was not sent along with actual data.
-            SendQueueAcksMapIter ackIter = _acks.begin();
-            SendQueueAcksMapIter ackEnd = _acks.end();
-            while (ackIter != ackEnd) {
-                EmiChannelQualifier cq = (*ackIter).first;
-                
-                if (0 == _acksSentInThisTick.count(cq)) {
-                    EmiSequenceNumber sn = (*ackIter).second;
-                    
-                    pos += EM::writeMsg(_buf, /* buf */
-                                        _bufLength, /* bufSize */
-                                        pos, /* offset */
-                                        true, /* hasAck */
-                                        sn, /* ack */
-                                        cq, /* channelQualifier */
-                                        0, /* sequenceNumber */
-                                        NULL, /* data */
-                                        0, /* dataLength */
-                                        0 /* flags */);
-                    
-                    _acksSentInThisTick.insert(cq);
-                    _acks.erase(cq);
-                }
-                
-                ++ackIter;
-            }
+            ++ackIter;
+        }
+        
+        if (packetHeaderLength != pos) {
+            ASSERT(pos <= _bufLength);
             
-            if (packetHeaderLength != pos) {
-                ASSERT(pos <= _bufLength);
-                
-                sendDatagram(congestionControl, _buf, pos);
-                _bytesSentSinceLastTick += pos;
-                
-                clearQueue(_queue.begin(), iter);
-            }
+            sendDatagram(congestionControl, _buf, pos);
+            _bytesSentSinceLastTick += pos;
+            
+            clearQueue(_queue.begin(), iter);
         }
     }
     
@@ -258,7 +259,7 @@ public:
     _enqueuedNak(-1),
     _bytesSentSinceLastTick(0),
     _queueSize(0) {
-        _bufLength = conn.getEmiSock().config.mtu - EMI_PACKET_HEADER_MAX_LENGTH - EMI_UDP_HEADER_SIZE;
+        _bufLength = conn.getEmiSock().config.mtu;
         _buf = (uint8_t *)malloc(_bufLength);
     }
     virtual ~EmiSendQueue() {
@@ -362,8 +363,10 @@ public:
             
             size_t msgSize = msg->approximateSize();
             
-            // _bufLength is the MSS (max segment size) of the EmiSocket
-            if (_queueSize + msgSize >= _bufLength) {
+            // _bufLength is the MTU of the EmiSocket.
+            // mss is short for maximum segment size.
+            size_t mss = _bufLength - EMI_PACKET_HEADER_MAX_LENGTH - EMI_UDP_HEADER_SIZE;
+            if (_queueSize + msgSize >= mss) {
                 flush(congestionControl, connTime, now);
             }
             
