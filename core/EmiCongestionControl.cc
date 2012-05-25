@@ -28,12 +28,16 @@ void EmiCongestionControl::onAck(EmiTimeInterval rtt) {
         float inc = 1;
         
         if (_remoteLinkCapacity > _sendingRate) {
-            static const double BETA = 0.0000015;
-            inc = std::max(std::pow(10, std::ceil(std::log10((_remoteLinkCapacity-_sendingRate)*8))) * BETA,
+            // These are constants as specified by UDT. I have no
+            // idea of why they have this particular value.
+            static const double ALPHA = 8;
+            static const double BETA  = 0.0000015;
+            inc = std::max(std::pow(10, std::ceil(std::log10((_remoteLinkCapacity-_sendingRate)*ALPHA))) * BETA,
                            1.0);
         }
         
-        _sendingRate = (_sendingRate*inc + EMI_TICK_TIME) / (_sendingRate * EMI_TICK_TIME);
+        _sendingRate += inc/EMI_TICK_TIME;
+        
         _congestionWindow = _remoteDataArrivalRate * (rtt + EMI_TICK_TIME) + EMI_MIN_CONGESTION_WINDOW;
     }
 }
