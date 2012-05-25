@@ -26,6 +26,8 @@ class EmiCongestionControl {
     EmiLinkCapacity    _linkCapacity;
     EmiDataArrivalRate _dataArrivalRate;
     
+    float _avgPacketSize;
+    
     // The average number of NAKs in a congestion period.
     float _avgNakCount;
     // The number of NAKs in the current congestion period.

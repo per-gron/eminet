@@ -106,6 +106,8 @@ _totalDataSentInSlowStart(0),
 _linkCapacity(),
 _dataArrivalRate(),
 
+_avgPacketSize(-1),
+
 _avgNakCount(1),
 _nakCount(1),
 _decRandom(2),
@@ -172,6 +174,14 @@ void EmiCongestionControl::onDataSent(size_t size) {
     if (0 == _sendingRate) {
         // We're in slow start mode
         _totalDataSentInSlowStart += size;
+    }
+    
+    if (-1 == _avgPacketSize) {
+        _avgPacketSize = size;
+    }
+    else {
+        static const float SMOOTH = 0.125;
+        _avgPacketSize = (1-SMOOTH)*_avgPacketSize + SMOOTH*size;
     }
 }
 
