@@ -15,7 +15,7 @@
 #include "EmiCongestionControl.h"
 
 #include <arpa/inet.h>
-#include <vector>
+#include <deque>
 #include <map>
 #include <set>
 #include <algorithm>
@@ -33,8 +33,8 @@ class EmiSendQueue {
     typedef typename Binding::PersistentData PersistentData;
     typedef EmiMessage<Binding>              EM;
     
-    typedef std::vector<EM *> SendQueueVector;
-    typedef typename std::vector<EM *>::iterator SendQueueVectorIter;
+    typedef std::deque<EM *> SendQueueDeque;
+    typedef typename SendQueueDeque::iterator SendQueueDequeIter;
     typedef std::map<EmiChannelQualifier, EmiSequenceNumber> SendQueueAcksMap;
     typedef typename SendQueueAcksMap::iterator SendQueueAcksMapIter;
     typedef std::set<EmiChannelQualifier> SendQueueAcksSet;
@@ -45,7 +45,7 @@ class EmiSendQueue {
     EmiPacketSequenceNumber _packetSequenceNumber;
     EmiPacketSequenceNumber _rttResponseSequenceNumber;
     EmiTimeInterval _rttResponseRegisterTime;
-    SendQueueVector _queue;
+    SendQueueDeque _queue;
     size_t _queueSize;
     SendQueueAcksMap _acks;
     // This set is intended to ensure that only one ack is sent per channel per tick
@@ -62,15 +62,26 @@ private:
     inline EmiSendQueue(const EmiSendQueue& other);
     inline EmiSendQueue& operator=(const EmiSendQueue& other);
     
-    void clearQueue() {
-        SendQueueVectorIter iter = _queue.begin();
-        SendQueueVectorIter end = _queue.end();
+    void clearQueue(SendQueueDequeIter begin, SendQueueDequeIter end) {
+        SendQueueDequeIter iter(begin);
         while (iter != end) {
-            (*iter)->release();
+            EM *msg = *iter;
+            _queueSize -= msg->approximateSize();
+            msg->release();
             ++iter;
         }
-        _queue.clear();
-        _queueSize = 0;
+        
+        // Optimize for common special case
+        if (_queue.begin() == begin && _queue.end() == end) {
+            _queue.clear();
+        }
+        else {
+            _queue.erase(begin, end);
+        }
+    }
+    
+    void clearQueue() {
+        clearQueue(_queue.begin(), _queue.end());
     }
     
     void sendDatagram(EmiCongestionControl& congestionControl,
@@ -164,8 +175,8 @@ private:
             
             /// Send the enqueued messages
             SendQueueAcksMapIter noAck = _acks.end();
-            SendQueueVectorIter  iter  = _queue.begin();
-            SendQueueVectorIter  end   = _queue.end();
+            SendQueueDequeIter   iter  = _queue.begin(); // Note: iter is used below this loop
+            SendQueueDequeIter   end   = _queue.end();
             while (iter != end) {
                 EM *msg = *iter;
                 
@@ -229,6 +240,8 @@ private:
                 
                 sendDatagram(congestionControl, _buf, pos);
                 _packetSentSinceLastTick = true;
+                
+                clearQueue(_queue.begin(), iter);
             }
         }
         
@@ -238,7 +251,6 @@ private:
             _packetSentSinceLastTick = true;
         }
         
-        clearQueue();
         _enqueueHeartbeat = false;
     }
     

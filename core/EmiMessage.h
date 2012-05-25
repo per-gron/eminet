@@ -126,6 +126,9 @@ public:
         if (0 == _refCount) delete this;
     }
     
+    // Returns an upper bound of the size of this message as encoded
+    // on the wire. Note that EmiSendQueue relies on this method to
+    // always return the same value given the same message.
     size_t approximateSize() const {
         // + 2 for the possibility of adding ACK data to the message
         // + 3 for the sequence number and split id
