@@ -40,9 +40,11 @@ class EmiCongestionControl {
     // packet sending rate is decreased. Initially -1
     EmiPacketSequenceNumber _lastDecSeq;
     
+    EmiPacketSequenceNumber _newestSentSequenceNumber;
+    
     // State for knowing which ACKs to send and when
     EmiPacketSequenceNumber _newestSeenSequenceNumber;
-    EmiPacketSequenceNumber _newestSentSequenceNumber;
+    EmiPacketSequenceNumber _newestSentAckSequenceNumber;
     
     float _remoteLinkCapacity;
     float _remoteDataArrivalRate;
@@ -62,7 +64,7 @@ public:
                    const EmiPacketHeader& packetHeader, size_t packetLength);
     
     void onRto();
-    void onDataSent(size_t size);
+    void onDataSent(EmiPacketSequenceNumber sequenceNumber, size_t size);
     
     // This method is intended to be called once per tick. It returns
     // the newest seen sequence number, or -1 if no sequence number
@@ -78,10 +80,8 @@ public:
         return _dataArrivalRate.calculate();
     }
     
-    // A return value of 0 means that we're in the slow start phase.
-    inline float getSendingRate() const {
-        return _sendingRate;
-    }
+    // Returns the number of bytes we are allowed to send per tick.
+    size_t tickAllowance() const;
 };
 
 #endif

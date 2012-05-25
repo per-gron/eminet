@@ -86,7 +86,7 @@ private:
     
     void sendDatagram(EmiCongestionControl& congestionControl,
                       const uint8_t *buf, size_t bufSize) {
-        congestionControl.onDataSent(bufSize);
+        congestionControl.onDataSent(_packetSequenceNumber, bufSize);
         _conn.sendDatagram(buf, bufSize);
     }
     

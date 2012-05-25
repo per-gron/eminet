@@ -45,7 +45,7 @@ void EmiCongestionControl::onAck(EmiTimeInterval rtt) {
         
         _sendingRate += inc/EMI_TICK_TIME;
         
-        _congestionWindow = _remoteDataArrivalRate * (rtt + EMI_TICK_TIME) + EMI_MIN_CONGESTION_WINDOW;
+        _congestionWindow = _remoteDataArrivalRate * (rtt + EMI_TICK_TIME) + 10*1024;
         _congestionWindow = std::min(EMI_MAX_CONGESTION_WINDOW, _congestionWindow);
     }
 }
@@ -114,8 +114,10 @@ _decRandom(2),
 _decCount(1),
 _lastDecSeq(-1),
 
-_newestSeenSequenceNumber(-1),
 _newestSentSequenceNumber(-1),
+
+_newestSeenSequenceNumber(-1),
+_newestSentAckSequenceNumber(-1),
 
 _remoteLinkCapacity(-1),
 _remoteDataArrivalRate(-1) {}
@@ -170,7 +172,9 @@ void EmiCongestionControl::onRto() {
     _sendingRate /= 2;
 }
 
-void EmiCongestionControl::onDataSent(size_t size) {
+void EmiCongestionControl::onDataSent(EmiPacketSequenceNumber sequenceNumber, size_t size) {
+    _newestSentSequenceNumber = sequenceNumber;
+    
     if (0 == _sendingRate) {
         // We're in slow start mode
         _totalDataSentInSlowStart += size;
@@ -186,10 +190,32 @@ void EmiCongestionControl::onDataSent(size_t size) {
 }
 
 EmiPacketSequenceNumber EmiCongestionControl::ack() {
-    if (_newestSeenSequenceNumber == _newestSentSequenceNumber) {
+    if (_newestSeenSequenceNumber == _newestSentAckSequenceNumber) {
         return -1;
     }
     
-    _newestSentSequenceNumber = _newestSeenSequenceNumber;
+    _newestSentAckSequenceNumber = _newestSeenSequenceNumber;
     return _newestSeenSequenceNumber;
+}
+
+size_t EmiCongestionControl::tickAllowance() const {
+    int packetsInTransit;
+    
+    if (-1 == _newestSentSequenceNumber) {
+        packetsInTransit = 0;
+    }
+    else {
+        packetsInTransit = EmiNetUtil::cyclicDifference24(_newestSentSequenceNumber,
+                                                          _newestSeenSequenceNumber);
+    }
+    
+    size_t cwndAllowance = _congestionWindow - packetsInTransit*_avgPacketSize;
+    size_t rateAllowance = _sendingRate * EMI_TICK_TIME;
+    
+    if (0 == rateAllowance) {
+        return cwndAllowance;
+    }
+    else {
+        return std::min(cwndAllowance, rateAllowance);
+    }
 }
