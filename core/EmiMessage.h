@@ -148,6 +148,7 @@ public:
     EmiPriority priority;
     const PersistentData data;
     
+    // Returns 0 if buffer was not big enough to accomodate the message
     static size_t writeMsg(uint8_t *buf,
                            size_t bufSize,
                            size_t offset,
@@ -158,34 +159,51 @@ public:
                            const uint8_t *data,
                            size_t dataLength,
                            EmiMessageFlags flags) {
+        // TODO The way this code is written makes the method rather fragile.
+        // It's easy to make small mistakes that lead to potential buffer
+        // overflow bugs. It should probably be rewritten in a clearer way.
+        
         size_t pos = offset;
         
         flags |= (hasAck ? EMI_ACK_FLAG : 0); // SYN/RST/ACK flags
         
-        if (0 == flags && 0 == dataLength) {
+        // Quick and dirty way to validate parameters
+        ASSERT(0 != flags || 0 != dataLength);
+        
+        size_t sequenceNumberFieldSize =
+            ((0 != dataLength ||
+              ((flags & EMI_SYN_FLAG) && !(flags & EMI_PRX_FLAG))) ? 2 : 0);
+        size_t splitIdFieldSize = (0 != dataLength ? 1 : 0);
+        size_t ackSize = (hasAck ? 2 : 0);
+        
+        if (bufSize-pos <= (EMI_MESSAGE_HEADER_MIN_LENGTH +
+                            sequenceNumberFieldSize +
+                            splitIdFieldSize +
+                            ackSize +
+                            dataLength)) {
+            // Buffer not big enough
             return 0;
         }
         
         *((uint8_t*)  (buf+pos)) = flags; pos += 1;
-        *((uint8_t*)  (buf+pos)) = std::max(0, channelQualifier); pos += 1; // Channel qualifier. cq == -1 means SYN/RST message
+        *((uint8_t*)  (buf+pos)) = std::max(0, channelQualifier); pos += 1; // channelQualifier == -1 means SYN/RST message
         *((uint16_t*) (buf+pos)) = htons(dataLength); pos += 2;
-        if (0 != dataLength ||
-            ((flags & EMI_SYN_FLAG) && !(flags & EMI_PRX_FLAG))) {
-            *((uint16_t*) (buf+pos)) = htons(sequenceNumber); pos += 2;
+        if (sequenceNumberFieldSize) {
+            *((uint16_t*) (buf+pos)) = htons(sequenceNumber); pos += sequenceNumberFieldSize;
         }
-        if (0 != dataLength) {
-            *((uint8_t*) (buf+pos)) = 0; pos += 1; // Split id
+        if (splitIdFieldSize) {
+            *((uint8_t*) (buf+pos)) = 0; pos += splitIdFieldSize; // Split id
         }
-        if (hasAck) {
-            *((uint16_t*) (buf+pos)) = htons(ack); pos += 2;
+        if (ackSize) {
+            *((uint16_t*) (buf+pos)) = htons(ack); pos += ackSize;
         }
         if (dataLength) {
-            if (pos+dataLength > bufSize) {
-                // The data doesn't fit in the buffer
-                return 0;
-            }
             memcpy(buf+pos, data, dataLength); pos += dataLength;
         }
+        
+        // If this assert fails, we have a buffer overflow.
+        // I wish I had put this here in the first place :/
+        ASSERT(pos < bufSize);
         
         return pos-offset;
     }

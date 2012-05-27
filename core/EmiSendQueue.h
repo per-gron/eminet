@@ -218,7 +218,8 @@ private:
                                           Binding::extractLength(msg->data),
                                           msg->flags);
             
-            if (pos+msgSize > allowedSize) {
+            // msgSize is 0 if the message did not fit in the buffer
+            if (0 == msgSize || pos+msgSize > allowedSize) {
                 // The message got too big.
                 break;
             }
