@@ -2,7 +2,7 @@
 
 var Util = require('util'),
     Events = require('events'),
-    EmiNetAddon = require('./build/Release/eminet');
+    EmiNetAddon = require('../build/Release/eminet');
 
 // Lazily loaded
 var Dns = null,
