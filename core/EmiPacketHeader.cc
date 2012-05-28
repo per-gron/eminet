@@ -13,6 +13,7 @@
 #include <cstring>
 
 inline static void extractFlagsAndSize(EmiPacketFlags flags,
+                                       EmiPacketExtraFlags extraFlags,
                                        bool *hasSequenceNumber,
                                        bool *hasAck,
                                        bool *hasNak,
@@ -20,7 +21,10 @@ inline static void extractFlagsAndSize(EmiPacketFlags flags,
                                        bool *hasArrivalRate, 
                                        bool *hasRttRequest,
                                        bool *hasRttResponse,
+                                       size_t *fillerSizePtr, // Can be NULL
                                        size_t *expectedSize) {
+    size_t fillerSize = 0;
+    
     *hasSequenceNumber = !!(flags & EMI_SEQUENCE_NUMBER_PACKET_FLAG);
     *hasAck            = !!(flags & EMI_ACK_PACKET_FLAG);
     *hasNak            = !!(flags & EMI_NAK_PACKET_FLAG);
@@ -28,9 +32,30 @@ inline static void extractFlagsAndSize(EmiPacketFlags flags,
     *hasArrivalRate    = !!(flags & EMI_ARRIVAL_RATE_PACKET_FLAG);
     *hasRttRequest     = !!(flags & EMI_RTT_REQUEST_PACKET_FLAG);
     *hasRttResponse    = !!(flags & EMI_RTT_RESPONSE_PACKET_FLAG);
+    bool hasExtraFlags = !!(flags & EMI_EXTRA_FLAGS_PACKET_FLAG);
     
     // 1 for the flags byte
     *expectedSize = sizeof(EmiPacketFlags);
+    
+    if (hasExtraFlags) {
+        *expectedSize += sizeof(EmiPacketExtraFlags);
+        
+        if (flags & EMI_1_BYTE_FILLER_EXTRA_PACKET_FLAG) {
+            fillerSize = 1;
+        }
+        else if (flags & EMI_2_BYTE_FILLER_EXTRA_PACKET_FLAG) {
+            fillerSize = 2;
+        }
+        else {
+            fillerSize = 0;
+        }
+        
+        *expectedSize += fillerSize;
+    }
+    
+    if (fillerSizePtr) {
+        *fillerSizePtr = fillerSize;
+    }
     
     *expectedSize += (*hasSequenceNumber ? EMI_PACKET_SEQUENCE_NUMBER_LENGTH : 0);
     *expectedSize += (*hasAck            ? EMI_PACKET_SEQUENCE_NUMBER_LENGTH : 0);
@@ -57,12 +82,18 @@ bool EmiPacketHeader::parse(const uint8_t *buf, size_t bufSize, EmiPacketHeader 
         return false;
     }
     
-    EmiPacketFlags flags = *buf;
+    EmiPacketFlags flags = buf[0];
+    
+    EmiPacketExtraFlags extraFlags = (EmiPacketExtraFlags) 0;
+    if (bufSize >= 1) {
+        extraFlags = (EmiPacketExtraFlags) buf[1];
+    }
     
     bool hasSequenceNumber, hasAck, hasNak, hasLinkCapacity;
     bool hasArrivalRate, hasRttRequest, hasRttResponse;
-    size_t expectedSize;
+    size_t expectedSize, fillerSize;
     extractFlagsAndSize(flags,
+                        extraFlags,
                         &hasSequenceNumber,
                         &hasAck,
                         &hasNak,
@@ -70,7 +101,19 @@ bool EmiPacketHeader::parse(const uint8_t *buf, size_t bufSize, EmiPacketHeader 
                         &hasArrivalRate, 
                         &hasRttRequest,
                         &hasRttResponse,
+                        &fillerSize,
                         &expectedSize);
+    
+    if (2 == fillerSize) {
+        // A 2 byte filler size means that the packet contains a 16 bit
+        // unsigned integer which specifies padding
+        if (4 > bufSize) {
+            return false;
+        }
+        uint16_t twoByteFillerSize = *((uint16_t *)(buf+2));
+        fillerSize += twoByteFillerSize;
+        expectedSize += twoByteFillerSize;
+    }
     
     if (bufSize < expectedSize) {
         return false;
@@ -86,6 +129,11 @@ bool EmiPacketHeader::parse(const uint8_t *buf, size_t bufSize, EmiPacketHeader 
     header->rttResponseDelay = 0;
     
     const uint8_t *bufCur = buf+sizeof(header->flags);
+    
+    if (flags | EMI_EXTRA_FLAGS_PACKET_FLAG) {
+        bufCur += sizeof(EmiPacketExtraFlags);
+        bufCur += fillerSize;
+    }
     
     if (hasSequenceNumber) {
         header->sequenceNumber = EmiNetUtil::read24(bufCur);
@@ -138,6 +186,7 @@ bool EmiPacketHeader::write(uint8_t *buf, size_t bufSize, const EmiPacketHeader&
     bool hasArrivalRate, hasRttRequest, hasRttResponse;
     size_t expectedSize;
     extractFlagsAndSize(header.flags,
+                        (EmiPacketExtraFlags)0,
                         &hasSequenceNumber,
                         &hasAck,
                         &hasNak,
@@ -145,6 +194,7 @@ bool EmiPacketHeader::write(uint8_t *buf, size_t bufSize, const EmiPacketHeader&
                         &hasArrivalRate, 
                         &hasRttRequest,
                         &hasRttResponse,
+                        /*fillerSize:*/NULL,
                         &expectedSize);
     
     if (bufSize < expectedSize) {
