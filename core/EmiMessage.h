@@ -21,7 +21,6 @@
 template<class Binding>
 class EmiMessage {
 private:
-    typedef void (^SendSynRstAckPacketCallback)(uint8_t *buf, size_t size);
     typedef typename Binding::PersistentData PersistentData;
     
     // Private copy constructor and assignment operator
@@ -208,21 +207,21 @@ public:
         return pos-offset;
     }
     
-    template<int BUF_SIZE>
-    static void writeControlPacketWithData(EmiMessageFlags flags,
-                                           const uint8_t *data, size_t dataLength,
-                                           EmiSequenceNumber sequenceNumber,
-                                           SendSynRstAckPacketCallback callback) {
-        uint8_t buf[BUF_SIZE];
-        
+    // Returns the size of the packet, or 0 if the buffer was not large enough
+    static size_t writeControlPacketWithData(EmiMessageFlags flags,
+                                             uint8_t *buf, size_t bufSize,
+                                             const uint8_t *data, size_t dataLength,
+                                             EmiSequenceNumber sequenceNumber) {
         // Zero out the packet header
         size_t tlen;
-        EmiPacketHeader::writeEmpty(buf, sizeof(buf), &tlen);
+        if (!EmiPacketHeader::writeEmpty(buf, bufSize, &tlen)) {
+            return 0;
+        }
         
         // Propagate the actual packet data
         size_t plen;
         plen = writeMsg(buf, /* buf */
-                        BUF_SIZE, /* bufSize */
+                        bufSize, /* bufSize */
                         tlen, /* offset */
                         false, /* hasAck */
                         0, /* ack */
@@ -232,25 +231,31 @@ public:
                         dataLength,
                         flags);
         
-        ASSERT(plen);
+        if (0 == plen) {
+            return 0;
+        }
         
-        callback(buf, tlen+plen);
+        return tlen+plen;
     }
     
-    template<int BUF_SIZE>
-    static void writeControlPacketWithData(EmiMessageFlags flags, const uint8_t *data, size_t dataLength,
-                                           SendSynRstAckPacketCallback callback) {
-        writeControlPacketWithData<BUF_SIZE>(flags, data, dataLength, 0, callback);
+    // Returns the size of the packet, or 0 if the buffer was not large enough
+    static size_t writeControlPacketWithData(EmiMessageFlags flags,
+                                             uint8_t *buf, size_t bufSize,
+                                             const uint8_t *data, size_t dataLength) {
+        return writeControlPacketWithData(flags, buf, bufSize, data, dataLength, 0);
     }
     
-    static void writeControlPacket(EmiMessageFlags flags, EmiSequenceNumber sequenceNumber, SendSynRstAckPacketCallback callback) {
-        // BUF_SIZE=96 ought to be plenty
-        writeControlPacketWithData<96>(flags, NULL, 0, sequenceNumber, callback);
+    // Returns the size of the packet, or 0 if the buffer was not large enough
+    static size_t writeControlPacket(EmiMessageFlags flags,
+                                     uint8_t *buf, size_t bufSize,
+                                     EmiSequenceNumber sequenceNumber) {
+        return writeControlPacketWithData(flags, buf, bufSize, NULL, 0, sequenceNumber);
     }
     
-    static void writeControlPacket(EmiMessageFlags flags, SendSynRstAckPacketCallback callback) {
-        // BUF_SIZE=96 ought to be plenty
-        writeControlPacketWithData<96>(flags, NULL, 0, callback);
+    // Returns the size of the packet, or 0 if the buffer was not large enough
+    static size_t writeControlPacket(EmiMessageFlags flags,
+                                     uint8_t *buf, size_t bufSize) {
+        return writeControlPacketWithData(flags, buf, bufSize, NULL, 0);
     }
 };
 

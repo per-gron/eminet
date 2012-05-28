@@ -124,9 +124,10 @@ private:
     void sendSynRst(const sockaddr_storage& inboundAddress, int addrIdx) {
         EmiSequenceNumber otherHostSN = _initialSequenceNumbers[0 == addrIdx ? 1 : 0];
         
-        EmiMessage<Binding>::writeControlPacket(EMI_SYN_FLAG | EMI_RST_FLAG, otherHostSN, ^(uint8_t *buf, size_t size) {
-            _sock->sendData(inboundAddress, _peers[addrIdx], buf, size);
-        });
+        uint8_t buf[96];
+        size_t size = EmiMessage<Binding>::writeControlPacket(EMI_SYN_FLAG | EMI_RST_FLAG, buf, sizeof(buf), otherHostSN);
+        ASSERT(0 != size); // size == 0 when the buffer was too small
+        _sock->sendData(inboundAddress, _peers[addrIdx], buf, size);
     }
     
     static void rateLimitTimeoutCallback(EmiTimeInterval now, Timer *timer, void *data) {
@@ -261,11 +262,13 @@ public:
     
     void sendPrx(const sockaddr_storage& inboundAddress,
                  const sockaddr_storage& remoteAddress) {
-        EmiMessage<Binding>::writeControlPacket(EMI_PRX_FLAG, ^(uint8_t *buf, size_t size) {
-            int idx(addressIndex(remoteAddress));
-            ASSERT(-1 != idx);
-            _sock->sendData(inboundAddress, remoteAddress, buf, size);
-        });
+        uint8_t buf[96];
+        size_t size = EmiMessage<Binding>::writeControlPacket(EMI_PRX_FLAG, buf, sizeof(buf));
+        ASSERT(0 != size); // size == 0 when the buffer was too small
+        
+        int idx(addressIndex(remoteAddress));
+        ASSERT(-1 != idx);
+        _sock->sendData(inboundAddress, remoteAddress, buf, size);
     }
     
     void rtoTimeout(EmiTimeInterval now,
@@ -339,10 +342,12 @@ public:
         
         /// Prepare the message headers
         EmiMessageFlags flags(EMI_PRX_FLAG | EMI_RST_FLAG | EMI_SYN_FLAG | EMI_ACK_FLAG);
-        EmiMessage<Binding>::template writeControlPacketWithData<128>(flags, buf, dataLen, ^(uint8_t *packetBuf, size_t size) {
-            /// Actually send the packet
-            _sock->sendData(inboundAddress, _peers[idx], packetBuf, size);
-        });
+        uint8_t packetBuf[128];
+        size_t size = EmiMessage<Binding>::writeControlPacketWithData(flags, packetBuf, sizeof(packetBuf), buf, dataLen);
+        ASSERT(0 != size); // size == 0 when the buffer was too small
+        
+        /// Actually send the packet
+        _sock->sendData(inboundAddress, _peers[idx], packetBuf, size);
     }
 };
 

@@ -458,9 +458,11 @@ public:
                         // In this case, we simply respond with a SYN-RST-ACK packet.
                         
                         EmiMessageFlags responseFlags(EMI_SYN_FLAG | EMI_RST_FLAG | EMI_ACK_FLAG);
-                        EmiMessage<Binding>::writeControlPacket(responseFlags, ^(uint8_t *buf, size_t size) {
-                            _socket->sendData(inboundAddress, remoteAddress, buf, size);
-                        });
+                        uint8_t buf[96];
+                        size_t size = EmiMessage<Binding>::writeControlPacket(responseFlags, buf, sizeof(buf));
+                        ASSERT(0 != size); // size == 0 when the buffer was too small
+                        
+                        _socket->sendData(inboundAddress, remoteAddress, buf, size);
                     }
                 }
                 else if ((EMI_RST_FLAG | EMI_SYN_FLAG | EMI_ACK_FLAG) == relevantFlags) {
@@ -493,9 +495,11 @@ public:
                     removeConnection(conn);
                     
                     EmiMessageFlags responseFlags(EMI_PRX_FLAG | EMI_RST_FLAG | EMI_ACK_FLAG);
-                    EmiMessage<Binding>::writeControlPacket(responseFlags, ^(uint8_t *buf, size_t size) {
-                        _socket->sendData(inboundAddress, remoteAddress, buf, size);
-                    });
+                    uint8_t buf[96];
+                    size_t size = EmiMessage<Binding>::writeControlPacket(responseFlags, buf, sizeof(buf));
+                    ASSERT(0 != size); // size == 0 when the buffer was too small
+                    
+                    _socket->sendData(inboundAddress, remoteAddress, buf, size);
                 }
                 else {
                     err = "Invalid message flags";

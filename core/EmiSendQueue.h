@@ -105,10 +105,12 @@ private:
         
         __block EmiCongestionControl& cc(congestionControl);
         
-        EmiMessage<Binding>::template writeControlPacketWithData<128>(msg->flags, data, dataLen, msg->sequenceNumber, ^(uint8_t *packetBuf, size_t size) {
-            // Actually send the packet
-            sendDatagram(cc, packetBuf, size);
-        });
+        uint8_t packetBuf[128];
+        size_t size = EmiMessage<Binding>::writeControlPacketWithData(msg->flags, packetBuf, sizeof(packetBuf), data, dataLen, msg->sequenceNumber);
+        ASSERT(0 != size); // size == 0 when the buffer was too small
+        
+        // Actually send the packet
+        sendDatagram(cc, packetBuf, size);
     }
     
     void fillPacketHeaderData(EmiTimeInterval now,

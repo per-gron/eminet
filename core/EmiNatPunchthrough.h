@@ -55,9 +55,12 @@ private:
     
     void sendPrxRstPacket() {
         EmiMessageFlags flags(EMI_PRX_FLAG | EMI_RST_FLAG);
-        EmiMessage<Binding>::writeControlPacket(flags, ^(uint8_t *buf, size_t size) {
-            _delegate.sendNatPunchthroughPacket(_mediatorAddress, buf, size);
-        });
+        
+        uint8_t buf[96];
+        size_t size = EmiMessage<Binding>::writeControlPacket(flags, buf, sizeof(buf));
+        ASSERT(0 != size); // size is 0 when the buffer was too small
+        
+        _delegate.sendNatPunchthroughPacket(_mediatorAddress, buf, size);
     }
     
     void sendPrxSynPackets() {
@@ -69,16 +72,17 @@ private:
         
         /// Prepare the message headers
         EmiMessageFlags flags(EMI_PRX_FLAG | EMI_SYN_FLAG);
-        EmiMessage<Binding>::template writeControlPacketWithData<128>(flags, hashBuf, sizeof(hashBuf), ^(uint8_t *buf,
-                                                                                                         size_t size) {
-            /// Actually send the packet(s)
-            _delegate.sendNatPunchthroughPacket(_peerInnerAddr, buf, size);
-            
-            if (0 != EmiAddressCmp::compare(_peerInnerAddr, _peerOuterAddr)) {
-                // Only send one packet if the inner and outer endpoints are equal
-                _delegate.sendNatPunchthroughPacket(_peerOuterAddr, buf, size);
-            }
-        });
+        uint8_t buf[128];
+        size_t size = EmiMessage<Binding>::writeControlPacketWithData(flags, buf, sizeof(buf), hashBuf, sizeof(hashBuf));
+        ASSERT(0 != size); // size is 0 when the buffer was too small
+        
+        /// Actually send the packet(s)
+        _delegate.sendNatPunchthroughPacket(_peerInnerAddr, buf, size);
+        
+        if (0 != EmiAddressCmp::compare(_peerInnerAddr, _peerOuterAddr)) {
+            // Send two packets only if the inner and outer endpoints are different
+            _delegate.sendNatPunchthroughPacket(_peerOuterAddr, buf, size);
+        }
     }
     
     void hashForPrxSynAck(uint8_t *hashBuf, size_t hashBufLen,
@@ -103,11 +107,12 @@ private:
         
         /// Prepare the message headers
         EmiMessageFlags flags(EMI_PRX_FLAG | EMI_SYN_FLAG | EMI_ACK_FLAG);
-        EmiMessage<Binding>::template writeControlPacketWithData<128>(flags, hashBuf, sizeof(hashBuf), ^(uint8_t *buf,
-                                                                                                         size_t size) {
-            /// Actually send the packet
-            _delegate.sendNatPunchthroughPacket(remoteAddr, buf, size);
-        });
+        uint8_t buf[128];
+        size_t size = EmiMessage<Binding>::writeControlPacketWithData(flags, buf, sizeof(buf), hashBuf, sizeof(hashBuf));
+        ASSERT(0 != size); // size == 0 when the buffer was too small
+        
+        /// Actually send the packet
+        _delegate.sendNatPunchthroughPacket(remoteAddr, buf, size);
     }
     
     // Invoked by EmiRtoTimer, but this shouldn't happen

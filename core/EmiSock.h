@@ -385,9 +385,11 @@ public:
                     
                     // Regardless of whether we still have a connection up,
                     // respond with a SYN-RST-ACK message.
-                    EM::writeControlPacket(EMI_SYN_FLAG | EMI_RST_FLAG | EMI_ACK_FLAG, ^(uint8_t *buf, size_t size) {
-                        sock->sendData(inboundAddress, remoteAddress, buf, size);
-                    });
+                    uint8_t buf[96];
+                    size_t size = EM::writeControlPacket(EMI_SYN_FLAG | EMI_RST_FLAG | EMI_ACK_FLAG, buf, sizeof(buf));
+                    ASSERT(0 != size); // size == 0 when the buffer was too small
+                    
+                    sock->sendData(inboundAddress, remoteAddress, buf, size);
                     
                     // Note that this has to be done after we send the control
                     // packet, since invoking gotRst might deallocate the sock
