@@ -35,7 +35,7 @@ public:
     // The maximum value of the RTT response delay is 255 ms.
     // This should be more than enough, since the other host
     // is supposed to send an RTT response within a tick, which
-    // is 100 ms.
+    // is 10 ms.
     uint8_t rttResponseDelay; // Set if (flags & EMI_RTT_RESPONSE_PACKET_FLAG)
     
     // Returns true if the parse was successful
