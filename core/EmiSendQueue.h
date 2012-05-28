@@ -52,6 +52,8 @@ class EmiSendQueue {
     SendQueueAcksSet _acksSentInThisTick;
     size_t _bufLength;
     uint8_t *_buf;
+    // _otherBuf is a pointer into _buf, and should not be freed. Its length is _bufLength
+    uint8_t *_otherBuf;
     bool _enqueueHeartbeat;
     bool _enqueuePacketAck; // This helps to make sure that we only send one packet ACK per tick
     EmiPacketSequenceNumber _enqueuedNak;
@@ -84,16 +86,17 @@ private:
         clearQueue(_queue.begin(), _queue.end());
     }
     
+    inline void incrementSequenceNumber() {
+        _packetSequenceNumber = (_packetSequenceNumber+1) & EMI_PACKET_SEQUENCE_NUMBER_MASK;
+    }
+    
     void sendDatagram(EmiCongestionControl& congestionControl,
-                      const uint8_t *buf, size_t bufSize,
-                      bool packetHasSequenceNumber) {
+                      const uint8_t *buf, size_t bufSize) {
         congestionControl.onDataSent(_packetSequenceNumber, bufSize);
         
-        if (packetHasSequenceNumber) {
-            _packetSequenceNumber = (_packetSequenceNumber+1) & EMI_PACKET_SEQUENCE_NUMBER_MASK;
-        }
-        
         _conn.sendDatagram(buf, bufSize);
+        
+        _bytesSentSinceLastTick += bufSize;
     }
     
     void sendMessageInSeparatePacket(EmiCongestionControl& congestionControl, const EM *msg) {
@@ -104,7 +107,7 @@ private:
         
         EmiMessage<Binding>::template writeControlPacketWithData<128>(msg->flags, data, dataLen, msg->sequenceNumber, ^(uint8_t *packetBuf, size_t size) {
             // Actually send the packet
-            sendDatagram(cc, packetBuf, size, /*packetHasSequenceNumber:*/false);
+            sendDatagram(cc, packetBuf, size);
         });
     }
     
@@ -166,21 +169,33 @@ private:
         }
     }
     
-    // Returns true if a packet was sent
-    bool flush(EmiCongestionControl& congestionControl,
-               EmiConnTime& connTime,
-               EmiTimeInterval now) {
+    // Returns the size of the packet that was written to buf.
+    //
+    // If fillPacket fails, it returns 0
+    size_t fillPacket(uint8_t *buf,
+                      size_t bufLength,
+                      EmiCongestionControl& congestionControl,
+                      EmiConnTime& connTime,
+                      EmiTimeInterval now,
+                      bool ignoreCongestionControl = false) {
         if (_queue.empty() && _acks.empty()) {
-            return false;
+            return 0;
         }
         
-        size_t allowedSize = std::min(_bufLength,
-                                      congestionControl.tickAllowance() - _bytesSentSinceLastTick);
+        size_t allowedSize;
+        
+        if (ignoreCongestionControl) {
+            allowedSize = bufLength;
+        }
+        else {
+            allowedSize = std::min(bufLength,
+                                   congestionControl.tickAllowance() - _bytesSentSinceLastTick);
+        }
         
         EmiPacketHeader packetHeader;
         fillPacketHeaderData(now, congestionControl, connTime, packetHeader);
         size_t packetHeaderLength;
-        EmiPacketHeader::write(_buf, _bufLength, packetHeader, &packetHeaderLength);
+        EmiPacketHeader::write(buf, bufLength, packetHeader, &packetHeaderLength);
         
         size_t pos = packetHeaderLength;
         
@@ -207,8 +222,8 @@ private:
             
             bool hasAck = curAck != noAck;
             
-            size_t msgSize = EM::writeMsg(_buf, /* buf */
-                                          _bufLength, /* bufSize */
+            size_t msgSize = EM::writeMsg(buf, /* buf */
+                                          bufLength, /* bufSize */
                                           pos, /* offset */
                                           hasAck, /* hasAck */
                                           hasAck && (*curAck).second, /* ack */
@@ -248,8 +263,8 @@ private:
             if (0 == _acksSentInThisTick.count(cq)) {
                 EmiSequenceNumber sn = (*ackIter).second;
                 
-                size_t msgSize = EM::writeMsg(_buf, /* buf */
-                                              _bufLength, /* bufSize */
+                size_t msgSize = EM::writeMsg(buf, /* buf */
+                                              bufLength, /* bufSize */
                                               pos, /* offset */
                                               true, /* hasAck */
                                               sn, /* ack */
@@ -276,19 +291,33 @@ private:
         }
         
         if (packetHeaderLength != pos) {
-            ASSERT(pos <= _bufLength);
-            
-            sendDatagram(congestionControl, _buf, pos, /*packetHasSequenceNumber:*/true);
-            _bytesSentSinceLastTick += pos;
+            ASSERT(pos <= bufLength);
             
             clearQueue(_queue.begin(), iter);
             
             // Return true to signify that a packet was sent
-            return true;
+            return pos;
         }
         else {
             // Return false to signify that no packet was sent
+            return 0;
+        }
+    }
+    
+    // Returns true if a packet was sent
+    bool flush(EmiCongestionControl& congestionControl,
+               EmiConnTime& connTime,
+               EmiTimeInterval now) {
+        size_t packetSize = fillPacket(_buf, _bufLength, congestionControl, connTime, now);
+        
+        if (0 == packetSize) {
             return false;
+        }
+        else {
+            sendDatagram(congestionControl, _buf, packetSize);
+            incrementSequenceNumber();
+            
+            return true;
         }
     }
     
@@ -305,7 +334,8 @@ public:
     _bytesSentSinceLastTick(0),
     _queueSize(0) {
         _bufLength = conn.getEmiSock().config.mtu;
-        _buf = (uint8_t *)malloc(_bufLength);
+        _buf = (uint8_t *)malloc(_bufLength*2);
+        _otherBuf = _buf+_bufLength;
     }
     virtual ~EmiSendQueue() {
         clearQueue();
@@ -339,7 +369,8 @@ public:
         EmiPacketHeader::write(buf, sizeof(buf), ph, &packetLength);
         
         if (_conn.isOpen()) {
-            sendDatagram(congestionControl, buf, packetLength, /*packetHasSequenceNumber:*/true);
+            sendDatagram(congestionControl, buf, packetLength);
+            incrementSequenceNumber();
         }
         
         return packetLength;
@@ -356,7 +387,66 @@ public:
         // Send packets until we can't send any more packets,
         // either because of congestion control, or because there
         // is nothing more to send.
-        while (flush(congestionControl, connTime, now));
+        bool packetWasSent;
+        do {
+            if (0 == (_packetSequenceNumber % 16)) {
+                /// Send a packet pair, for link capacity estimation
+                
+                size_t firstPacketSize = fillPacket(_buf, _bufLength,
+                                                    congestionControl, connTime,
+                                                    now);
+                
+                if (0 == firstPacketSize) {
+                    // We had nothing to send, or congestion control prevents
+                    // us from sending the first packet. Break.
+                    break;
+                }
+                
+                // We need to increment the packet sequence number before
+                // we fill the second packet.
+                incrementSequenceNumber();
+                
+                // For the second packet in the packet pair, we ignore
+                // congestion control, because we really want to send
+                // out the other part of the pair if at all possible.
+                size_t secondPacketSize = fillPacket(_otherBuf, _bufLength,
+                                                     congestionControl, connTime,
+                                                     now,
+                                                     /*ignoreCongestionControl:*/true);
+                
+                if (0 == secondPacketSize) {
+                    // There was no data to send for the second packet. Don't
+                    // send a packet pair.
+                    sendDatagram(congestionControl, _buf, firstPacketSize);
+                }
+                else {
+                    // Increment the sequence number, to account for the second packet
+                    incrementSequenceNumber();
+                    
+                    size_t   smallestPacketSize = std::min(firstPacketSize, secondPacketSize);
+                    size_t   biggestPacketSize  = std::max(firstPacketSize, secondPacketSize);
+                    
+                    // Add filler bytes to the smaller of the two packets to ensure
+                    // the two packets are of the same size. The link capacity
+                    // estimation algorithm requires that.
+                    if (firstPacketSize != secondPacketSize) {
+                        uint8_t *smallestPacket = (firstPacketSize < secondPacketSize ? _buf : _otherBuf);
+                        
+                        EmiPacketHeader::addFillerBytes(smallestPacket, smallestPacketSize,
+                                                        biggestPacketSize-smallestPacketSize);
+                    }
+                    
+                    sendDatagram(congestionControl, _buf,      biggestPacketSize);
+                    sendDatagram(congestionControl, _otherBuf, biggestPacketSize);
+                }
+                
+                return true;
+            }
+            else {
+                /// Don't send a packet pair; just do the normal thing.
+                packetWasSent = flush(congestionControl, connTime, now);
+            }
+        } while (packetWasSent);
         
         if (0 == _bytesSentSinceLastTick && _enqueueHeartbeat) {
             // Send heartbeat
