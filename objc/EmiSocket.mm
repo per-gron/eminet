@@ -23,15 +23,31 @@
 
 @interface EmiConnectionOpenedBlockWrapper : NSObject {
     EmiConnectionOpenedBlock _block;
+    NSData *_cookie;
+    NSData *_sharedSecret;
 }
 
 - (id)initWithBlock:(EmiConnectionOpenedBlock)block;
+- (id)initWithBlock:(EmiConnectionOpenedBlock)block
+             cookie:(NSData *)cookie
+       sharedSecret:(NSData *)sharedSecret;
+
 + (EmiConnectionOpenedBlockWrapper *)wrapperWithBlock:(EmiConnectionOpenedBlock)block;
-- (EmiConnectionOpenedBlock)block;
++ (EmiConnectionOpenedBlockWrapper *)wrapperWithBlock:(EmiConnectionOpenedBlock)block
+                                               cookie:(NSData *)cookie
+                                         sharedSecret:(NSData *)sharedSecret;
+
+@property (nonatomic, retain, readonly) EmiConnectionOpenedBlock block;
+@property (nonatomic, retain, readonly) NSData *cookie;
+@property (nonatomic, retain, readonly) NSData *sharedSecret;
 
 @end
 
 @implementation EmiConnectionOpenedBlockWrapper
+
+@synthesize block = _block;
+@synthesize cookie = _cookie;
+@synthesize sharedSecret = _sharedSecret;
 
 - (id)initWithBlock:(EmiConnectionOpenedBlock)block {
     if (self = [super init]) {
@@ -41,12 +57,28 @@
     return self;
 }
 
+- (id)initWithBlock:(EmiConnectionOpenedBlock)block
+             cookie:(NSData *)cookie
+       sharedSecret:(NSData *)sharedSecret {
+    if (self = [super init]) {
+        _block = [block copy];
+        _cookie = cookie;
+        _sharedSecret = sharedSecret;
+    }
+    
+    return self;
+}
+
 + (EmiConnectionOpenedBlockWrapper *)wrapperWithBlock:(EmiConnectionOpenedBlock)block {
     return [[EmiConnectionOpenedBlockWrapper alloc] initWithBlock:block];
 }
 
-- (EmiConnectionOpenedBlock)block {
-    return _block;
++ (EmiConnectionOpenedBlockWrapper *)wrapperWithBlock:(EmiConnectionOpenedBlock)block
+                                               cookie:(NSData *)cookie
+                                         sharedSecret:(NSData *)sharedSecret {
+    return [[EmiConnectionOpenedBlockWrapper alloc] initWithBlock:block
+                                                           cookie:cookie
+                                                     sharedSecret:sharedSecret];
 }
 
 @end
@@ -97,7 +129,9 @@
 
 #pragma mark - Public methods
 
-- (BOOL)connectToAddress:(NSData *)address block:(EmiConnectionOpenedBlock)block error:(NSError **)errPtr {
+- (BOOL)connectToAddress:(NSData *)address
+                   block:(EmiConnectionOpenedBlock)block
+                   error:(NSError **)errPtr {
     NSError *err = nil;
     
     sockaddr_storage ss;
@@ -109,11 +143,52 @@
     return retVal;
 }
 
-- (BOOL)connectToHost:(NSString *)host onPort:(uint16_t)port block:(EmiConnectionOpenedBlock)block error:(NSError **)err {
+- (BOOL)connectToAddress:(NSData *)address
+                  cookie:(NSData *)cookie
+            sharedSecret:(NSData *)sharedSecret
+                   block:(EmiConnectionOpenedBlock)block
+                   error:(NSError **)errPtr {
+    NSError *err = nil;
+    
+    sockaddr_storage ss;
+    memcpy(&ss, [address bytes], MIN([address length], sizeof(sockaddr_storage)));
+    
+    BOOL retVal = ((S *)_sock)->connectP2P([NSDate timeIntervalSinceReferenceDate], ss,
+                                           (const uint8_t *)[cookie bytes], [cookie length],
+                                           (const uint8_t *)[sharedSecret bytes], [sharedSecret length],
+                                           block, err);
+    *errPtr = err;
+    
+    return retVal;
+}
+
+- (BOOL)connectToHost:(NSString *)host
+               onPort:(uint16_t)port
+                block:(EmiConnectionOpenedBlock)block
+                error:(NSError **)err {
     // We use the connect functionality of GCDAsyncUdpSocket only to get access to the DNS
     // resolve functions.
     _resolveSocket = [[GCDAsyncUdpSocket alloc] initWithDelegate:self delegateQueue:dispatch_get_current_queue()];
     _resolveSocket.userData = [EmiConnectionOpenedBlockWrapper wrapperWithBlock:block];
+    return [_resolveSocket connectToHost:host onPort:port error:err];
+}
+
+- (BOOL)connectToHost:(NSString *)host
+               onPort:(uint16_t)port
+               cookie:(NSData *)cookie
+         sharedSecret:(NSData *)sharedSecret
+                block:(EmiConnectionOpenedBlock)block
+                error:(NSError **)err {
+    if (!cookie || !sharedSecret) {
+        [NSException raise:@"EmiSocketException" format:@"Invalid arguments"];
+    }
+    
+    // We use the connect functionality of GCDAsyncUdpSocket only to get access to the DNS
+    // resolve functions.
+    _resolveSocket = [[GCDAsyncUdpSocket alloc] initWithDelegate:self delegateQueue:dispatch_get_current_queue()];
+    _resolveSocket.userData = [EmiConnectionOpenedBlockWrapper wrapperWithBlock:block
+                                                                         cookie:cookie
+                                                                   sharedSecret:sharedSecret];
     return [_resolveSocket connectToHost:host onPort:port error:err];
 }
 
@@ -143,12 +218,26 @@ withFilterContext:(id)filterContext {
 // We use the connect functionality of GCDAsyncUdpSocket only to get access to the DNS
 // resolve functions.
 - (void)udpSocket:(GCDAsyncUdpSocket *)sock didConnectToAddress:(NSData *)address {
-    EmiConnectionOpenedBlock block = ((EmiConnectionOpenedBlockWrapper *)sock.userData).block;
+    EmiConnectionOpenedBlockWrapper *wrapper = sock.userData;
+    EmiConnectionOpenedBlock block = wrapper.block;
     
     _resolveSocket = nil;
     
     NSError *err;
-    if (![self connectToAddress:address block:block error:&err]) {
+    
+    BOOL result;
+    if (wrapper.cookie && wrapper.sharedSecret) {
+        result = [self connectToAddress:address
+                                 cookie:wrapper.cookie
+                           sharedSecret:wrapper.sharedSecret
+                                  block:block
+                                  error:&err];
+    }
+    else {
+        result = [self connectToAddress:address block:block error:&err];
+    }
+    
+    if (!result) {
         block(err, nil);
     }
     else {

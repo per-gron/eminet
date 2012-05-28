@@ -34,13 +34,37 @@ typedef void (^EmiConnectionOpenedBlock)(NSError *err, EmiConnection *connection
 // Returns YES on success
 - (BOOL)startWithConfig:(EmiSocketConfig *)config error:(NSError **)error;
 
-- (BOOL)connectToAddress:(NSData *)address block:(EmiConnectionOpenedBlock)block error:(NSError **)err;
+- (BOOL)connectToAddress:(NSData *)address
+                   block:(EmiConnectionOpenedBlock)block
+                   error:(NSError **)errPtr;
+// P2P connect
+- (BOOL)connectToAddress:(NSData *)address
+                  cookie:(NSData *)cookie
+            sharedSecret:(NSData *)sharedSecret
+                   block:(EmiConnectionOpenedBlock)block
+                   error:(NSError **)errPtr;
 /**
  * If an obvious error is detected, this method immediately returns NO and sets err.
  * If you don't care about the error, you can pass nil for errPtr.
  * Otherwise, this method returns YES and begins the asynchronous connection process.
  **/
-- (BOOL)connectToHost:(NSString *)host onPort:(uint16_t)port block:(EmiConnectionOpenedBlock)block error:(NSError **)err;
+- (BOOL)connectToHost:(NSString *)host
+               onPort:(uint16_t)port
+                block:(EmiConnectionOpenedBlock)block
+                error:(NSError **)errPtr;
+/**
+ * P2P connect.
+ * 
+ * If an obvious error is detected, this method immediately returns NO and sets err.
+ * If you don't care about the error, you can pass nil for errPtr.
+ * Otherwise, this method returns YES and begins the asynchronous connection process.
+ **/
+- (BOOL)connectToHost:(NSString *)host
+               onPort:(uint16_t)port
+               cookie:(NSData *)cookie
+         sharedSecret:(NSData *)sharedSecret
+                block:(EmiConnectionOpenedBlock)block
+                error:(NSError **)errPtr;
 
 @property (nonatomic, unsafe_unretained) id<EmiSocketDelegate> delegate;
 @property (nonatomic, readonly, strong) NSData *serverAddress;
