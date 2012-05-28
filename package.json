@@ -1,0 +1,12 @@
+{
+  "name": "eminet",
+  "description": "EmiNet bindings for Node",
+  "version": "0.1",
+  "author": "Per Eckerdal <per@emilir.com>",
+  "engines": { "node" : ">=0.6.0" },
+  "scripts": {
+    "preinstall": "node-waf configure build"
+  },
+  "main": "./node/eminet",
+  "private": true
+}
