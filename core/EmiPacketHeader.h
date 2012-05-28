@@ -61,6 +61,16 @@ public:
     // headerLength will be set to the header length. headerLength
     // can be NULL, in which case it's not set.
     static bool writeEmpty(uint8_t *buf, size_t bufSize, size_t *headerLength);
+    
+    // Adds fillerSize bytes of filler to the packet.
+    //
+    // Assumes that the buffer is at least of size packetSize+fillerSize.
+    //
+    // Assumes that the packet data does not already contain filler data.
+    //
+    // Assumes that the buffer actually contains packet data, including
+    // a valid header.
+    static void addFillerBytes(uint8_t *buf, size_t packetSize, uint16_t fillerSize);
 };
 
 #endif

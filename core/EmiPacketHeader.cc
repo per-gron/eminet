@@ -11,6 +11,7 @@
 #include "EmiNetUtil.h"
 
 #include <cstring>
+#include <algorithm>
 
 inline static void extractFlagsAndSize(EmiPacketFlags flags,
                                        EmiPacketExtraFlags extraFlags,
@@ -110,7 +111,7 @@ bool EmiPacketHeader::parse(const uint8_t *buf, size_t bufSize, EmiPacketHeader 
         if (4 > bufSize) {
             return false;
         }
-        uint16_t twoByteFillerSize = *((uint16_t *)(buf+2));
+        uint16_t twoByteFillerSize = ntohs(*((uint16_t *)(buf+2)));
         fillerSize += twoByteFillerSize;
         expectedSize += twoByteFillerSize;
     }
@@ -255,4 +256,44 @@ bool EmiPacketHeader::writeEmpty(uint8_t *buf, size_t bufSize, size_t *headerLen
     *headerLength = 1;
     
     return true;
+}
+
+void EmiPacketHeader::addFillerBytes(uint8_t *buf, size_t packetSize, uint16_t fillerSize) {
+    ASSERT(1 <= packetSize);
+    
+    if (0 == fillerSize) {
+        // We don't need to do anything
+        return;
+    }
+    
+    // Move the packet data
+    std::copy_backward(buf+1, buf+packetSize, buf+packetSize+fillerSize);
+    
+    // Make sure we have the extra flags byte
+    if (!(buf[0] & EMI_EXTRA_FLAGS_PACKET_FLAG)) {
+        buf[0] |= EMI_EXTRA_FLAGS_PACKET_FLAG;
+        buf[1] = 0;
+        
+        // Decrement the filler size here because by adding
+        // the extra flags byte we have already increased
+        // the size of the packet by one.
+        fillerSize -= sizeof(EmiPacketExtraFlags);
+    }
+    
+    if (0 == fillerSize) {
+        // We're done. This happens when fillerSize was 1 and
+        // the packet did not already contain the extra flags
+        // byte
+    }
+    else if (1 == fillerSize) {
+        buf[1] |= EMI_1_BYTE_FILLER_EXTRA_PACKET_FLAG;
+        buf[2] = 0;
+    }
+    else {
+        buf[1] |= EMI_2_BYTE_FILLER_EXTRA_PACKET_FLAG;
+        
+        *((uint16_t *)(buf+2)) = htons(fillerSize - 2);
+        
+        memset(buf+4, 0, fillerSize-2);
+    }
 }
