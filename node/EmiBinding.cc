@@ -48,7 +48,7 @@ static void timer_cb(uv_timer_t *handle, int status) {
 }
 
 EmiBinding::Timer *EmiBinding::makeTimer() {
-    EmiBinding::Timer *timer = (uv_timer_t *)malloc(sizeof(uv_timer_t)+sizeof(TimerCb));
+    EmiBinding::Timer *timer = (uv_timer_t *)malloc(sizeof(uv_timer_t)+sizeof(TimerCb*));
     
     uv_timer_init(uv_default_loop(), timer);
     

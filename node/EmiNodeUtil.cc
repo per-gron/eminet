@@ -130,7 +130,7 @@ uv_udp_t *EmiNodeUtil::openSocket(const sockaddr_storage& address,
                                   void *data,
                                   EmiError& error) {
     int err;
-    uv_udp_t *socket = (uv_udp_t *)malloc(sizeof(uv_udp_t)+sizeof(EmiNodeUtilRecvCb));
+    uv_udp_t *socket = (uv_udp_t *)malloc(sizeof(uv_udp_t)+sizeof(EmiNodeUtilRecvCb*));
     *(reinterpret_cast<EmiNodeUtilRecvCb**>(socket+1)) = recvCb;
     
     err = uv_udp_init(uv_default_loop(), socket);
