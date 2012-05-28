@@ -19,8 +19,6 @@
 // in a computation friendly format (the actual wire format is more
 // condensed)
 struct EmiMessageHeader {
-    typedef bool (^EmiParseMessageBlock)(const EmiMessageHeader& header, size_t dataOffset);
-    
     EmiMessageFlags flags;
     EmiChannelQualifier channelQualifier;
     // This is int32_t and not EmiChannelQualifier because it has to be capable of
@@ -42,8 +40,11 @@ struct EmiMessageHeader {
     // message fits in the buffer, only that the header fits.
     static bool parse(const uint8_t *buf, size_t bufSize, EmiMessageHeader& header);
     
-    // Returns true if the entire parse was successful
-    static bool parseMessages(const uint8_t *buf, size_t bufSize, EmiParseMessageBlock block);
+    // Returns true if the parse was successful
+    static bool parseNextMessage(const uint8_t *buf, size_t bufSize,
+                                 size_t *offset,
+                                 size_t *dataOffset,
+                                 EmiMessageHeader *header);
 };
 
 #endif

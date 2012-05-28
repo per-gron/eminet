@@ -39,29 +39,28 @@ bool EmiMessageHeader::parse(const uint8_t *buf, size_t bufSize, EmiMessageHeade
     return true;
 }
 
-bool EmiMessageHeader::parseMessages(const uint8_t *buf, size_t bufSize, EmiParseMessageBlock block) {
-    size_t offset = 0;
-    
-    while (offset + EMI_MESSAGE_HEADER_MIN_LENGTH <= bufSize) {
-        EmiMessageHeader header;
-        if (!EmiMessageHeader::parse(buf+offset, 
-                                     bufSize-offset,
-                                     header)) {
+bool EmiMessageHeader::parseNextMessage(const uint8_t *buf, size_t bufSize,
+                                        size_t *offset,
+                                        size_t *dataOffset,
+                                        EmiMessageHeader *header) {
+    if (*offset + EMI_MESSAGE_HEADER_MIN_LENGTH <= bufSize) {
+        if (!EmiMessageHeader::parse(buf+*offset, 
+                                     bufSize-*offset,
+                                     *header)) {
             return false;
         }
         
-        size_t dataOffset = offset+header.headerLength;
-        if (dataOffset + header.length > bufSize) {
+        *dataOffset = *offset+header->headerLength;
+        if (*dataOffset + header->length > bufSize) {
             return false;
         }
         
-        offset += header.headerLength+header.length;
-        if (header.flags & EMI_SACK_FLAG) return false;
+        *offset += header->headerLength+header->length;
+        if (header->flags & EMI_SACK_FLAG) return false;
         
-        if (!block(header, dataOffset)) {
-            return false;
-        }
+        return true;
     }
-    
-    return offset == bufSize;
+    else {
+        return *offset == bufSize;
+    }
 }
