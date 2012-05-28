@@ -1,7 +1,7 @@
 {
   "name": "eminet",
   "description": "EmiNet bindings for Node",
-  "version": "0.1",
+  "version": "0.1.0",
   "author": "Per Eckerdal <per@emilir.com>",
   "engines": { "node" : ">=0.6.0" },
   "scripts": {
