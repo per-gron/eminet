@@ -103,14 +103,12 @@ private:
         const uint8_t *data = Binding::extractData(msg->data);
         size_t dataLen = Binding::extractLength(msg->data);
         
-        __block EmiCongestionControl& cc(congestionControl);
-        
         uint8_t packetBuf[128];
-        size_t size = EmiMessage<Binding>::writeControlPacketWithData(msg->flags, packetBuf, sizeof(packetBuf), data, dataLen, msg->sequenceNumber);
+        size_t size = EM::writeControlPacketWithData(msg->flags, packetBuf, sizeof(packetBuf), data, dataLen, msg->sequenceNumber);
         ASSERT(0 != size); // size == 0 when the buffer was too small
         
         // Actually send the packet
-        sendDatagram(cc, packetBuf, size);
+        sendDatagram(congestionControl, packetBuf, size);
     }
     
     void fillPacketHeaderData(EmiTimeInterval now,
