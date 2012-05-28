@@ -277,17 +277,18 @@ public:
     inline void connectionRegained() {
         _delegate.emiConnLost();
     }
+    void eachCurrentMessageIteration(EmiTimeInterval now, EmiMessage<Binding> *msg) {
+        Error err;
+        // Reliable is set to false, because if the message is reliable, it is
+        // already in the sender buffer and shouldn't be reinserted anyway
+        
+        // enqueueMessage can't fail because the reliable parameter is false
+        ASSERT(enqueueMessage(now, msg, /*reliable:*/false, err));
+    }
     void rtoTimeout(EmiTimeInterval now, EmiTimeInterval rtoWhenRtoTimerWasScheduled) {
         _congestionControl.onRto();
         
-        _senderBuffer.eachCurrentMessage(now, rtoWhenRtoTimerWasScheduled, ^(EmiMessage<Binding> *msg) {
-            Error err;
-            // Reliable is set to false, because if the message is reliable, it is
-            // already in the sender buffer and shouldn't be reinserted anyway
-            
-            // enqueueMessage can't fail because the reliable parameter is false
-            ASSERT(enqueueMessage(now, msg, /*reliable:*/false, err));
-        });
+        _senderBuffer.eachCurrentMessage(now, rtoWhenRtoTimerWasScheduled, *this);
     }
     inline void enqueueHeartbeat() {
         _sendQueue.enqueueHeartbeat();

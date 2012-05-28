@@ -19,7 +19,6 @@ template<class Binding>
 class EmiSenderBuffer {
     typedef typename Binding::Error Error;
     typedef EmiMessage<Binding>     EM;
-    typedef void (^EmiSenderBufferIteratorBlock)(EM *message);
     
     struct EmiSenderBufferNextMsgTreeCmp {
         bool operator()(EM *a, EM *b) const {
@@ -194,7 +193,9 @@ public:
     bool empty() const {
         return _nextMsgTree.empty();
     }
-    void eachCurrentMessage(EmiTimeInterval now, EmiTimeInterval rto, EmiSenderBufferIteratorBlock block) {
+    template<class Delegate>
+    void eachCurrentMessage(EmiTimeInterval now, EmiTimeInterval rto,
+                            Delegate& delegate) {
         EmiSenderBufferNextMsgTreeIter iter = _nextMsgTree.begin();
         EmiSenderBufferNextMsgTreeIter end = _nextMsgTree.end();
         
@@ -212,7 +213,7 @@ public:
             // can't modify it here. Do it later.
             toBePushedToTheEnd.push_back(msg);
             
-            block(msg);
+            delegate.eachCurrentMessageIteration(now, msg);
             
             ++iter;
         }
