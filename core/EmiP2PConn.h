@@ -17,34 +17,28 @@
 #include "EmiAddressCmp.h"
 #include "EmiUdpSocket.h"
 
-template<class Binding, class Delegate, int EMI_P2P_COOKIE_SIZE>
+template<class Binding, class Delegate, int EMI_P2P_RAND_NUM_SIZE>
 class EmiP2PConn {
 public:
     
-    class ConnCookie {
+    class ConnCookieRandNum {
     public:
-        uint8_t cookie[EMI_P2P_COOKIE_SIZE];
+        uint8_t randNum[EMI_P2P_RAND_NUM_SIZE];
         
-        ConnCookie(const uint8_t *cookie_, size_t cookieLength, bool isComplementary = false) {
-            ASSERT(EMI_P2P_COOKIE_SIZE == cookieLength);
-            memcpy(cookie, cookie_, sizeof(cookie));
-            
-            if (isComplementary) {
-                for (int i=0; i<cookieLength; i++) {
-                    cookie[i] = ~cookie[i];
-                }
-            }
+        ConnCookieRandNum(const uint8_t *cookie_, size_t cookieLength) {
+            ASSERT(cookieLength >= EMI_P2P_RAND_NUM_SIZE);
+            memcpy(randNum, cookie_, sizeof(randNum));
         }
         
-        inline ConnCookie(const ConnCookie& other) {
-            memcpy(cookie, other.cookie, sizeof(cookie));
+        inline ConnCookieRandNum(const ConnCookieRandNum& other) {
+            memcpy(randNum, other.randNum, sizeof(randNum));
         }
-        inline ConnCookie& operator=(const ConnCookie& other) {
-            memcpy(cookie, other.cookie, sizeof(cookie));
+        inline ConnCookieRandNum& operator=(const ConnCookieRandNum& other) {
+            memcpy(randNum, other.randNum, sizeof(randNum));
         }
         
-        inline bool operator<(const ConnCookie& rhs) const {
-            return 0 > memcmp(cookie, rhs.cookie, sizeof(cookie));
+        inline bool operator<(const ConnCookieRandNum& rhs) const {
+            return 0 > memcmp(randNum, rhs.randNum, sizeof(randNum));
         }
     };
     
@@ -150,11 +144,11 @@ private:
     }
     
 public:
-    const ConnCookie cookie;
+    const ConnCookieRandNum cookie;
     
     EmiP2PConn(Delegate& delegate,
                EmiSequenceNumber initialSequenceNumber,
-               const ConnCookie &cookie_,
+               const ConnCookieRandNum &cookie_,
                bool firstPeerHadComplementaryCookie,
                EmiUdpSocket<Binding> *sock,
                const sockaddr_storage& firstPeer,

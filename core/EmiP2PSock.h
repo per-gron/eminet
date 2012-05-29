@@ -40,14 +40,14 @@ protected:
     typedef typename Binding::TemporaryData    TemporaryData;
     typedef typename Binding::Error            Error;
     
-    typedef EmiP2PConn<Binding, EmiP2PSock, EMI_P2P_COOKIE_SIZE> Conn;
+    typedef EmiP2PConn<Binding, EmiP2PSock, EMI_P2P_RAND_NUM_SIZE> Conn;
     typedef EmiUdpSocket<Binding> EUS;
     
     typedef EmiP2PSockConfig                                 SockConfig;
-    typedef typename Conn::ConnCookie                        ConnCookie;
+    typedef typename Conn::ConnCookieRandNum                 ConnCookieRandNum;
     typedef std::map<sockaddr_storage, Conn*, EmiAddressCmp> ConnMap;
     typedef typename ConnMap::iterator                       ConnMapIter;
-    typedef std::map<ConnCookie, Conn*>                      ConnCookieMap;
+    typedef std::map<ConnCookieRandNum, Conn*>               ConnCookieMap;
     typedef typename ConnCookieMap::iterator                 ConnCookieMapIter;
     
 private:
@@ -72,44 +72,42 @@ private:
     }
     
     void hashCookie(EmiTimeInterval stamp, const uint8_t *randNum,
-                    uint8_t *buf, size_t bufLen, bool minusOne = false) const {
+                    uint8_t *buf, size_t bufLen,
+                    bool complementary,
+                    bool minusOne = false) const {
         ASSERT(bufLen >= Binding::HMAC_HASH_SIZE);
+        
+        uint8_t complementaryByte = (complementary ? 0 : 1);
         
         uint64_t integerStamp = floor(stamp/EMI_P2P_COOKIE_RESOLUTION - (minusOne ? 1 : 0));
         
-        uint8_t toBeHashed[EMI_P2P_RAND_NUM_SIZE+sizeof(integerStamp)];
+        uint8_t toBeHashed[EMI_P2P_RAND_NUM_SIZE+sizeof(integerStamp)+sizeof(complementaryByte)];
         
         memcpy(toBeHashed, randNum, EMI_P2P_RAND_NUM_SIZE);
         *((uint64_t *)(toBeHashed+EMI_P2P_RAND_NUM_SIZE)) = integerStamp;
+        toBeHashed[EMI_P2P_RAND_NUM_SIZE+sizeof(integerStamp)] = complementaryByte;
         
         Binding::hmacHash(_serverSecret, sizeof(_serverSecret),
                           toBeHashed, sizeof(toBeHashed),
                           buf, bufLen);
     }
     
-    static void complementaryCookie(uint8_t *out, size_t outLen,
-                                    const uint8_t *in, size_t inLen) {
-        ASSERT(EMI_P2P_COOKIE_SIZE == outLen && EMI_P2P_COOKIE_SIZE == inLen);
-        for (int i=0; i<EMI_P2P_COOKIE_SIZE; i++) {
-            out[i] = ~in[i];
-        }
-    }
-    
     // Returns true if the cookie is valid
-    bool checkNonComplementaryCookie(EmiTimeInterval stamp,
-                                     const uint8_t *buf, size_t bufLen) const {
+    bool checkCookie(EmiTimeInterval stamp,
+                     bool complementary,
+                     const uint8_t *buf, size_t bufLen) const {
         if (EMI_P2P_COOKIE_SIZE != bufLen) {
             return false;
         }
         
         uint8_t testBuf[Binding::HMAC_HASH_SIZE];
         
-        hashCookie(stamp, buf, testBuf, sizeof(testBuf));
+        hashCookie(stamp, buf, testBuf, sizeof(testBuf), complementary);
         if (0 == memcmp(testBuf, buf+EMI_P2P_RAND_NUM_SIZE, sizeof(testBuf))) {
             return true;
         }
         
-        hashCookie(stamp, buf, testBuf, sizeof(testBuf), /*minusOne:*/true);
+        hashCookie(stamp, buf, testBuf, sizeof(testBuf), complementary, /*minusOne:*/true);
         if (0 == memcmp(testBuf, buf+EMI_P2P_RAND_NUM_SIZE, sizeof(testBuf))) {
             return true;
         }
@@ -126,15 +124,12 @@ private:
             return false;
         }
         
-        if (checkNonComplementaryCookie(stamp, cookie, cookieLen)) {
+        if (checkCookie(stamp, /*complementary:*/false, cookie, cookieLen)) {
             *wasComplementary = false;
             return true;
         }
         
-        uint8_t buf[EMI_P2P_COOKIE_SIZE];
-        complementaryCookie(buf, sizeof(buf), cookie, cookieLen);
-        
-        if (checkNonComplementaryCookie(stamp, buf, sizeof(buf))) {
+        if (checkCookie(stamp, /*complementary:*/true, cookie, cookieLen)) {
             *wasComplementary = true;
             return true;
         }
@@ -176,7 +171,7 @@ private:
         if (!conn) {
             // We did not already have a connection with this address
             // Check to see if we have a connection with this cookie
-            ConnCookie cc(cookie, cookieLength, cookieIsComplementary);
+            ConnCookieRandNum cc(cookie, cookieLength);
             
             ConnCookieMapIter cur = _connCookies.find(cc);
             
@@ -325,11 +320,15 @@ public:
         ASSERT(bufBLen >= EMI_P2P_COOKIE_SIZE);
         
         Binding::randomBytes(bufA, EMI_P2P_RAND_NUM_SIZE);
+        memcpy(bufB, bufA, EMI_P2P_RAND_NUM_SIZE);
         
         hashCookie(stamp, /*randNum:*/bufA,
-                   bufA+EMI_P2P_RAND_NUM_SIZE, bufALen-EMI_P2P_RAND_NUM_SIZE);
+                   bufA+EMI_P2P_RAND_NUM_SIZE, bufALen-EMI_P2P_RAND_NUM_SIZE,
+                   /*complementary:*/false);
         
-        complementaryCookie(bufB, bufBLen, bufA, bufALen);
+        hashCookie(stamp, /*randNum:*/bufB,
+                   bufB+EMI_P2P_RAND_NUM_SIZE, bufBLen-EMI_P2P_RAND_NUM_SIZE,
+                   /*complementary:*/true);
         
         return EMI_P2P_COOKIE_SIZE;
     }
