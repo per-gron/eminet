@@ -24,6 +24,8 @@ class EmiRtoTimer {
     Timer                 *_connectionTimer;
     const EmiTimeInterval  _timeBeforeConnectionWarning;
     const EmiTimeInterval  _connectionTimeout;
+    const EmiTimeInterval  _initialConnectionTimeout;
+    bool                   _gotFirstPacket;
     bool                   _issuedConnectionWarning;
     
     Delegate& _delegate;
@@ -49,27 +51,56 @@ private:
         ert->_delegate.connectionTimeout();
     }
     
+    inline EmiTimeInterval getConnectionTimeout() const {
+        return _gotFirstPacket ? _initialConnectionTimeout : _connectionTimeout;
+    }
+    
     static void connectionWarningCallback(EmiTimeInterval now, Timer *timer, void *data) {
         EmiRtoTimer *ert = (EmiRtoTimer *)data;
         
         ert->_issuedConnectionWarning = true;
         Binding::scheduleTimer(ert->_connectionTimer, connectionTimeoutCallback, ert,
-                               ert->_connectionTimeout - ert->_timeBeforeConnectionWarning,
+                               ert->getConnectionTimeout() - ert->_timeBeforeConnectionWarning,
                                /*repeating:*/false);
         
         ert->_delegate.connectionLost();
     }
     
+    void resetConnectionTimeout() {
+        EmiTimeInterval connectionTimeout = getConnectionTimeout();
+        
+        if (_timeBeforeConnectionWarning >= 0 &&
+            _timeBeforeConnectionWarning < connectionTimeout) {
+            Binding::scheduleTimer(_connectionTimer, connectionWarningCallback,
+                                   this, _timeBeforeConnectionWarning, /*repeating:*/false);
+        }
+        else {
+            Binding::scheduleTimer(_connectionTimer, connectionTimeoutCallback,
+                                   this, connectionTimeout, /*repeating:*/false);
+        }
+        
+        if (_issuedConnectionWarning) {
+            _issuedConnectionWarning = false;
+            _delegate.connectionRegained();
+        }
+    }
+    
 public:
     // A negative timeBeforeConnectionWarning means don't
     // issue connection warnings
-    EmiRtoTimer(EmiTimeInterval timeBeforeConnectionWarning, EmiTimeInterval connectionTimeout, EmiConnTime& time, Delegate &delegate) :
+    EmiRtoTimer(EmiTimeInterval timeBeforeConnectionWarning,
+                EmiTimeInterval connectionTimeout,
+                EmiTimeInterval initialConnectionTimeout,
+                EmiConnTime& time,
+                Delegate &delegate) :
     _time(time),
     _rtoTimer(Binding::makeTimer()),
     _rtoWhenRtoTimerWasScheduled(0),
     _connectionTimer(Binding::makeTimer()),
     _timeBeforeConnectionWarning(timeBeforeConnectionWarning),
     _connectionTimeout(connectionTimeout),
+    _initialConnectionTimeout(connectionTimeout),
+    _gotFirstPacket(false),
     _issuedConnectionWarning(false),
     _delegate(delegate) {
         resetConnectionTimeout();
@@ -105,21 +136,9 @@ public:
         }
     }
     
-    void resetConnectionTimeout() {
-        if (_timeBeforeConnectionWarning >= 0 &&
-            _timeBeforeConnectionWarning < _connectionTimeout) {
-            Binding::scheduleTimer(_connectionTimer, connectionWarningCallback,
-                                   this, _timeBeforeConnectionWarning, /*repeating:*/false);
-        }
-        else {
-            Binding::scheduleTimer(_connectionTimer, connectionTimeoutCallback,
-                                   this, _connectionTimeout, /*repeating:*/false);
-        }
-        
-        if (_issuedConnectionWarning) {
-            _issuedConnectionWarning = false;
-            _delegate.connectionRegained();
-        }
+    void gotPacket() {
+        _gotFirstPacket = true;
+        resetConnectionTimeout();
     }
     
     inline bool issuedConnectionWarning() const {

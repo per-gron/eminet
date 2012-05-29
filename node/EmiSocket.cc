@@ -15,6 +15,7 @@ using namespace v8;
   EXPAND_SYM(heartbeatFrequency);                          \
   EXPAND_SYM(heartbeatsBeforeConnectionWarning);           \
   EXPAND_SYM(connectionTimeout);                           \
+  EXPAND_SYM(initialConnectionTimeout);                    \
   EXPAND_SYM(receiverBufferSize);                          \
   EXPAND_SYM(senderBufferSize);                            \
   EXPAND_SYM(acceptConnections);                           \
@@ -140,10 +141,17 @@ Handle<Value> EmiSocket::New(const Arguments& args) {
     READ_CONFIG(sc, heartbeatFrequency,                IsNumber,  float,           NumberValue);
     READ_CONFIG(sc, heartbeatsBeforeConnectionWarning, IsNumber,  float,           NumberValue);
     READ_CONFIG(sc, connectionTimeout,                 IsNumber,  EmiTimeInterval, NumberValue);
+    READ_CONFIG(sc, initialConnectionTimeout,          IsNumber,  EmiTimeInterval, NumberValue);
     READ_CONFIG(sc, senderBufferSize,                  IsNumber,  size_t,          Uint32Value);
     READ_CONFIG(sc, acceptConnections,                 IsBoolean, bool,            BooleanValue);
     READ_CONFIG(sc, port,                              IsNumber,  uint16_t,        Uint32Value);
     READ_CONFIG(sc, fabricatedPacketDropRate,          IsNumber,  EmiTimeInterval, NumberValue);
+    
+    // If initialConnectionTimeout is not set, it should be
+    // the value of connectionTimeout.
+    if (!HAS_CONFIG_PARAM(initialConnectionTimeout)) {
+        sc.initialConnectionTimeout = sc.connectionTimeout;
+    }
     
     int family;
     READ_FAMILY_CONFIG(family, type, scope);

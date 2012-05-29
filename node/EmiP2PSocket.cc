@@ -11,6 +11,7 @@ using namespace v8;
 
 #define EXPAND_SYMS                                        \
   EXPAND_SYM(connectionTimeout);                           \
+  EXPAND_SYM(initialConnectionTimeout);                    \
   EXPAND_SYM(rateLimit);                                   \
   EXPAND_SYM(type);                                        \
   EXPAND_SYM(port);                                        \
@@ -115,10 +116,17 @@ Handle<Value> EmiP2PSocket::New(const Arguments& args) {
     EXPAND_SYMS
 #undef EXPAND_SYM
     
-    READ_CONFIG(sc, connectionTimeout,                 IsNumber,  EmiTimeInterval, NumberValue);
-    READ_CONFIG(sc, rateLimit,                         IsNumber,  size_t,          Uint32Value);
-    READ_CONFIG(sc, port,                              IsNumber,  uint16_t,        Uint32Value);
-    READ_CONFIG(sc, fabricatedPacketDropRate,          IsNumber,  EmiTimeInterval, NumberValue);
+    READ_CONFIG(sc, connectionTimeout,        IsNumber,  EmiTimeInterval, NumberValue);
+    READ_CONFIG(sc, initialConnectionTimeout, IsNumber,  EmiTimeInterval, NumberValue);
+    READ_CONFIG(sc, rateLimit,                IsNumber,  size_t,          Uint32Value);
+    READ_CONFIG(sc, port,                     IsNumber,  uint16_t,        Uint32Value);
+    READ_CONFIG(sc, fabricatedPacketDropRate, IsNumber,  EmiTimeInterval, NumberValue);
+    
+    // If initialConnectionTimeout is not set, it should be
+    // the value of connectionTimeout.
+    if (!HAS_CONFIG_PARAM(initialConnectionTimeout)) {
+        sc.initialConnectionTimeout = sc.connectionTimeout;
+    }
     
     int family;
     READ_FAMILY_CONFIG(family, type, scope);

@@ -111,6 +111,7 @@ public:
     _heartbeatTimer(Binding::makeTimer()),
     _rtoTimer(timeBeforeConnectionWarning(delegate),
               _delegate.getEmiSock().config.connectionTimeout,
+              _delegate.getEmiSock().config.initialConnectionTimeout,
               _time,
               *this) {}
     
@@ -128,7 +129,7 @@ public:
     void gotPacket(const EmiPacketHeader& header, EmiTimeInterval now) {
         _time.gotPacket(header, now);
         _lossList.gotPacket(now, header.sequenceNumber);
-        _rtoTimer.resetConnectionTimeout();
+        _rtoTimer.gotPacket();
     }
     
     void resetHeartbeatTimeout() {

@@ -203,7 +203,9 @@ private:
                 conn = new Conn(*this, initialSequenceNumber,
                                 cc, cookieIsComplementary,
                                 sock, remoteAddress,
-                                config.connectionTimeout, config.rateLimit);
+                                config.connectionTimeout,
+                                config.initialConnectionTimeout,
+                                config.rateLimit);
                 _connCookies.insert(std::make_pair(cc, conn));
             }
             

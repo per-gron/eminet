@@ -25,6 +25,7 @@ private:
     static v8::Persistent<v8::String> heartbeatFrequencySymbol;
     static v8::Persistent<v8::String> heartbeatsBeforeConnectionWarningSymbol;
     static v8::Persistent<v8::String> connectionTimeoutSymbol;
+    static v8::Persistent<v8::String> initialConnectionTimeoutSymbol;
     static v8::Persistent<v8::String> receiverBufferSizeSymbol;
     static v8::Persistent<v8::String> senderBufferSizeSymbol;
     static v8::Persistent<v8::String> acceptConnectionsSymbol;

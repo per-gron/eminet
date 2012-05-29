@@ -20,6 +20,7 @@ public:
     mtu(EMI_DEFAULT_MTU),
     heartbeatFrequency(EMI_DEFAULT_HEARTBEAT_FREQUENCY),
     connectionTimeout(EMI_DEFAULT_CONNECTION_TIMEOUT),
+    initialConnectionTimeout(EMI_DEFAULT_CONNECTION_TIMEOUT),
     heartbeatsBeforeConnectionWarning(EMI_DEFAULT_HEARTBEATS_BEFORE_CONNECTION_WARNING),
     receiverBufferSize(EMI_DEFAULT_RECEIVER_BUFFER_SIZE),
     senderBufferSize(EMI_DEFAULT_SENDER_BUFFER_SIZE),
@@ -32,6 +33,7 @@ public:
     size_t mtu;
     float heartbeatFrequency;
     EmiTimeInterval connectionTimeout;
+    EmiTimeInterval initialConnectionTimeout;
     float heartbeatsBeforeConnectionWarning;
     size_t receiverBufferSize;
     size_t senderBufferSize;

@@ -46,6 +46,14 @@ typedef EmiSocketConfigSC SC;
     ((SC *)_sc)->connectionTimeout = connectionTimeout;
 }
 
+- (EmiTimeInterval)initialConnectionTimeout {
+    return ((SC *)_sc)->initialConnectionTimeout;
+}
+
+- (void)setInitialConnectionTimeout:(EmiTimeInterval)initialConnectionTimeout {
+    ((SC *)_sc)->initialConnectionTimeout = initialConnectionTimeout;
+}
+
 - (float)heartbeatsBeforeConnectionWarning {
     return ((SC *)_sc)->heartbeatsBeforeConnectionWarning;
 }

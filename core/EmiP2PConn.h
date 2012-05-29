@@ -138,11 +138,6 @@ private:
         _delegate.removeConnection(this);
     }
     
-    void resetConnectionTimeout(int idx) {
-        if (0 == idx) _rtoTimer0.resetConnectionTimeout();
-        else          _rtoTimer1.resetConnectionTimeout();
-    }
-    
 public:
     const ConnCookieRandNum cookie;
     
@@ -153,6 +148,7 @@ public:
                EmiUdpSocket<Binding> *sock,
                const sockaddr_storage& firstPeer,
                EmiTimeInterval connectionTimeout,
+               EmiTimeInterval initialConnectionTimeout,
                size_t rateLimit) :
     cookie(cookie_),
     _firstPeerHadComplementaryCookie(firstPeerHadComplementaryCookie),
@@ -161,8 +157,8 @@ public:
     _times(),
     _rateLimit(rateLimit),
     _bytesSentSinceRateLimitTimeout(0),
-    _rtoTimer0(/*timeBeforeConnectionWarning:*/-1, connectionTimeout, _times[0], *this),
-    _rtoTimer1(/*timeBeforeConnectionWarning:*/-1, connectionTimeout, _times[1], *this),
+    _rtoTimer0(/*timeBeforeConnectionWarning:*/-1, connectionTimeout, initialConnectionTimeout, _times[0], *this),
+    _rtoTimer1(/*timeBeforeConnectionWarning:*/-1, connectionTimeout, initialConnectionTimeout, _times[1], *this),
     _rateLimitTimer(rateLimit ? Binding::makeTimer() : NULL) {
         int family = firstPeer.ss_family;
         
@@ -197,7 +193,8 @@ public:
         int idx(addressIndex(address));
         ASSERT(-1 != idx);
         
-        resetConnectionTimeout(idx);
+        if (0 == idx) _rtoTimer0.gotPacket();
+        else          _rtoTimer1.gotPacket();
         
         _times[idx].gotPacket(packetHeader, now);
     }

@@ -16,6 +16,7 @@ private:
     v8::Persistent<v8::Object> _jsHandle;
     
     static v8::Persistent<v8::String> connectionTimeoutSymbol;
+    static v8::Persistent<v8::String> initialConnectionTimeoutSymbol;
     static v8::Persistent<v8::String> rateLimitSymbol;
     static v8::Persistent<v8::String> typeSymbol;
     static v8::Persistent<v8::String> portSymbol;

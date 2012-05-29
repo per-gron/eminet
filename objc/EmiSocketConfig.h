@@ -16,6 +16,7 @@
 
 @property (nonatomic, strong) NSData *serverAddress;
 @property (nonatomic, assign) EmiTimeInterval connectionTimeout;
+@property (nonatomic, assign) EmiTimeInterval initialConnectionTimeout;
 @property (nonatomic, assign) float heartbeatsBeforeConnectionWarning;
 @property (nonatomic, assign) NSUInteger receiverBufferSize;
 @property (nonatomic, assign) NSUInteger senderBufferSize;

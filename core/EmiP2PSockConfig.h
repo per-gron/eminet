@@ -18,6 +18,7 @@ class EmiP2PSockConfig {
 public:
     EmiP2PSockConfig() :
     connectionTimeout(EMI_DEFAULT_CONNECTION_TIMEOUT),
+    initialConnectionTimeout(EMI_DEFAULT_CONNECTION_TIMEOUT),
     rateLimit(0),
     port(0),
     fabricatedPacketDropRate(0) {
@@ -25,6 +26,7 @@ public:
     }
     
     EmiTimeInterval connectionTimeout;
+    EmiTimeInterval initialConnectionTimeout;
     // The approximate maximum number of bytes that will be allowed
     // per connection. Packets beyond this limit will be dropped. The
     // current implementation allows at most 2*rateLimit bytes any
