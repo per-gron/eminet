@@ -115,6 +115,7 @@ _decCount(1),
 _lastDecSeq(-1),
 
 _newestSentSequenceNumber(-1),
+_newestSeenAckSequenceNumber(-1),
 
 _newestSeenSequenceNumber(-1),
 _newestSentAckSequenceNumber(-1),
@@ -155,6 +156,12 @@ void EmiCongestionControl::gotPacket(EmiTimeInterval now, EmiTimeInterval rtt,
     }
     
     if (packetHeader.flags & EMI_ACK_PACKET_FLAG) {
+        if (-1 == _newestSeenAckSequenceNumber ||
+            EmiNetUtil::cyclicDifference24Signed(packetHeader.ack,
+                                                 _newestSeenAckSequenceNumber) > 0) {
+            _newestSeenAckSequenceNumber = packetHeader.ack;
+        }
+        
         onAck(rtt);
     }
     
@@ -173,6 +180,9 @@ void EmiCongestionControl::onRto() {
 }
 
 void EmiCongestionControl::onDataSent(EmiPacketSequenceNumber sequenceNumber, size_t size) {
+    if (-1 == _newestSentSequenceNumber) {
+        _newestSeenAckSequenceNumber = ((sequenceNumber-1) & EMI_PACKET_SEQUENCE_NUMBER_MASK);
+    }
     _newestSentSequenceNumber = sequenceNumber;
     
     if (0 == _sendingRate) {
@@ -206,7 +216,7 @@ size_t EmiCongestionControl::tickAllowance() const {
     }
     else {
         packetsInTransit = EmiNetUtil::cyclicDifference24(_newestSentSequenceNumber,
-                                                          _newestSeenSequenceNumber);
+                                                          _newestSeenAckSequenceNumber)/2;
     }
     
     size_t cwndAllowance = _congestionWindow - packetsInTransit*_avgPacketSize;

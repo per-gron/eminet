@@ -78,6 +78,11 @@ private:
             // Because of this, we need to set the heartbeat timer here.
             _conn->resetHeartbeatTimeout();
             
+            if (!error) {
+                // This instructs the RTO timer that the connection is now opened.
+                _conn->connectionOpened();
+            }
+            
             SockDelegate::connectionOpened(_connectionOpenedCallbackCookie, error, reason, *_conn);
         }
     }

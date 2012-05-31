@@ -174,6 +174,10 @@ public:
         return _rtoTimer.issuedConnectionWarning();
     }
     
+    inline void connectionOpened() {
+        _rtoTimer.connectionOpened();
+    }
+    
     inline EmiConnTime& getTime() {
         return _time;
     }

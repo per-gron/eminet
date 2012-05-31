@@ -242,6 +242,10 @@ public:
         }
         else {
             _conn = new ELC(this, _receiverBuffer, now, otherHostInitialSequenceNumber);
+            
+            // This instructs the RTO timer that the connection is now opened.
+            connectionOpened();
+            
             return true;
         }
     }
@@ -259,6 +263,11 @@ public:
             _conn = new ELC(this, _receiverBuffer, now, cookie);
             return true;
         }
+    }
+    
+    // This instructs the RTO timer that the connection is now opened.
+    inline void connectionOpened() {
+        _timers.connectionOpened();
     }
     
     inline void resetHeartbeatTimeout() {

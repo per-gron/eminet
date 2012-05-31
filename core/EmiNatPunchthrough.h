@@ -123,6 +123,8 @@ private:
     
     // Invoked by EmiRtoTimer
     inline void connectionTimeout() {
+        _rtoTimer.connectionOpened();
+        
         if (_isInProxyTeardownPhase) {
             // We lost the connection to the P2P mediator.
             // There's not much we can do about it, and we
@@ -248,6 +250,8 @@ public:
         
         /// Send a PRX-RST packet to the P2P mediator
         sendPrxRstPacket();
+        
+        _rtoTimer.connectionOpened();
         
         _delegate.natPunchthroughFinished(/*success:*/true);
     }

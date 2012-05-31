@@ -25,7 +25,7 @@ class EmiRtoTimer {
     const EmiTimeInterval  _timeBeforeConnectionWarning;
     const EmiTimeInterval  _connectionTimeout;
     const EmiTimeInterval  _initialConnectionTimeout;
-    bool                   _gotFirstPacket;
+    bool                   _connectionOpen;
     bool                   _issuedConnectionWarning;
     
     Delegate& _delegate;
@@ -52,7 +52,7 @@ private:
     }
     
     inline EmiTimeInterval getConnectionTimeout() const {
-        return _gotFirstPacket ? _initialConnectionTimeout : _connectionTimeout;
+        return _connectionOpen ? _connectionTimeout : _initialConnectionTimeout;
     }
     
     static void connectionWarningCallback(EmiTimeInterval now, Timer *timer, void *data) {
@@ -99,8 +99,8 @@ public:
     _connectionTimer(Binding::makeTimer()),
     _timeBeforeConnectionWarning(timeBeforeConnectionWarning),
     _connectionTimeout(connectionTimeout),
-    _initialConnectionTimeout(connectionTimeout),
-    _gotFirstPacket(false),
+    _initialConnectionTimeout(initialConnectionTimeout),
+    _connectionOpen(false),
     _issuedConnectionWarning(false),
     _delegate(delegate) {
         resetConnectionTimeout();
@@ -136,9 +136,12 @@ public:
         }
     }
     
-    void gotPacket() {
-        _gotFirstPacket = true;
+    inline void gotPacket() {
         resetConnectionTimeout();
+    }
+    
+    inline void connectionOpened() {
+        _connectionOpen = true;
     }
     
     inline bool issuedConnectionWarning() const {

@@ -41,6 +41,7 @@ class EmiCongestionControl {
     EmiPacketSequenceNumber _lastDecSeq;
     
     EmiPacketSequenceNumber _newestSentSequenceNumber;
+    EmiPacketSequenceNumber _newestSeenAckSequenceNumber;
     
     // State for knowing which ACKs to send and when
     EmiPacketSequenceNumber _newestSeenSequenceNumber;
