@@ -18,6 +18,7 @@
 #include <deque>
 #include <map>
 #include <set>
+#include <vector>
 #include <algorithm>
 #include <cmath>
 
@@ -257,6 +258,7 @@ private:
         /// enqueued but was not sent along with actual data.
         SendQueueAcksMapIter ackIter = _acks.begin();
         SendQueueAcksMapIter ackEnd = _acks.end();
+        std::vector<EmiChannelQualifier> acksToErase;
         while (ackIter != ackEnd) {
             EmiChannelQualifier cq = (*ackIter).first;
             
@@ -284,10 +286,21 @@ private:
                 // potential break above.
                 pos += msgSize;
                 _acksSentInThisTick.insert(cq);
-                _acks.erase(cq);
+                // We can't _acks.erase(cq), because that invalidates ackIter
+                acksToErase.push_back(cq);
             }
             
             ++ackIter;
+        }
+        
+        {
+            std::vector<EmiChannelQualifier>::iterator iter = acksToErase.begin();
+            std::vector<EmiChannelQualifier>::iterator end  = acksToErase.end();
+            while (iter != end) {
+                EmiChannelQualifier cq = *iter;
+                _acks.erase(cq);
+                ++iter;
+            }
         }
         
         if (packetHeaderLength != pos) {
