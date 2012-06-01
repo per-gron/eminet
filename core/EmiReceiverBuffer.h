@@ -106,10 +106,12 @@ public:
     
     virtual ~EmiReceiverBuffer() {
         EmiReceiverBufferTreeIter iter = _tree.begin();
-        EmiReceiverBufferTreeIter end = _tree.end();
-        while (iter != end) {
+        while (iter != _tree.end()) {
             remove(*iter);
-            ++iter;
+            
+            // We can't just increment iter, because the call to
+            // remove invalidated iter.
+            iter = _tree.begin();
         }
         
         _size = 0;
