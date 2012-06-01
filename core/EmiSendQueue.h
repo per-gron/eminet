@@ -196,7 +196,9 @@ private:
         EmiPacketHeader packetHeader;
         fillPacketHeaderData(now, congestionControl, connTime, packetHeader);
         size_t packetHeaderLength;
-        EmiPacketHeader::write(buf, bufLength, packetHeader, &packetHeaderLength);
+        if (!EmiPacketHeader::write(buf, bufLength, packetHeader, &packetHeaderLength)) {
+            return 0;
+        }
         
         size_t pos = packetHeaderLength;
         

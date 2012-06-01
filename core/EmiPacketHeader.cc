@@ -131,7 +131,7 @@ bool EmiPacketHeader::parse(const uint8_t *buf, size_t bufSize, EmiPacketHeader 
     
     const uint8_t *bufCur = buf+sizeof(header->flags);
     
-    if (flags | EMI_EXTRA_FLAGS_PACKET_FLAG) {
+    if (flags & EMI_EXTRA_FLAGS_PACKET_FLAG) {
         bufCur += sizeof(EmiPacketExtraFlags);
         bufCur += fillerSize;
     }
