@@ -172,9 +172,6 @@ void EmiCongestionControl::gotPacket(EmiTimeInterval now, EmiTimeInterval rtt,
     if (packetHeader.flags & EMI_SEQUENCE_NUMBER_PACKET_FLAG) {
         if (-1 == _newestSeenSN ||
             EmiNetUtil::cyclicDifference24Signed(packetHeader.sequenceNumber, _newestSeenSN) > 0) {
-            ASSERT(-1 == _newestSeenSN ||
-                   EmiNetUtil::cyclicDifference24Signed(packetHeader.sequenceNumber,
-                                                        _newestSeenSN) < 100);
             _newestSeenSN = packetHeader.sequenceNumber;
         }
     }
