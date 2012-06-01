@@ -121,7 +121,7 @@ bool EmiPacketHeader::parse(const uint8_t *buf, size_t bufSize, EmiPacketHeader 
     }
     
     header->flags = flags;
-    header->sequenceNumber = EmiNetUtil::read24(buf+sizeof(EmiPacketFlags));
+    header->sequenceNumber = 0;
     header->ack = 0;
     header->nak = 0;
     header->linkCapacity = 0.0f;

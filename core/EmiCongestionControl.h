@@ -40,12 +40,12 @@ class EmiCongestionControl {
     // packet sending rate is decreased. Initially -1
     EmiPacketSequenceNumber _lastDecSeq;
     
-    EmiPacketSequenceNumber _newestSentSequenceNumber;
-    EmiPacketSequenceNumber _newestSeenAckSequenceNumber;
+    EmiPacketSequenceNumber _newestSentSN;
+    EmiPacketSequenceNumber _newestSeenAckSN;
     
     // State for knowing which ACKs to send and when
-    EmiPacketSequenceNumber _newestSeenSequenceNumber;
-    EmiPacketSequenceNumber _newestSentAckSequenceNumber;
+    EmiPacketSequenceNumber _newestSeenSN;
+    EmiPacketSequenceNumber _newestSentAckSN;
     
     float _remoteLinkCapacity;
     float _remoteDataArrivalRate;

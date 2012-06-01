@@ -114,11 +114,11 @@ _decRandom(2),
 _decCount(1),
 _lastDecSeq(-1),
 
-_newestSentSequenceNumber(-1),
-_newestSeenAckSequenceNumber(-1),
+_newestSentSN(-1),
+_newestSeenAckSN(-1),
 
-_newestSeenSequenceNumber(-1),
-_newestSentAckSequenceNumber(-1),
+_newestSeenSN(-1),
+_newestSentAckSN(-1),
 
 _remoteLinkCapacity(-1),
 _remoteDataArrivalRate(-1) {}
@@ -156,10 +156,10 @@ void EmiCongestionControl::gotPacket(EmiTimeInterval now, EmiTimeInterval rtt,
     }
     
     if (packetHeader.flags & EMI_ACK_PACKET_FLAG) {
-        if (-1 == _newestSeenAckSequenceNumber ||
+        if (-1 == _newestSeenAckSN ||
             EmiNetUtil::cyclicDifference24Signed(packetHeader.ack,
-                                                 _newestSeenAckSequenceNumber) > 0) {
-            _newestSeenAckSequenceNumber = packetHeader.ack;
+                                                 _newestSeenAckSN) > 0) {
+            _newestSeenAckSN = packetHeader.ack;
         }
         
         onAck(rtt);
@@ -169,9 +169,14 @@ void EmiCongestionControl::gotPacket(EmiTimeInterval now, EmiTimeInterval rtt,
         onNak(packetHeader.nak, largestSNSoFar);
     }
     
-    if (-1 == _newestSeenSequenceNumber ||
-        EmiNetUtil::cyclicDifference24Signed(packetHeader.sequenceNumber, _newestSeenSequenceNumber) > 0) {
-        _newestSeenSequenceNumber = packetHeader.sequenceNumber;
+    if (packetHeader.flags & EMI_SEQUENCE_NUMBER_PACKET_FLAG) {
+        if (-1 == _newestSeenSN ||
+            EmiNetUtil::cyclicDifference24Signed(packetHeader.sequenceNumber, _newestSeenSN) > 0) {
+            ASSERT(-1 == _newestSeenSN ||
+                   EmiNetUtil::cyclicDifference24Signed(packetHeader.sequenceNumber,
+                                                        _newestSeenSN) < 100);
+            _newestSeenSN = packetHeader.sequenceNumber;
+        }
     }
 }
 
@@ -180,10 +185,10 @@ void EmiCongestionControl::onRto() {
 }
 
 void EmiCongestionControl::onDataSent(EmiPacketSequenceNumber sequenceNumber, size_t size) {
-    if (-1 == _newestSentSequenceNumber) {
-        _newestSeenAckSequenceNumber = ((sequenceNumber-1) & EMI_PACKET_SEQUENCE_NUMBER_MASK);
+    if (-1 == _newestSentSN) {
+        _newestSeenAckSN = ((sequenceNumber-1) & EMI_PACKET_SEQUENCE_NUMBER_MASK);
     }
-    _newestSentSequenceNumber = sequenceNumber;
+    _newestSentSN = sequenceNumber;
     
     if (0 == _sendingRate) {
         // We're in slow start mode
@@ -200,23 +205,25 @@ void EmiCongestionControl::onDataSent(EmiPacketSequenceNumber sequenceNumber, si
 }
 
 EmiPacketSequenceNumber EmiCongestionControl::ack() {
-    if (_newestSeenSequenceNumber == _newestSentAckSequenceNumber) {
+    if (_newestSeenSN == _newestSentAckSN) {
         return -1;
     }
     
-    _newestSentAckSequenceNumber = _newestSeenSequenceNumber;
-    return _newestSeenSequenceNumber;
+    _newestSentAckSN = _newestSeenSN;
+    return _newestSeenSN;
 }
 
 size_t EmiCongestionControl::tickAllowance() const {
     int packetsInTransit;
     
-    if (-1 == _newestSentSequenceNumber) {
+    if (-1 == _newestSentSN) {
         packetsInTransit = 0;
     }
     else {
-        packetsInTransit = EmiNetUtil::cyclicDifference24(_newestSentSequenceNumber,
-                                                          _newestSeenAckSequenceNumber)/2;
+        // /2 because presumably half of the packets are
+        // in transit, the other half's ACKs are in transit
+        packetsInTransit = EmiNetUtil::cyclicDifference24(_newestSentSN,
+                                                          _newestSeenAckSN)/2;
     }
     
     size_t cwndAllowance = _congestionWindow - packetsInTransit*_avgPacketSize;
