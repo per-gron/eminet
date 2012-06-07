@@ -73,7 +73,10 @@ private:
     
     void deleteELC(ELC *elc) {
         if (_socket) {
-            delete _socket;
+            if (EMI_CONNECTION_TYPE_SERVER != _type) {
+                // For server connections, EmiSock owns the socket
+                delete _socket;
+            }
             _socket = NULL;
         }
         
