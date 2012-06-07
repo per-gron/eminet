@@ -29,6 +29,72 @@ class EmiConn;
 
 template<class SockDelegate, class ConnDelegate>
 class EmiSendQueue {
+    
+    // The purpose of BytesSentTheLastNTicks is to increase the
+    // precision of the congestion control algorithm: The congestion
+    // control works by telling EmiSendQueue how many bytes it is
+    // allowed to send per tick, but if this value is lower than
+    // the MTU, EmiSendQueue will never be able to send large
+    // packets.
+    //
+    // The most obvious hack is to simply not let the byter per
+    // tick limit drop below the MTU, but that is not good enough,
+    // because that would put a lower bound on the data send rate
+    // at MTU/EMI_TICK_TIME, which for a MTU of 576 and tick time
+    // of 10ms is more than 50KB/s.
+    //
+    // Because data rates far below 50KB are to be expected in
+    // congested mobile data networks, we need a way to increase
+    // the precision.
+    //
+    // We do this by keeping track of the number of bytes sent in
+    // the last N ticks (where N is a reasonably small number, like
+    // 50). The sending algorithm is allowed to send a packet if
+    // the number of bytes sent in the last N ticks plus that packet's
+    // size is lower than N * the number of bytes that can be sent
+    // per tick.
+    //
+    // This reduces the minimum data rate to MTU/EMI_TICK_TIME/N,
+    // which in a normal circumstance could be 576/0.01/50 ≈ 1KB/s
+    //
+    // BytesSentTheLastNTicks is a helper class that counts the
+    // amount of bytes sent in the last Num ticks.
+    template<int Num>
+    class BytesSentTheLastNTicks {
+        size_t _buf[Num];
+        int    _idx;
+        size_t _sum;
+    public:
+        BytesSentTheLastNTicks() :
+        _idx(0),
+        _sum(0) {
+            memset(_buf, 0, Num*sizeof(size_t));
+        }
+        
+        inline int N() const {
+            return Num;
+        }
+        
+        inline void sendData(size_t size) {
+            _sum += size;
+            _buf[_idx] += size;
+        }
+        
+        inline size_t bytesSent() const {
+            return _sum;
+        }
+        
+        inline size_t bytesSentSinceLastTick() const {
+            return _buf[_idx];
+        }
+        
+        inline void tick() {
+            _idx = (_idx+1)%Num;
+            _sum -= _buf[_idx];
+            _buf[_idx] = 0;
+        }
+    };
+    
     typedef typename SockDelegate::Binding   Binding;
     typedef typename Binding::Error          Error;
     typedef typename Binding::PersistentData PersistentData;
@@ -58,7 +124,7 @@ class EmiSendQueue {
     bool _enqueueHeartbeat;
     bool _enqueuePacketAck; // This helps to make sure that we only send one packet ACK per tick
     EmiPacketSequenceNumber _enqueuedNak;
-    size_t _bytesSentSinceLastTick;
+    BytesSentTheLastNTicks<100> _bytesSentCounter;
     
 private:
     // Private copy constructor and assignment operator
@@ -97,7 +163,7 @@ private:
         
         _conn.sendDatagram(buf, bufSize);
         
-        _bytesSentSinceLastTick += bufSize;
+        _bytesSentCounter.sendData(bufSize);
     }
     
     void sendMessageInSeparatePacket(EmiCongestionControl& congestionControl, const EM *msg) {
@@ -189,8 +255,18 @@ private:
             allowedSize = bufLength;
         }
         else {
-            allowedSize = std::min(bufLength,
-                                   congestionControl.tickAllowance() - _bytesSentSinceLastTick);
+            // The std::min(..., bufLength) is there to ensure that
+            // we don't attempt to send more data than what fills
+            // in a packet.
+            //
+            // The std::max(bufLength, ...) is there to ensure that
+            // we are allowed to send at least one full packet every
+            // _bytesSentCounter.N() ticks, regardless of what the
+            // congestion control algorithm says.
+            allowedSize = std::min((std::max(bufLength,
+                                             _bytesSentCounter.N()*congestionControl.tickAllowance()) -
+                                    _bytesSentCounter.bytesSent()),
+                                   bufLength);
         }
         
         EmiPacketHeader packetHeader;
@@ -346,7 +422,7 @@ public:
     _enqueueHeartbeat(false),
     _enqueuePacketAck(false),
     _enqueuedNak(-1),
-    _bytesSentSinceLastTick(0),
+    _bytesSentCounter(),
     _queueSize(0) {
         _bufLength = mtu;
         _buf = (uint8_t *)malloc(_bufLength*2);
@@ -463,15 +539,15 @@ public:
             }
         } while (packetWasSent);
         
-        if (0 == _bytesSentSinceLastTick && _enqueueHeartbeat) {
+        if (0 == _bytesSentCounter.bytesSentSinceLastTick() && _enqueueHeartbeat) {
             // Send heartbeat
             size_t heartbeatSize = sendHeartbeat(congestionControl, connTime, now);
-            _bytesSentSinceLastTick += heartbeatSize;
+            _bytesSentCounter.sendData(heartbeatSize);
             _enqueueHeartbeat = false;
         }
         
-        bool somethingHasBeenSentInThisTick = (0 != _bytesSentSinceLastTick);
-        _bytesSentSinceLastTick = 0;
+        bool somethingHasBeenSentInThisTick = (0 != _bytesSentCounter.bytesSentSinceLastTick());
+        _bytesSentCounter.tick();
         
         return somethingHasBeenSentInThisTick;
     }
