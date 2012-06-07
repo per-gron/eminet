@@ -92,29 +92,55 @@ private:
         return true;
     }
     
+    // If the inbound address does not match what the resulting EmiConn
+    // expects, NULL is returned and *invalidLocalAddr is set to true.
+    //
+    // Otherwise, *invalidLocalAddr is set to false.
+    //
+    // If invalidLocalAddr is NULL, *invalidLocalAddr is not set, but
+    // the return value is not affected (NULL is returned if the local
+    // address is invalid)
     EC *getConnectionForMessage(EUS *sock,
+                                bool *invalidLocalAddr,
+                                const sockaddr_storage& inboundAddr,
                                 const sockaddr_storage& remoteAddr,
                                 bool acceptPacketFromUnexpectedHost = false) {
+        EC *result = NULL;
+        
         if (_serverSocket == sock) {
             ServerConnectionMapIter cur(_serverConns.find(AddressKey(remoteAddr)));
-            return _serverConns.end() == cur ? NULL : (*cur).second;
+            
+            result = (_serverConns.end() == cur ? NULL : (*cur).second);
         }
         else {
             ClientConnectionMapIter cur(_clientConns.find(sock));
-            if (_clientConns.end() == cur) {
-                return NULL;
+            if (_clientConns.end() != cur) {
+                EC *conn = (*cur).second;
+                
+                if (acceptPacketFromUnexpectedHost ||
+                    0 == EmiAddressCmp::compare(conn->getRemoteAddress(), remoteAddr)) {
+                    // We only want to accept packets from the correct remote host.
+                    result = conn;
+                }
             }
-            
-            EC *conn = (*cur).second;
-            
-            if (!acceptPacketFromUnexpectedHost &&
-                0 != EmiAddressCmp::compare(conn->getRemoteAddress(), remoteAddr)) {
-                // We only want to accept packets from the correct remote host.
-                return NULL;
-            }
-            
-            return conn;
         }
+        
+        bool ila = false;
+        if (result) {
+            const sockaddr_storage& localAddr(result->getLocalAddress());
+            ila = (!EmiNetUtil::isAnyAddr(localAddr) &&
+                   0 != EmiAddressCmp::compare(localAddr, inboundAddr));
+        }
+        
+        if (ila) {
+            result = NULL;
+        }
+        
+        if (invalidLocalAddr) {
+            *invalidLocalAddr = ila;
+        }
+        
+        return result;
     }
     
     static void onMessage(EUS *socket,
@@ -146,7 +172,11 @@ private:
         
         const uint8_t *rawData(Binding::extractData(data)+offset);
         
-        EC *conn(getConnectionForMessage(sock, remoteAddress));
+        bool invalidLocalAddr;
+        EC *conn(getConnectionForMessage(sock, &invalidLocalAddr, inboundAddress, remoteAddress));
+        if (invalidLocalAddr) {
+            return;
+        }
         
         EmiPacketHeader packetHeader;
         size_t packetHeaderLength;
@@ -259,6 +289,8 @@ private:
                 // We want to accept PRX-RST-ACK packets from hosts other than the
                 // current remote host of the connection.
                 EC *prxConn(getConnectionForMessage(sock,
+                                                    /*invalidLocalAddr:*/NULL,
+                                                    inboundAddress,
                                                     remoteAddress,
                                                     /*acceptPacketFromUnexpectedHost:*/true));
                 ENSURE_CONN_VAR(prxConn, "PRX-RST-ACK");
@@ -269,6 +301,8 @@ private:
                 // We want to accept PRX-SYN packets from hosts other than the
                 // current remote host of the connection.
                 EC *prxConn(getConnectionForMessage(sock,
+                                                    /*invalidLocalAddr:*/NULL,
+                                                    inboundAddress,
                                                     remoteAddress,
                                                     /*acceptPacketFromUnexpectedHost:*/true));
                 ENSURE_CONN_VAR(prxConn, "PRX-SYN");
@@ -279,6 +313,8 @@ private:
                 // We want to accept PRX-SYN-ACK packets from hosts other than the
                 // current remote host of the connection.
                 EC *prxConn(getConnectionForMessage(sock,
+                                                    /*invalidLocalAddr:*/NULL,
+                                                    inboundAddress,
                                                     remoteAddress,
                                                     /*acceptPacketFromUnexpectedHost:*/true));
                 ENSURE_CONN_VAR(prxConn, "PRX-SYN-ACK");
@@ -388,7 +424,10 @@ private:
             // will set conn to NULL, which is correct, because we don't want
             // to give any additional data to it anyway, even if this packet
             // contains more messages.
-            conn = getConnectionForMessage(sock, remoteAddress);
+            bool invalidLocalAddr;
+            conn = getConnectionForMessage(sock, &invalidLocalAddr,
+                                           inboundAddress, remoteAddress);
+            ENSURE(!invalidLocalAddr, "Got packet with invalid local address");
         }
         else {
             err = "Invalid message flags";
