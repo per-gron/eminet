@@ -499,8 +499,6 @@ public:
             EUS *socket = conn->getSocket();
             
             _clientConns.erase(socket);
-            
-            conn->closeSocket();
         }
         else {
             _serverConns.erase(AddressKey(conn->getRemoteAddress()));

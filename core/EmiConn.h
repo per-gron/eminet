@@ -72,6 +72,11 @@ private:
     inline EmiConn& operator=(const EmiConn& other);
     
     void deleteELC(ELC *elc) {
+        if (_socket) {
+            delete _socket;
+            _socket = NULL;
+        }
+        
         // This if ensures that ConnDelegate::invalidate is only invoked once.
         if (elc) {
             _delegate.invalidate();
@@ -513,13 +518,6 @@ public:
         
         if (_socket) {
             _socket->sendData(_localAddress, address, data, size);
-        }
-    }
-    
-    void closeSocket() {
-        if (_socket) {
-            delete _socket;
-            _socket = NULL;
         }
     }
     
