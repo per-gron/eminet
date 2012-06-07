@@ -173,7 +173,18 @@ public:
         }
     }
     
-    void gotPacket(EmiTimeInterval now, const EmiPacketHeader& packetHeader, size_t packetLength) {
+    // Returns false if the packet came to an invalid inboundAddress
+    bool gotPacket(EmiTimeInterval now,
+                   const sockaddr_storage& inboundAddress,
+                   const EmiPacketHeader& packetHeader,
+                   size_t packetLength) {
+        if (EmiNetUtil::isAnyAddr(_localAddress)) {
+            _localAddress = inboundAddress;
+        }
+        else if (0 != EmiAddressCmp::compare(_localAddress, inboundAddress)) {
+            return false;
+        }
+        
         _timers.gotPacket(packetHeader, now);
         _congestionControl.gotPacket(now, _timers.getTime().getRtt(),
                                      _sendQueue.lastSentSequenceNumber(),
@@ -183,6 +194,8 @@ public:
             _sendQueue.enqueueRttResponse(packetHeader.sequenceNumber, now);
             _timers.ensureTickTimeout();
         }
+        
+        return true;
     }
     
     // Delegates to EmiSendQueue
@@ -366,7 +379,6 @@ public:
     bool gotSynRst(EmiTimeInterval now,
                    const sockaddr_storage& inboundAddr,
                    EmiSequenceNumber otherHostInitialSequenceNumber) {
-        _localAddress = inboundAddr;
         return _conn && _conn->gotSynRst(now, inboundAddr, otherHostInitialSequenceNumber);
     }
     // Delegates to EmiLogicalConnection
