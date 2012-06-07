@@ -12,6 +12,7 @@
 #include "EmiMessage.h"
 #include "EmiNetUtil.h"
 #include "EmiNatPunchthrough.h"
+#include "EmiMessageHeader.h"
 
 #include <map>
 

@@ -9,7 +9,6 @@
 #ifndef emilir_EmiConn_h
 #define emilir_EmiConn_h
 
-#include "EmiSock.h"
 #include "EmiTypes.h"
 #include "EmiSenderBuffer.h"
 #include "EmiReceiverBuffer.h"
@@ -20,9 +19,11 @@
 #include "EmiP2PData.h"
 #include "EmiConnTimers.h"
 #include "EmiConnTime.h"
+#include "EmiConnParams.h"
 #include "EmiUdpSocket.h"
 
 class EmiPacketHeader;
+class EmiMessageHeader;
 
 template<class SockDelegate, class ConnDelegate>
 class EmiConn {
@@ -33,7 +34,6 @@ class EmiConn {
     
     typedef typename SockDelegate::ConnectionOpenedCallbackCookie ConnectionOpenedCallbackCookie;
     
-    typedef EmiSock<SockDelegate, ConnDelegate>      ES;
     typedef EmiUdpSocket<Binding>                    EUS;
     typedef EmiMessage<Binding>                      EM;
     typedef EmiReceiverBuffer<SockDelegate, EmiConn> ERB;
@@ -49,7 +49,7 @@ class EmiConn {
     const sockaddr_storage _originalRemoteAddress;
     sockaddr_storage       _remoteAddress;
     
-    EUS           *_socket;
+    EUS *_socket;
     
     EmiP2PData        _p2p;
     EmiConnectionType _type;

@@ -10,6 +10,7 @@
 #define emilir_EmiReceiverBuffer_h
 
 #include "EmiNetUtil.h"
+#include "EmiMessageHeader.h"
 
 #include <set>
 #include <vector>
