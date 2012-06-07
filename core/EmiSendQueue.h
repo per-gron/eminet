@@ -338,7 +338,7 @@ private:
     
 public:
     
-    EmiSendQueue(EC& conn) :
+    EmiSendQueue(EC& conn, size_t mtu) :
     _conn(conn),
     _packetSequenceNumber(arc4random() & EMI_PACKET_SEQUENCE_NUMBER_MASK),
     _rttResponseSequenceNumber(-1),
@@ -348,7 +348,7 @@ public:
     _enqueuedNak(-1),
     _bytesSentSinceLastTick(0),
     _queueSize(0) {
-        _bufLength = conn.getEmiSock().config.mtu;
+        _bufLength = mtu;
         _buf = (uint8_t *)malloc(_bufLength*2);
         _otherBuf = _buf+_bufLength;
     }

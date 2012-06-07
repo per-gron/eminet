@@ -39,8 +39,7 @@ private:
     inline EmiConnTimers(const EmiConnTimers& other);
     inline EmiConnTimers& operator=(const EmiConnTimers& other);
     
-    inline static EmiTimeInterval timeBeforeConnectionWarning(Delegate& delegate) {
-        const EmiSockConfig& sc(delegate.getEmiSock().config);
+    inline static EmiTimeInterval timeBeforeConnectionWarning(const EmiSockConfig& sc) {
         return 1/sc.heartbeatFrequency * sc.heartbeatsBeforeConnectionWarning;
     }
     
@@ -101,7 +100,7 @@ private:
     }
 
 public:
-    EmiConnTimers(Delegate& delegate) :
+    EmiConnTimers(const EmiSockConfig& config, Delegate& delegate) :
     _delegate(delegate),
     _time(),
     _lossList(),
@@ -109,9 +108,9 @@ public:
     _nakTimer(Binding::makeTimer()),
     _tickTimer(Binding::makeTimer()),
     _heartbeatTimer(Binding::makeTimer()),
-    _rtoTimer(timeBeforeConnectionWarning(delegate),
-              _delegate.getEmiSock().config.connectionTimeout,
-              _delegate.getEmiSock().config.initialConnectionTimeout,
+    _rtoTimer(timeBeforeConnectionWarning(config),
+              config.connectionTimeout,
+              config.initialConnectionTimeout,
               _time,
               *this) {}
     
@@ -138,7 +137,7 @@ public:
         // Don't send heartbeats until we've got a response from the remote host
         if (!_delegate.isOpening()) {
             Binding::scheduleTimer(_heartbeatTimer, heartbeatTimeoutCallback,
-                                   this, 1/_delegate.getEmiSock().config.heartbeatFrequency,
+                                   this, 1/_delegate.config.heartbeatFrequency,
                                    /*repeating:*/false);
         }
     }

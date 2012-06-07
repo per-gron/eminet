@@ -20,7 +20,7 @@
               params:(const EmiConnParams<EmiBinding> *)params {
     if (self = [super init]) {
         _emiSocket = socket;
-        _ec = new EC(EmiConnDelegate(self), *socket.sock, *params);
+        _ec = new EC(EmiConnDelegate(self), socket.sock->config, *params);
     }
     
     return self;

@@ -8,10 +8,20 @@
 
 #import "EmiConnDelegate.h"
 
+#import "EmiSocketInternal.h"
+#import "EmiConnectionInternal.h"
+
 EmiConnDelegate::EmiConnDelegate(EmiConnection *conn) :
 _conn(conn) {}
 
 void EmiConnDelegate::invalidate() {
+    if (!_conn) {
+        // invalidate has already been called
+        return;
+    }
+    
+    _conn.emiSocket.sock->deregisterConnection(_conn.conn);
+    
     // Just to be sure, since the ivar is __unsafe_unretained
     // Note that this code would be incorrect if connections supported reconnecting; It's correct only because after a forceClose, the delegate will never be called again.
     _conn.delegate = nil;

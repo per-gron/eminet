@@ -49,8 +49,7 @@ class EmiConn {
     const sockaddr_storage _originalRemoteAddress;
     sockaddr_storage       _remoteAddress;
     
-    ES&  _emisock;
-    EUS *_socket;
+    EUS           *_socket;
     
     EmiP2PData        _p2p;
     EmiConnectionType _type;
@@ -95,7 +94,14 @@ private:
         conn->forceClose(EMI_REASON_THIS_HOST_CLOSED);
     }
     
+    inline bool shouldArtificiallyDropPacket() const {
+        if (0 == config.fabricatedPacketDropRate) return false;
+        
+        return ((float)arc4random() / EmiNetUtil::ARC4RANDOM_MAX) < config.fabricatedPacketDropRate;
+    }
+    
 public:
+    const EmiSockConfig config;
     
     // Invoked by EmiReceiverBuffer
     inline void gotReceiverBufferMessage(EmiTimeInterval now, typename ERB::Entry *entry) {
@@ -110,28 +116,28 @@ public:
                                  /*dontFlush:*/true));
     }
     
-    EmiConn(const ConnDelegate& delegate, ES& emisock, const EmiConnParams<Binding>& params) :
+    EmiConn(const ConnDelegate& delegate,
+            const EmiSockConfig& config_,
+            const EmiConnParams<Binding>& params) :
     _inboundPort(params.inboundPort),
     _originalRemoteAddress(params.address),
     _remoteAddress(params.address),
     _conn(NULL),
     _delegate(delegate),
-    _emisock(emisock),
     _socket(params.socket),
     _type(params.type),
     _p2p(params.p2p),
-    _senderBuffer(_emisock.config.senderBufferSize),
-    _receiverBuffer(_emisock.config.receiverBufferSize, *this),
-    _sendQueue(*this),
+    _senderBuffer(config_.senderBufferSize),
+    _receiverBuffer(config_.receiverBufferSize, *this),
+    _sendQueue(*this, config_.mtu),
     _congestionControl(),
-    _timers(*this),
-    _forceCloseTimer(NULL) {
+    _timers(config_, *this),
+    _forceCloseTimer(NULL),
+    config(config_) {
         EmiNetUtil::anyAddr(0, AF_INET, &_localAddress);
     }
     
     virtual ~EmiConn() {
-        _emisock.deregisterConnection(this);
-        
         if (_forceCloseTimer) {
             Binding::freeTimer(_forceCloseTimer);
         }
@@ -143,8 +149,6 @@ public:
     // object! It must not be called from within code that
     // subsequently uses the object.
     void forceClose(EmiDisconnectReason reason) {
-        _emisock.deregisterConnection(this);
-        
         if (_conn) {
             ELC *conn = _conn;
             
@@ -503,7 +507,7 @@ public:
     void sendDatagram(const sockaddr_storage& address, const uint8_t *data, size_t size) {
         _timers.sentPacket();
         
-        if (_emisock.shouldArtificiallyDropPacket()) {
+        if (shouldArtificiallyDropPacket()) {
             return;
         }
         
@@ -517,10 +521,6 @@ public:
             delete _socket;
             _socket = NULL;
         }
-    }
-    
-    inline ES& getEmiSock() {
-        return _emisock;
     }
     
     inline const EmiP2PData& getP2PData() const {

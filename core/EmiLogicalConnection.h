@@ -306,7 +306,7 @@ public:
         /// Initiate NAT punch through
         
         if (!_natPunchthrough) {
-            _natPunchthrough = new ENP(_conn->getEmiSock().config.connectionTimeout,
+            _natPunchthrough = new ENP(_conn->config.connectionTimeout,
                                        *this,
                                        _initialSequenceNumber,
                                        _conn->getRemoteAddress(),

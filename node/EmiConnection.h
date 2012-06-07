@@ -11,11 +11,13 @@
 
 class EmiConnection : public node::ObjectWrap {
     friend class EmiConnDelegate;
+    friend class EmiSockDelegate;
     typedef EmiConn<EmiSockDelegate, EmiConnDelegate> EC;
     typedef EmiConnParams<EmiBinding>                 ECP;
     
 private:
-    EC _conn;
+    EmiSocket& _es;
+    EC         _conn;
     v8::Persistent<v8::Object> _jsHandle;
     
     static v8::Persistent<v8::String>   channelQualifierSymbol;

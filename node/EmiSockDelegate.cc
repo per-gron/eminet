@@ -28,13 +28,15 @@ EmiSockDelegate::EC *EmiSockDelegate::makeConnection(const EmiConnParams<EmiBind
 void EmiSockDelegate::gotConnection(EC& conn) {
     HandleScope scope;
     
-    Handle<Value> jsHandle(conn.getEmiSock().getDelegate()._es._jsHandle);
+    EmiConnection& ec(conn.getDelegate().getConnection());
+    
+    Handle<Value> jsHandle(ec._es._jsHandle);
     
     const unsigned argc = 3;
     Handle<Value> argv[argc] = {
         jsHandle.IsEmpty() ? Handle<Value>(Undefined()) : jsHandle,
-        conn.getEmiSock().getDelegate()._es.handle_,
-        conn.getDelegate().getConnection().handle_
+        ec._es.handle_,
+        ec.handle_
     };
     Local<Value> ret = EmiSocket::gotConnection->Call(Context::GetCurrent()->Global(), argc, argv);
     

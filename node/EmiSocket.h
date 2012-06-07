@@ -14,6 +14,7 @@
 class EmiSocket : public EmiObjectWrap {
     typedef EmiSock<EmiSockDelegate, EmiConnDelegate> ES;
     
+    friend class EmiConnDelegate;
     friend class EmiSockDelegate;
     friend class EmiBinding;
     

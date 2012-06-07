@@ -16,7 +16,7 @@ Persistent<String>   EmiConnection::prioritySymbol;
 Persistent<Function> EmiConnection::constructor;
 
 EmiConnection::EmiConnection(EmiSocket& es, const ECP& params) :
-_conn(EmiConnDelegate(*this), es.getSock(), params) {};
+_es(es), _conn(EmiConnDelegate(*this), es.getSock().config, params) {};
 
 EmiConnection::~EmiConnection() {
     _jsHandle.Dispose();
@@ -207,7 +207,7 @@ Handle<Value> EmiConnection::GetSocket(const Arguments& args) {
     ENSURE_ZERO_ARGS(args);
     UNWRAP(EmiConnection, ec, args);
     
-    return scope.Close(ec->_conn.getEmiSock().getDelegate().getEmiSocket().getJsHandle());
+    return scope.Close(ec->_es.getJsHandle());
 }
 
 Handle<Value> EmiConnection::GetAddressType(const Arguments& args) {

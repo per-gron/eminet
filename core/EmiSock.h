@@ -399,7 +399,7 @@ private:
     }
     
 public:
-    const EmiSockConfig  config;
+    const EmiSockConfig config;
     
     EmiSock(const EmiSockConfig& config_, const SockDelegate& delegate) :
     config(config_), _delegate(delegate), _serverSocket(NULL) {}
