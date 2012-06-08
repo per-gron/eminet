@@ -20,7 +20,7 @@ EC *EmiSockDelegate::makeConnection(const EmiConnParams<EmiBinding>& params) {
                                           params:&params].conn;
 }
 
-void EmiSockDelegate::gotConnection(EC& conn) {
+void EmiSockDelegate::gotServerConnection(EC& conn) {
     [_socket.delegate emiSocketGotConnection:conn.getDelegate().getConn()];
 }
 

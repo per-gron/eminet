@@ -146,7 +146,7 @@ private:
         EC *conn = _delegate.makeConnection(ECP(_serverSocket, remoteAddress, inboundPort));
         ASSERT(0 == _serverConns.count(AddressKey(remoteAddress)));
         _serverConns.insert(std::make_pair(AddressKey(remoteAddress), conn));
-        _delegate.gotConnection(*conn);
+        _delegate.gotServerConnection(*conn);
         
         return conn;
     }

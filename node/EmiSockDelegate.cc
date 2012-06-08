@@ -25,7 +25,7 @@ EmiSockDelegate::EC *EmiSockDelegate::makeConnection(const EmiConnParams<EmiBind
     return &ec->getConn();
 }
 
-void EmiSockDelegate::gotConnection(EC& conn) {
+void EmiSockDelegate::gotServerConnection(EC& conn) {
     HandleScope scope;
     
     EmiConnection& ec(conn.getDelegate().getConnection());

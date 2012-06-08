@@ -42,7 +42,7 @@ public:
         
     EC *makeConnection(const EmiConnParams<EmiBinding>& params);
     
-    void gotConnection(EC& conn);
+    void gotServerConnection(EC& conn);
     
     static void connectionOpened(ConnectionOpenedCallbackCookie& cookie, bool error, EmiDisconnectReason reason, EC& ec);
     
