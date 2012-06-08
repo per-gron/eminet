@@ -21,8 +21,9 @@ void EmiConnDelegate::invalidate() {
     }
     
     if (EMI_CONNECTION_TYPE_SERVER == _conn.conn->getType()) {
-        // TODO Invoke this from the EmiSock queue
-        _conn.emiSocket.sock->deregisterServerConnection(_conn.conn);
+        dispatch_sync(_conn.emiSocket.socketQueue, ^{
+            _conn.emiSocket.sock->deregisterServerConnection(_conn.conn);
+        });
     }
     
     // Just to be sure, since the ivar is __unsafe_unretained

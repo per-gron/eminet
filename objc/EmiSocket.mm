@@ -454,4 +454,8 @@ withFilterContext:(id)filterContext {
 	});
 }
 
+- (dispatch_queue_t)socketQueue {
+    return _socketQueue;
+}
+
 @end

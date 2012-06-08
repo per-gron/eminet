@@ -87,6 +87,7 @@ typedef void (^EmiConnectionOpenedBlock)(NSError *err, EmiConnection *connection
 
 @property (nonatomic, unsafe_unretained) id<EmiSocketDelegate> delegate;
 @property (nonatomic, assign) dispatch_queue_t delegateQueue;
+@property (nonatomic, readonly, assign) dispatch_queue_t socketQueue;
 @property (nonatomic, readonly, strong) NSData *serverAddress;
 @property (nonatomic, readonly, assign) EmiTimeInterval connectionTimeout;
 @property (nonatomic, readonly, assign) float heartbeatsBeforeConnectionWarning;
