@@ -21,6 +21,7 @@
 #include "EmiConnTime.h"
 #include "EmiConnParams.h"
 #include "EmiUdpSocket.h"
+#include "EmiMessageHandler.h"
 
 class EmiPacketHeader;
 class EmiMessageHeader;
@@ -34,14 +35,18 @@ class EmiConn {
     
     typedef typename SockDelegate::ConnectionOpenedCallbackCookie ConnectionOpenedCallbackCookie;
     
-    typedef EmiUdpSocket<Binding>                    EUS;
-    typedef EmiMessage<Binding>                      EM;
-    typedef EmiReceiverBuffer<SockDelegate, EmiConn> ERB;
-    typedef EmiSendQueue<SockDelegate, ConnDelegate> ESQ;
-    typedef EmiConnTimers<Binding, EmiConn>          ECT;
+    typedef EmiUdpSocket<Binding>                        EUS;
+    typedef EmiMessage<Binding>                          EM;
+    typedef EmiReceiverBuffer<SockDelegate, EmiConn>     ERB;
+    typedef EmiSendQueue<SockDelegate, ConnDelegate>     ESQ;
+    typedef EmiConnTimers<Binding, EmiConn>              ECT;
+    typedef EmiMessageHandler<EmiConn, EmiConn, Binding> EMH;
     typedef EmiLogicalConnection<SockDelegate, ConnDelegate, ERB> ELC;
     
-    const uint16_t         _inboundPort;
+    // For makeServerConnection
+    friend class EmiMessageHandler<EmiConn, EmiConn, Binding>;
+    
+    uint16_t               _inboundPort;
     // This gets set when we receive the first packet from the other host.
     // Before that, it is an address with port 0
     sockaddr_storage       _localAddress;
@@ -49,6 +54,7 @@ class EmiConn {
     const sockaddr_storage _originalRemoteAddress;
     sockaddr_storage       _remoteAddress;
     
+    EMH  _messageHandler;
     EUS *_socket;
     
     EmiP2PData        _p2p;
@@ -108,6 +114,34 @@ private:
         return ((float)arc4random() / EmiNetUtil::ARC4RANDOM_MAX) < config.fabricatedPacketDropRate;
     }
     
+    static void onMessage(EUS *socket,
+                          void *userData,
+                          EmiTimeInterval now,
+                          const sockaddr_storage& inboundAddress,
+                          const sockaddr_storage& remoteAddress,
+                          const TemporaryData& data,
+                          size_t offset,
+                          size_t len) {
+        EmiConn *conn((EmiConn *)userData);
+        
+        if (conn->shouldArtificiallyDropPacket()) {
+            return;
+        }
+        
+        bool unexpectedRemoteHost = (0 != EmiAddressCmp::compare(conn->_remoteAddress, remoteAddress));
+        conn->_messageHandler.onMessage(/*acceptConnections:*/false,
+                                        now, socket,
+                                        unexpectedRemoteHost, conn,
+                                        inboundAddress, remoteAddress,
+                                        data, offset, len);
+    }
+    
+    // Invoked by _messageHandler
+    EmiConn *makeServerConnection(const sockaddr_storage& remoteAddress, uint16_t inboundPort) {
+        // This should never happen, because we never pass acceptConnections=true to onMessage
+        ASSERT(false && "Internal error");
+    }
+    
 public:
     const EmiSockConfig config;
     
@@ -132,6 +166,7 @@ public:
     _remoteAddress(params.address),
     _conn(NULL),
     _delegate(delegate),
+    _messageHandler(*this),
     _socket(params.socket),
     _type(params.type),
     _p2p(params.p2p),
@@ -274,20 +309,40 @@ public:
             return true;
         }
     }
-    bool open(EmiTimeInterval now, const ConnectionOpenedCallbackCookie& cookie) {
+    template<class SocketCookie>
+    bool open(EmiTimeInterval now,
+              const SocketCookie& socketCookie,
+              const sockaddr_storage& bindAddress,
+              const ConnectionOpenedCallbackCookie& cookie,
+              Error& err) {
         ASSERT(EMI_CONNECTION_TYPE_CLIENT == _type ||
                EMI_CONNECTION_TYPE_P2P    == _type);
+                
+        _socket = EUS::open(socketCookie, onMessage, this, bindAddress, err);
+        
+        if (!_socket) {
+            return false;
+        }
+        
+        _inboundPort = _socket->getLocalPort();
+        
+        if (!_inboundPort) {
+            delete _socket;
+            _socket = NULL;
+            return false;
+        }
         
         if (_conn) {
             // We don't need to explicitly resend the init message here;
             // SYN connection init messages like this are reliable messages
             // and will be resent automatically when appropriate.
-            return false;
         }
         else {
+            // This will send the SYN message
             _conn = new ELC(this, _receiverBuffer, now, cookie);
-            return true;
         }
+        
+        return true;
     }
     
     // This instructs the RTO timer that the connection is now opened.

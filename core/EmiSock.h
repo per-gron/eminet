@@ -52,9 +52,7 @@ class EmiSock {
     typedef std::map<AddressKey, EC*>              ServerConnectionMap;
     typedef typename ServerConnectionMap::iterator ServerConnectionMapIter;
     
-    typedef std::map<EUS*, EC*>                    ClientConnectionMap;
-    typedef typename ClientConnectionMap::iterator ClientConnectionMapIter;
-    
+    // For makeServerConnection
     friend class EmiMessageHandler<EC, EmiSock, Binding>;
     
 private:
@@ -65,7 +63,6 @@ private:
     EMH                   _messageHandler;
     EUS                  *_serverSocket;
     ServerConnectionMap   _serverConns;
-    ClientConnectionMap   _clientConns;
     SockDelegate          _delegate;
     
     // SockDelegate::connectionOpened will be called on the cookie iff this function returns true.
@@ -73,52 +70,18 @@ private:
                        const uint8_t *p2pCookie, size_t p2pCookieLength,
                        const uint8_t *sharedSecret, size_t sharedSecretLength,
                        const ConnectionOpenedCallbackCookie& callbackCookie, Error& err) {
-        sockaddr_storage ss(config.address);
-        EmiNetUtil::addrSetPort(ss, 0); // Bind to a random free port number
+        sockaddr_storage bindAddress(config.address);
+        EmiNetUtil::addrSetPort(bindAddress, 0); // Bind to a random free port number
         
-        EUS *socket = EUS::open(_delegate.getSocketCookie(), onMessage, this, ss, err);
-        
-        if (!socket) {
-            return false;
-        }
-        
-        uint16_t inboundPort = socket->getLocalPort();
-        
-        if (!inboundPort) {
-            return false;
-        }
-        
-        EC *ec(_delegate.makeConnection(ECP(socket, remoteAddress, inboundPort, 
+        EC *ec(_delegate.makeConnection(ECP(remoteAddress,
                                             p2pCookie, p2pCookieLength,
                                             sharedSecret, sharedSecretLength)));
-        _clientConns.insert(std::make_pair(socket, ec));
-        ec->open(now, callbackCookie);
+        if (!ec->open(now, _delegate.getSocketCookie(), bindAddress, callbackCookie, err)) {
+            ec->forceClose();
+            return false;
+        }
         
         return true;
-    }
-    
-    EC *getConnectionForMessage(EUS *sock,
-                                const sockaddr_storage& remoteAddr,
-                                bool *unexpectedRemoteHost) {
-        *unexpectedRemoteHost = false;
-        
-        EC *result = NULL;
-        
-        if (_serverSocket == sock) {
-            ServerConnectionMapIter cur(_serverConns.find(AddressKey(remoteAddr)));
-            
-            result = (_serverConns.end() == cur ? NULL : (*cur).second);
-        }
-        else {
-            ClientConnectionMapIter cur(_clientConns.find(sock));
-            if (_clientConns.end() != cur) {
-                result = (*cur).second;
-                
-                *unexpectedRemoteHost = (0 != EmiAddressCmp::compare(result->getRemoteAddress(), remoteAddr));
-            }
-        }
-        
-        return result;
     }
     
     static void onMessage(EUS *socket,
@@ -135,12 +98,14 @@ private:
             return;
         }
         
-        bool unexpectedRemoteHost;
-        EC *conn = sock->getConnectionForMessage(socket, remoteAddress, &unexpectedRemoteHost);
+        ASSERT(sock->_serverSocket == socket);
+        
+        ServerConnectionMapIter cur(sock->_serverConns.find(AddressKey(remoteAddress)));
+        EC *conn = (sock->_serverConns.end() == cur ? NULL : (*cur).second);
         
         sock->_messageHandler.onMessage(sock->config.acceptConnections,
                                         now, socket,
-                                        unexpectedRemoteHost, conn,
+                                        /*unexpectedRemoteHost:*/false, conn,
                                         inboundAddress, remoteAddress,
                                         data, offset, len);
     }
@@ -173,36 +138,28 @@ public:
         /// EmiSock should not be deleted before all open connections are closed,
         /// but just to be sure, we close all remaining connections.
         
-#define X(map, Iter)                                                                  \
-        do {                                                                          \
-            size_t numConns = map.size();                                             \
-            Iter iter = map.begin();                                                  \
-            Iter end  = map.end();                                                    \
-            while (iter != end) {                                                     \
-                /* This will remove the connection from _conns */                     \
-                (*iter).second->forceClose();                                         \
-                                                                                      \
-                /* We do this check to make sure we don't enter an infinite loop. */  \
-                /* It shouldn't be required.                                      */  \
-                size_t newNumConns = map.size();                                      \
-                ASSERT(newNumConns < numConns);                                       \
-                numConns = newNumConns;                                               \
-                                                                                      \
-                /* We can't increment iter, it has been   */                          \
-                /* invalidated because the connection was */                          \
-                /* removed from _conns                    */                          \
-                iter = map.begin();                                                   \
-            }                                                                         \
+        do {
+            size_t numConns = _serverConns.size();
+            ServerConnectionMapIter iter = _serverConns.begin();
+            ServerConnectionMapIter end  = _serverConns.end();
+            while (iter != end) {
+                // This will remove the connection from _conns
+                (*iter).second->forceClose();
+                
+                // We do this check to make sure we don't enter an infinite loop.
+                // It shouldn't be required.
+                size_t newNumConns = _serverConns.size();
+                ASSERT(newNumConns < numConns);
+                numConns = newNumConns;
+                
+                // We can't increment iter, it has been
+                // invalidated because the connection was
+                // removed from _conns
+                iter = _serverConns.begin();
+            }
         } while (0);
         
-        /// Close all client connections
-        X(_clientConns, ClientConnectionMapIter);
-        /// Close all server connections
-        X(_serverConns, ServerConnectionMapIter);
-        
-#undef X
-        
-        /// Close the server socket (all client sockets will be closed by now)
+        /// Close the server socket
         if (_serverSocket) {
             delete _serverSocket;
         }
@@ -254,12 +211,7 @@ public:
     }
     
     void deregisterConnection(EC *conn) {
-        if (EMI_CONNECTION_TYPE_SERVER != conn->getType()) {
-            EUS *socket = conn->getSocket();
-            
-            _clientConns.erase(socket);
-        }
-        else {
+        if (EMI_CONNECTION_TYPE_SERVER == conn->getType()) {
             _serverConns.erase(AddressKey(conn->getRemoteAddress()));
         }
     }
