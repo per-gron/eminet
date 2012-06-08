@@ -188,6 +188,21 @@ public:
         deleteELC(_conn);
     }
     
+    // Invoked by SockDelegate for server connections
+    void onMessage(EmiTimeInterval now,
+                   EUS *socket,
+                   const sockaddr_storage& inboundAddress,
+                   const sockaddr_storage& remoteAddress,
+                   const TemporaryData& data,
+                   size_t offset,
+                   size_t len) {
+        _messageHandler.onMessage(/*acceptConnections:*/false,
+                                  now, socket,
+                                  /*unexpectedRemoteHost:*/false, this,
+                                  inboundAddress, remoteAddress,
+                                  data, offset, len);
+    }
+    
     // Note that this method might deallocate the connection
     // object! It must not be called from within code that
     // subsequently uses the object.

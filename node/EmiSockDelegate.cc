@@ -72,3 +72,16 @@ void EmiSockDelegate::connectionOpened(ConnectionOpenedCallbackCookie& cookie,
     
     cookie.Dispose();
 }
+
+void EmiSockDelegate::connectionGotMessage(EC *conn,
+                                           EmiUdpSocket<EmiBinding> *socket,
+                                           EmiTimeInterval now,
+                                           const sockaddr_storage& inboundAddress,
+                                           const sockaddr_storage& remoteAddress,
+                                           const EmiBinding::TemporaryData& data,
+                                           size_t offset,
+                                           size_t len) {
+    conn->onMessage(now, socket,
+                    inboundAddress, remoteAddress,
+                    data, offset, len);
+}

@@ -25,36 +25,42 @@
 
 // About thread safety in EmiNet:
 //
-// EmiNet core in itself is not thread safe. It is, however, designed
-// to allow bindings to use the library in a thread safe way:
+// EmiNet core in itself does not deal directly with threads or
+// thread safety. It is, however, designed so that each part touches
+// the other parts as little as possible, to allow bindings to use
+// the library in a thread safe way:
 //
-// An EmiSock object, along with all of its server EmiConn objects,
-// must be accessed in a strictly sequenced manner.
+// An EmiSock object must be accessed in a strictly sequenced manner.
 //
 // An EmiP2PSock object must be accessed in a strictly sequenced
 // manner.
 //
-// Each client or P2P EmiConn object must be accessed in a strictly
-// sequenced manner.
+// An EmiConn object must be accessed in a strictly sequenced manner.
 //
 // This means that:
 // 1) It is safe to create and access separate EmiSock objects from
-//    separate threads, as long as each EmiSock object and its server
-//    EmiConn objects are accessed from only one thread.
+//    separate threads, as long as each EmiSock object is accessed
+//    from only one thread.
 // 2) It is safe to create and access separate EmiP2PSock objects from
 //    separate threads, as long as each EmiP2PSock object is accessed
 //    from only one thread.
-// 3) It is safe to create and access separate client or P2P EmiConn
-//    objects, as long as each EmiConn object is accessed form only
-//    one thread.
+// 3) It is safe to create and access separate EmiConn objects, as
+//    long as each EmiConn object is accessed from only one thread.
 //
-// The limitation that all server EmiConn objects beloning to the same
-// EmiSock object must be accessed in a strictly sequenced manner is
-// a limitation that might be alleviated in the future.
-//
-// Note that, for thread safety to work, the EmiNet binding must make
-// sure to invoke the UDP datagram received callback in the correct
-// thread; The EmiNet core code assumes that.
+// Note that, for thread safety to work:
+// 1) UDP datagram callbacks must be invoked in the correct thread.
+//    For instance, the EmiP2PSock datagram callback must be called
+//    in that EmiP2PSock object's thread. The same applies for EmiSock
+//    and EmiConn objects and their UDP datagram callbacks.
+//    SocketCookies (search the code base for "SocketCookie") are
+//    designed to help the binding code enforce this.
+// 2) EmiSock::deregisterServerConnection must be called from the
+//    EmiSock thread. (This does not happen automatically, because
+//    deregisterServerConnection should be called from
+//    ConnDelegate::invalidate, which is invoked in an EmiConn thread)
+// 3) SockDelegate::connectionGotMessage must invoke EmiConn::onMessage
+//    in the EmiConn thread, preferably asynchronously (or the
+//    performance gain will be lost).
 template<class SockDelegate, class ConnDelegate>
 class EmiSock {
     typedef typename SockDelegate::Binding     Binding;
@@ -135,13 +141,25 @@ private:
         ServerConnectionMapIter cur(sock->_serverConns.find(AddressKey(remoteAddress)));
         EC *conn = (sock->_serverConns.end() == cur ? NULL : (*cur).second);
         
-        sock->_messageHandler.onMessage(sock->config.acceptConnections,
-                                        now, socket,
-                                        /*unexpectedRemoteHost:*/false, conn,
-                                        inboundAddress, remoteAddress,
-                                        data, offset, len);
+        if (conn) {
+            // The purpose of connectionGotMessage is to give the bindings
+            // an opportunity to invoke the message handler in conn's thread,
+            // instead of the EmiSock which this code is running in.
+            sock->_delegate.connectionGotMessage(conn, socket, now,
+                                                 inboundAddress, remoteAddress,
+                                                 data, offset, len);
+        }
+        else {
+            // acceptConnections must be true, otherwise we wouldn't have
+            // opened the socket that invokes this callback.
+            sock->_messageHandler.onMessage(/*acceptConnections:*/true,
+                                            now, socket,
+                                            /*unexpectedRemoteHost:*/false, /*conn:*/NULL,
+                                            inboundAddress, remoteAddress,
+                                            data, offset, len);
+        }
     }
-            
+    
     EC *makeServerConnection(const sockaddr_storage& remoteAddress, uint16_t inboundPort) {
         EC *conn = _delegate.makeConnection(ECP(_serverSocket, remoteAddress, inboundPort));
         ASSERT(0 == _serverConns.count(AddressKey(remoteAddress)));
@@ -242,6 +260,13 @@ public:
                              callbackCookie, err);
     }
     
+    // Should be invoked by ConnDelegate::invalidate for server
+    // connections.
+    // 
+    // Note: This method is, just like all other EmiSock methods,
+    // NOT thread safe! For this method it is especially important
+    // because ConnDelegate::invalidate is not necessarily invoked
+    // in the thread that belongs to the EmiSock object.
     void deregisterServerConnection(EC *conn) {
         ASSERT(EMI_CONNECTION_TYPE_SERVER == conn->getType());
         

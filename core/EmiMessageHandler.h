@@ -15,6 +15,9 @@
 
 #include <netinet/in.h>
 
+// The purpose of this class is to encapsulate behavior that is used
+// by both EmiSock and EmiConn.
+//
 // I let Connection be a template argument as a hack to avoid a circular
 // dependency between EmiConn.h and EmiMessageHandler.h
 template<class Connection, class MessageHandlerDelegate, class Binding>
@@ -115,10 +118,6 @@ private:
         }
         else if (synFlag && !rstFlag) {
             // This is an initiate connection message
-            
-            ENSURE(acceptConnections,
-                   "Got SYN but this socket doesn't \
-                   accept incoming connections");
             ENSURE(!unexpectedRemoteHost,
                    "Got SYN from unexpected remote host");
             ENSURE(0 == header.length,
@@ -130,16 +129,28 @@ private:
                 // The connection is already open, and we get a SYN message with a
                 // different initial sequence number. This probably means that the
                 // other host has forgot about the connection we have open. Force
-                // close it and continue as if conn did not exist.
+                // close it and ignore the packet.
+                //
+                // We can't invoke _delegate.makeServerConnection here, because we
+                // might be executing on the EmiConn thread, and makeServerConnection
+                // can only be called from the EmiSock thread.
+                //
+                // This is not a catastrophe; the other host will re-send the SYN
+                // packet.
                 conn->forceClose();
                 conn = NULL;
             }
-            
-            if (!conn) {
-                conn = _delegate.makeServerConnection(remoteAddress, inboundPort);
+            else {
+                ENSURE(acceptConnections,
+                       "Got SYN but this socket doesn't \
+                       accept incoming connections");
+                
+                if (!conn) {
+                    conn = _delegate.makeServerConnection(remoteAddress, inboundPort);
+                }
+                
+                conn->opened(inboundAddress, now, header.sequenceNumber);
             }
-            
-            conn->opened(inboundAddress, now, header.sequenceNumber);
         }
         else if (synFlag && rstFlag) {
             if (ackFlag) {

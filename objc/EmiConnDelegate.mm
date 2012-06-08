@@ -21,6 +21,7 @@ void EmiConnDelegate::invalidate() {
     }
     
     if (EMI_CONNECTION_TYPE_SERVER == _conn.conn->getType()) {
+        // TODO Invoke this from the EmiSock queue
         _conn.emiSocket.sock->deregisterServerConnection(_conn.conn);
     }
     

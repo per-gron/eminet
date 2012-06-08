@@ -35,3 +35,16 @@ void EmiSockDelegate::connectionOpened(ConnectionOpenedCallbackCookie& cookie, b
         cookie = nil; // Release the block memory
     }
 }
+
+void EmiSockDelegate::connectionGotMessage(EC *conn,
+                                           EmiUdpSocket<EmiBinding> *socket,
+                                           EmiTimeInterval now,
+                                           const sockaddr_storage& inboundAddress,
+                                           const sockaddr_storage& remoteAddress,
+                                           NSData *data,
+                                           size_t offset,
+                                           size_t len) {
+    conn->onMessage(now, socket,
+                    inboundAddress, remoteAddress,
+                    data, offset, len);
+}

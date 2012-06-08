@@ -19,6 +19,8 @@ template<class SockDelegate, class ConnDelegate>
 class EmiConn;
 template<class Binding>
 class EmiConnParams;
+template<class Binding>
+class EmiUdpSocket;
 
 class EmiSockDelegate {
     typedef EmiSock<EmiSockDelegate, EmiConnDelegate> ES;
@@ -43,6 +45,15 @@ public:
                                  bool error,
                                  EmiDisconnectReason reason,
                                  EC& ec);
+    
+    void connectionGotMessage(EC *conn,
+                              EmiUdpSocket<EmiBinding> *socket,
+                              EmiTimeInterval now,
+                              const sockaddr_storage& inboundAddress,
+                              const sockaddr_storage& remoteAddress,
+                              const EmiBinding::TemporaryData& data,
+                              size_t offset,
+                              size_t len);
     
     inline EmiSocket& getEmiSocket() { return _es; }
     inline const EmiSocket& getEmiSocket() const { return _es; }

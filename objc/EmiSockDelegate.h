@@ -27,6 +27,8 @@ template<class SockDelegate, class ConnDelegate>
 class EmiConn;
 template<class SockDelegate>
 class EmiConnParams;
+template<class Binding>
+class EmiUdpSocket;
 
 class EmiSockDelegate {
     typedef EmiSock<EmiSockDelegate, EmiConnDelegate> ES;
@@ -45,6 +47,15 @@ public:
     void gotServerConnection(EC& conn);
     
     static void connectionOpened(ConnectionOpenedCallbackCookie& cookie, bool error, EmiDisconnectReason reason, EC& ec);
+    
+    void connectionGotMessage(EC *conn,
+                              EmiUdpSocket<EmiBinding> *socket,
+                              EmiTimeInterval now,
+                              const sockaddr_storage& inboundAddress,
+                              const sockaddr_storage& remoteAddress,
+                              NSData *data,
+                              size_t offset,
+                              size_t len);
     
     inline void *getSocketCookie() { return NULL; }
 };
