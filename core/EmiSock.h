@@ -23,6 +23,38 @@
 #include <cstdlib>
 #include <netinet/in.h>
 
+// About thread safety in EmiNet:
+//
+// EmiNet core in itself is not thread safe. It is, however, designed
+// to allow bindings to use the library in a thread safe way:
+//
+// An EmiSock object, along with all of its server EmiConn objects,
+// must be accessed in a strictly sequenced manner.
+//
+// An EmiP2PSock object must be accessed in a strictly sequenced
+// manner.
+//
+// Each client or P2P EmiConn object must be accessed in a strictly
+// sequenced manner.
+//
+// This means that:
+// 1) It is safe to create and access separate EmiSock objects from
+//    separate threads, as long as each EmiSock object and its server
+//    EmiConn objects are accessed from only one thread.
+// 2) It is safe to create and access separate EmiP2PSock objects from
+//    separate threads, as long as each EmiP2PSock object is accessed
+//    from only one thread.
+// 3) It is safe to create and access separate client or P2P EmiConn
+//    objects, as long as each EmiConn object is accessed form only
+//    one thread.
+//
+// The limitation that all server EmiConn objects beloning to the same
+// EmiSock object must be accessed in a strictly sequenced manner is
+// a limitation that might be alleviated in the future.
+//
+// Note that, for thread safety to work, the EmiNet binding must make
+// sure to invoke the UDP datagram received callback in the correct
+// thread; The EmiNet core code assumes that.
 template<class SockDelegate, class ConnDelegate>
 class EmiSock {
     typedef typename SockDelegate::Binding     Binding;
