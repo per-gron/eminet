@@ -10,6 +10,7 @@
 #define emilir_EmiConnDelegate_h
 
 #import "EmiConnection.h"
+#import "EmiDispatchQueueWrapper.h"
 
 class EmiConnDelegate {
     EmiConnection *_conn;
@@ -28,7 +29,10 @@ public:
     
     inline EmiConnection *getConn() { return _conn; }
     
-    inline void *getSocketCookie() { return NULL; }
+    inline EmiDispatchQueueWrapper *getSocketCookie() {
+        // TODO
+        return nil;
+    }
 };
 
 #endif

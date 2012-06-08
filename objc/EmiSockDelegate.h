@@ -10,6 +10,7 @@
 #define emilir_EmiSockDelegate_h
 
 #include "EmiBinding.h"
+#import "EmiDispatchQueueWrapper.h"
 
 #include "EmiTypes.h"
 #import <Foundation/Foundation.h>
@@ -57,7 +58,10 @@ public:
                               size_t offset,
                               size_t len);
     
-    inline void *getSocketCookie() { return NULL; }
+    // This method will always be called from the socketqueue
+    inline EmiDispatchQueueWrapper *getSocketCookie() {
+        return [[EmiDispatchQueueWrapper alloc] initWithQueue:dispatch_get_current_queue()];
+    }
 };
 
 #endif

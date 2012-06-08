@@ -18,6 +18,7 @@
 
 class EmiSockDelegate;
 @class GCDAsyncUdpSocket;
+@class EmiDispatchQueueWrapper;
 
 class EmiBinding {
 private:
@@ -109,7 +110,7 @@ public:
     static void freeNetworkInterfaces(const NetworkInterfaces& ni);
     
     static void closeSocket(GCDAsyncUdpSocket *socket);
-    static GCDAsyncUdpSocket *openSocket(void *socketCookie,
+    static GCDAsyncUdpSocket *openSocket(EmiDispatchQueueWrapper *socketCookie,
                                          EmiOnMessage *callback,
                                          void *userData,
                                          const sockaddr_storage& address,

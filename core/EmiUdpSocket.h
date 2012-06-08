@@ -69,7 +69,7 @@ private:
     }
     
     template<class SocketCookie>
-    bool init(const SocketCookie& socketCookie, const sockaddr_storage& address, Error& err) {
+    bool init(SocketCookie socketCookie, const sockaddr_storage& address, Error& err) {
         NetworkInterfaces ni;
         
         if (!Binding::getNetworkInterfaces(ni, err)) {
@@ -141,7 +141,7 @@ public:
     }
     
     template<class SocketCookie>
-    static EmiUdpSocket *open(const SocketCookie& socketCookie,
+    static EmiUdpSocket *open(SocketCookie socketCookie,
                               OnMessage *callback,
                               void *userData,
                               const sockaddr_storage& address,
