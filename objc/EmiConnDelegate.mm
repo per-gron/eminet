@@ -20,7 +20,9 @@ void EmiConnDelegate::invalidate() {
         return;
     }
     
-    _conn.emiSocket.sock->deregisterConnection(_conn.conn);
+    if (EMI_CONNECTION_TYPE_SERVER == _conn.conn->getType()) {
+        _conn.emiSocket.sock->deregisterServerConnection(_conn.conn);
+    }
     
     // Just to be sure, since the ivar is __unsafe_unretained
     // Note that this code would be incorrect if connections supported reconnecting; It's correct only because after a forceClose, the delegate will never be called again.

@@ -210,10 +210,10 @@ public:
                              callbackCookie, err);
     }
     
-    void deregisterConnection(EC *conn) {
-        if (EMI_CONNECTION_TYPE_SERVER == conn->getType()) {
-            _serverConns.erase(AddressKey(conn->getRemoteAddress()));
-        }
+    void deregisterServerConnection(EC *conn) {
+        ASSERT(EMI_CONNECTION_TYPE_SERVER == conn->getType());
+        
+        _serverConns.erase(AddressKey(conn->getRemoteAddress()));
     }
 };
 

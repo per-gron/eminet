@@ -12,7 +12,9 @@ EmiConnDelegate::EmiConnDelegate(EmiConnection& conn) : _conn(conn) {
 }
 
 void EmiConnDelegate::invalidate() {
-    _conn._es._sock.deregisterConnection(&_conn._conn);
+    if (EMI_CONNECTION_TYPE_SERVER == _conn._conn.getType()) {
+        _conn._es._sock.deregisterServerConnection(&_conn._conn);
+    }
     
     // This allows V8's GC to reclaim the EmiConnection when it's been closed
     // The corresponding Ref is in EmiConnection::New
