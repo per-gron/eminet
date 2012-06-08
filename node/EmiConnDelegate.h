@@ -7,6 +7,7 @@
 #include <node.h>
 
 class EmiConnection;
+class EmiObjectWrap;
 
 class EmiConnDelegate {
     EmiConnection& _conn;
@@ -30,6 +31,8 @@ public:
     
     inline EmiConnection& getConnection() { return _conn; }
     inline const EmiConnection& getConnection() const { return _conn; }
+    
+    inline EmiObjectWrap *getSocketCookie() { return (EmiObjectWrap *)&_conn; }
 };
 
 #endif

@@ -309,16 +309,14 @@ public:
             return true;
         }
     }
-    template<class SocketCookie>
     bool open(EmiTimeInterval now,
-              const SocketCookie& socketCookie,
               const sockaddr_storage& bindAddress,
               const ConnectionOpenedCallbackCookie& cookie,
               Error& err) {
         ASSERT(EMI_CONNECTION_TYPE_CLIENT == _type ||
                EMI_CONNECTION_TYPE_P2P    == _type);
                 
-        _socket = EUS::open(socketCookie, onMessage, this, bindAddress, err);
+        _socket = EUS::open(_delegate.getSocketCookie(), onMessage, this, bindAddress, err);
         
         if (!_socket) {
             return false;

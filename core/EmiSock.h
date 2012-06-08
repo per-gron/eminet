@@ -108,7 +108,7 @@ private:
         EC *ec(_delegate.makeConnection(ECP(remoteAddress,
                                             p2pCookie, p2pCookieLength,
                                             sharedSecret, sharedSecretLength)));
-        if (!ec->open(now, _delegate.getSocketCookie(), bindAddress, callbackCookie, err)) {
+        if (!ec->open(now, bindAddress, callbackCookie, err)) {
             ec->forceClose();
             return false;
         }

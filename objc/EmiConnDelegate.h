@@ -27,6 +27,8 @@ public:
     void emiNatPunchthroughFinished(bool success);
     
     inline EmiConnection *getConn() { return _conn; }
+    
+    inline void *getSocketCookie() { return NULL; }
 };
 
 #endif
