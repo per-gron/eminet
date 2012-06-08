@@ -565,7 +565,9 @@ public:
     }
     bool isClosing() const {
         // Strictly speaking, checking if the connection is closed
-        // should not be necessary, we do it just to be sure.
+        // should not be necessary, because this method ought to
+        // never be called when the connection is closed, but we
+        // do it just to be sure.
         return !isClosed() && _closing;
     }
     bool isClosed() const {
