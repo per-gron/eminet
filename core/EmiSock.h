@@ -250,10 +250,10 @@ public:
     }
     
     // SockDelegate::connectionOpened will be called on the cookie iff this function returns true.
-    bool connectP2P(EmiTimeInterval now, const sockaddr_storage& remoteAddress,
-                    const uint8_t *p2pCookie, size_t p2pCookieLength,
-                    const uint8_t *sharedSecret, size_t sharedSecretLength,
-                    const ConnectionOpenedCallbackCookie& callbackCookie, Error& err) {
+    bool connect(EmiTimeInterval now, const sockaddr_storage& remoteAddress,
+                 const uint8_t *p2pCookie, size_t p2pCookieLength,
+                 const uint8_t *sharedSecret, size_t sharedSecretLength,
+                 const ConnectionOpenedCallbackCookie& callbackCookie, Error& err) {
         return connectHelper(now, remoteAddress,
                              p2pCookie, p2pCookieLength,
                              sharedSecret, sharedSecretLength,

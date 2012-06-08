@@ -222,12 +222,12 @@ Handle<Value> EmiSocket::DoConnect(const Arguments& args, int family) {
         Local<Object>    p2pCookie(args[3]->ToObject());
         Local<Object> sharedSecret(args[4]->ToObject());
         
-        if (!es->_sock.connectP2P(EmiNodeUtil::now(), address,
-                                  (uint8_t *)node::Buffer::Data(p2pCookie),
-                                  node::Buffer::Length(p2pCookie),
-                                  (uint8_t *)node::Buffer::Data(sharedSecret),
-                                  node::Buffer::Length(sharedSecret),
-                                  cookie, err)) {
+        if (!es->_sock.connect(EmiNodeUtil::now(), address,
+                               (uint8_t *)node::Buffer::Data(p2pCookie),
+                               node::Buffer::Length(p2pCookie),
+                               (uint8_t *)node::Buffer::Data(sharedSecret),
+                               node::Buffer::Length(sharedSecret),
+                               cookie, err)) {
             goto error;
         }
     }

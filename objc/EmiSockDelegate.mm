@@ -21,7 +21,13 @@ EC *EmiSockDelegate::makeConnection(const EmiConnParams<EmiBinding>& params) {
 }
 
 void EmiSockDelegate::gotServerConnection(EC& conn) {
-    [_socket.delegate emiSocketGotConnection:conn.getDelegate().getConn()];
+    __block id<EmiSocketDelegate> sockDelegate = _socket.delegate;
+    
+    __block EC& blockConn = conn;
+    
+    dispatch_async(_socket.delegateQueue, ^{
+        [sockDelegate emiSocketGotConnection:blockConn.getDelegate().getConn()];
+    });
 }
 
 void EmiSockDelegate::connectionOpened(ConnectionOpenedCallbackCookie& cookie, bool error, EmiDisconnectReason reason, EC& ec) {
