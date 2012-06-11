@@ -13,11 +13,35 @@
 @class EmiConnection;
 @class GCDAsyncUdpSocket;
 @class EmiSocketConfig;
+@class EmiSocket;
 
 typedef void (^EmiConnectionOpenedBlock)(NSError *err, EmiConnection *connection);
 
 @protocol EmiSocketDelegate <NSObject>
-- (void)emiSocketGotConnection:(EmiConnection *)connection;
+- (void)emiSocket:(EmiSocket *)socket gotConnection:(EmiConnection *)connection;
+
+@optional
+
+// This method is called immediately prior to emiSocket:gotConnection:.
+// It allows a listening socket to specify the connectionQueue for a new accepted
+// connection. If this method is not implemented, or returns NULL, the new accepted
+// connection will create its own default queue.
+// 
+// Since you cannot autorelease a dispatch_queue, this method uses the "new" prefix
+// in its name to specify that the returned queue has been retained.
+// 
+// Thus you could do something like this in the implementation:
+//   return dispatch_queue_create("MyQueue", NULL);
+// 
+// If you are placing multiple conections on the same queue, then care should be
+// taken to increment the retain count each time this method is invoked.
+// 
+// For example, your implementation might look something like this:
+//   dispatch_retain(myExistingQueue);
+//   return myExistingQueue;
+- (dispatch_queue_t)newConnectionQueueForConnectionFromAddress:(NSData *)address
+                                                   onEmiSocket:(EmiSocket *)sock;
+
 @end
 
 @interface EmiSocket : NSObject {
@@ -88,6 +112,7 @@ typedef void (^EmiConnectionOpenedBlock)(NSError *err, EmiConnection *connection
 @property (nonatomic, unsafe_unretained) id<EmiSocketDelegate> delegate;
 @property (nonatomic, assign) dispatch_queue_t delegateQueue;
 @property (nonatomic, readonly, assign) dispatch_queue_t socketQueue;
+
 @property (nonatomic, readonly, strong) NSData *serverAddress;
 @property (nonatomic, readonly, assign) EmiTimeInterval connectionTimeout;
 @property (nonatomic, readonly, assign) float heartbeatsBeforeConnectionWarning;

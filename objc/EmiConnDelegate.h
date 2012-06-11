@@ -30,8 +30,7 @@ public:
     inline EmiConnection *getConn() { return _conn; }
     
     inline EmiDispatchQueueWrapper *getSocketCookie() {
-        // TODO
-        return nil;
+        return [[EmiDispatchQueueWrapper alloc] initWithQueue:_conn.connectionQueue];
     }
 };
 

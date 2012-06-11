@@ -158,7 +158,7 @@
 }
 
 - (void)dealloc {
-    _delegate = nil;
+    self.delegate = nil;
     if (_delegateQueue) {
         dispatch_release(_delegateQueue);
         _delegateQueue = NULL;

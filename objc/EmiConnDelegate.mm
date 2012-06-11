@@ -35,32 +35,67 @@ void EmiConnDelegate::invalidate() {
 }
 
 void EmiConnDelegate::emiConnMessage(EmiChannelQualifier channelQualifier, NSData *data, NSUInteger offset, NSUInteger size) {
-    [_conn.delegate emiConnectionMessage:_conn
-                        channelQualifier:channelQualifier 
-                                    data:[data subdataWithRange:NSMakeRange(offset, size)]];
+    id<EmiConnectionDelegate> connDelegate = _conn.delegate;
+    dispatch_queue_t connDelegateQueue = _conn.delegateQueue;
+    
+    if (connDelegateQueue) {
+        dispatch_async(connDelegateQueue, ^{
+            [connDelegate emiConnectionMessage:_conn
+                              channelQualifier:channelQualifier
+                                          data:[data subdataWithRange:NSMakeRange(offset, size)]];
+        });
+    }
 }
 
 void EmiConnDelegate::emiConnLost() {
-    [_conn.delegate emiConnectionLost:_conn];
+    id<EmiConnectionDelegate> connDelegate = _conn.delegate;
+    dispatch_queue_t connDelegateQueue = _conn.delegateQueue;
+    
+    if (connDelegateQueue) {
+        dispatch_async(connDelegateQueue, ^{
+            [connDelegate emiConnectionLost:_conn];
+        });
+    }
 }
 
 void EmiConnDelegate::emiConnRegained() {
-    [_conn.delegate emiConnectionRegained:_conn];
+    id<EmiConnectionDelegate> connDelegate = _conn.delegate;
+    dispatch_queue_t connDelegateQueue = _conn.delegateQueue;
+    
+    if (connDelegateQueue) {
+        dispatch_async(connDelegateQueue, ^{
+            [connDelegate emiConnectionRegained:_conn];
+        });
+    }
 }
 
 void EmiConnDelegate::emiConnDisconnect(EmiDisconnectReason reason) {
-    [_conn.delegate emiConnectionDisconnect:_conn forReason:reason];
+    id<EmiConnectionDelegate> connDelegate = _conn.delegate;
+    dispatch_queue_t connDelegateQueue = _conn.delegateQueue;
+    
+    if (connDelegateQueue) {
+        dispatch_async(connDelegateQueue, ^{
+            [connDelegate emiConnectionDisconnect:_conn forReason:reason];
+        });
+    }
 }
 
 void EmiConnDelegate::emiNatPunchthroughFinished(bool success) {
-    if (success) {
-        if ([_conn.delegate respondsToSelector:@selector(emiP2PConnectionEstablished:)]) {
-            [_conn.delegate emiP2PConnectionEstablished:_conn];
-        }
-    }
-    else {
-        if ([_conn.delegate respondsToSelector:@selector(emiP2PConnectionNotEstablished:)]) {
-            [_conn.delegate emiP2PConnectionNotEstablished:_conn];
-        }
+    id<EmiConnectionDelegate> connDelegate = _conn.delegate;
+    dispatch_queue_t connDelegateQueue = _conn.delegateQueue;
+    
+    if (connDelegateQueue) {
+        dispatch_async(connDelegateQueue, ^{
+            if (success) {
+                if ([connDelegate respondsToSelector:@selector(emiP2PConnectionEstablished:)]) {
+                    [connDelegate emiP2PConnectionEstablished:_conn];
+                }
+            }
+            else {
+                if ([connDelegate respondsToSelector:@selector(emiP2PConnectionNotEstablished:)]) {
+                    [connDelegate emiP2PConnectionNotEstablished:_conn];
+                }
+            }
+        });
     }
 }

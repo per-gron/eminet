@@ -23,6 +23,7 @@ typedef EmiConn<EmiSockDelegate, EmiConnDelegate> EC;
 @interface EmiConnection()
 
 - (id)initWithSocket:(EmiSocket *)socket
+     connectionQueue:(dispatch_queue_t)connectionQueue
               params:(const EmiConnParams<EmiBinding> *)params;
 
 - (EC*)conn;
