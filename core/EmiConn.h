@@ -106,6 +106,7 @@ private:
     static void forceCloseTimeoutCallback(EmiTimeInterval now, typename Binding::Timer *timer, void *data) {
         EmiConn *conn = (EmiConn *)data;
         Binding::freeTimer(timer);
+        conn->_forceCloseTimer = NULL;
         conn->forceClose(EMI_REASON_THIS_HOST_CLOSED);
     }
     
