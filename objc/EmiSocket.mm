@@ -307,12 +307,13 @@ withFilterContext:(id)filterContext {
     memcpy(&ss, [address bytes], MIN([address length], sizeof(ss)));
     
     EmiSocketUserDataWrapper *wrap = sock.userData;
-    
-    (wrap.callback)(sock,
-                    wrap.userData,
-                    [NSDate timeIntervalSinceReferenceDate],
-                    ss,
-                    data, /*offset:*/0, [data length]);
+    if (wrap) {
+        (wrap.callback)(sock,
+                        wrap.userData,
+                        [NSDate timeIntervalSinceReferenceDate],
+                        ss,
+                        data, /*offset:*/0, [data length]);
+    }
 }
 
 + (void)udpSocket:(GCDAsyncUdpSocket *)sock didNotSendDataWithTag:(long)tag dueToError:(NSError *)error {

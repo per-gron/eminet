@@ -152,6 +152,10 @@ void EmiBinding::freeNetworkInterfaces(const NetworkInterfaces& ni) {
 
 
 void EmiBinding::closeSocket(GCDAsyncUdpSocket *socket) {
+    // This ensures that we don't send onMessage events to
+    // deallocated objects.
+    socket.userData = nil;
+    
     [socket close];
 }
 
