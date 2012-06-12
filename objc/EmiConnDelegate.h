@@ -14,6 +14,8 @@
 
 class EmiConnDelegate {
     EmiConnection *_conn;
+    EmiDispatchQueueWrapper *_queueWrapper;
+    
 public:
     
     EmiConnDelegate(EmiConnection *conn);
@@ -30,7 +32,11 @@ public:
     inline EmiConnection *getConn() { return _conn; }
     
     inline EmiDispatchQueueWrapper *getSocketCookie() {
-        return [[EmiDispatchQueueWrapper alloc] initWithQueue:_conn.connectionQueue];
+        return _queueWrapper;
+    }
+    
+    inline EmiDispatchQueueWrapper *getTimerCookie() {
+        return _queueWrapper;
     }
 };
 

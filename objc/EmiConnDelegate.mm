@@ -12,7 +12,8 @@
 #import "EmiConnectionInternal.h"
 
 EmiConnDelegate::EmiConnDelegate(EmiConnection *conn) :
-_conn(conn) {}
+_conn(conn),
+_queueWrapper([[EmiDispatchQueueWrapper alloc] initWithQueue:conn.connectionQueue]) {}
 
 void EmiConnDelegate::invalidate() {
     if (!_conn) {

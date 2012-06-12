@@ -33,6 +33,7 @@ public:
     inline const EmiConnection& getConnection() const { return _conn; }
     
     inline EmiObjectWrap *getSocketCookie() { return (EmiObjectWrap *)&_conn; }
+    inline void *getTimerCookie() { return NULL; }
 };
 
 #endif

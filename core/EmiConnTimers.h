@@ -19,7 +19,8 @@ class EmiConnTimers {
     
     friend class EmiRtoTimer<Binding, EmiConnTimers>;
     
-    typedef typename Binding::Timer Timer;
+    typedef typename Binding::TimerCookie TimerCookie;
+    typedef typename Binding::Timer       Timer;
     typedef EmiRtoTimer<Binding, EmiConnTimers> ERT;
     
     bool _sentDataSinceLastHeartbeat;
@@ -100,18 +101,21 @@ private:
     }
 
 public:
-    EmiConnTimers(const EmiSockConfig& config, Delegate& delegate) :
+    EmiConnTimers(const EmiSockConfig& config,
+                  const TimerCookie& timerCookie,
+                  Delegate& delegate) :
     _delegate(delegate),
     _time(),
     _lossList(),
     _sentDataSinceLastHeartbeat(false),
-    _nakTimer(Binding::makeTimer()),
-    _tickTimer(Binding::makeTimer()),
-    _heartbeatTimer(Binding::makeTimer()),
+    _nakTimer(Binding::makeTimer(timerCookie)),
+    _tickTimer(Binding::makeTimer(timerCookie)),
+    _heartbeatTimer(Binding::makeTimer(timerCookie)),
     _rtoTimer(timeBeforeConnectionWarning(config),
               config.connectionTimeout,
               config.initialConnectionTimeout,
               _time,
+              timerCookie,
               *this) {}
     
     virtual ~EmiConnTimers() {
@@ -138,26 +142,23 @@ public:
         if (!_delegate.isOpening()) {
             Binding::scheduleTimer(_heartbeatTimer, heartbeatTimeoutCallback,
                                    this, 1/_delegate.config.heartbeatFrequency,
-                                   /*repeating:*/false);
+                                   /*repeating:*/false, /*reschedule:*/true);
         }
     }
     
     void ensureNakTimeout() {
         // Don't send NAKs until we've got a response from the remote host
-        if (!_delegate.isOpening() &&
-            !Binding::timerIsActive(_nakTimer)) {
+        if (!_delegate.isOpening()) {
             Binding::scheduleTimer(_nakTimer, nakTimeoutCallback,
                                    this, _time.getNak(),
-                                   /*repeating:*/false);
+                                   /*repeating:*/false, /*reschedule:*/false);
         }
     }
     
     void ensureTickTimeout() {
-        if (!Binding::timerIsActive(_tickTimer)) {
-            Binding::scheduleTimer(_tickTimer, tickTimeoutCallback, this,
-                                   EMI_TICK_TIME,
-                                   /*repeating:*/false);
-        }
+        Binding::scheduleTimer(_tickTimer, tickTimeoutCallback, this,
+                               EMI_TICK_TIME,
+                               /*repeating:*/false, /*reschedule:*/false);
         ensureNakTimeout();
     }
     

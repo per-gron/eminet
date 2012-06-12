@@ -25,7 +25,7 @@ EXPAND_SYMS
 Persistent<Function> EmiP2PSocket::connectionError;
 
 EmiP2PSocket::EmiP2PSocket(v8::Handle<v8::Object> jsHandle, const EmiP2PSockConfig& sc) :
-_sock(sc),
+_sock(sc, /*timerCookie:*/NULL),
 _jsHandle(v8::Persistent<v8::Object>::New(jsHandle)) {}
 
 EmiP2PSocket::~EmiP2PSocket() {

@@ -18,6 +18,85 @@
 #include <arpa/inet.h>
 #include <net/if.h>
 
+#define DISPATCH_SYNC_OR_ASYNC(queue, block, method)        \
+    {                                                       \
+        dispatch_block_t DISPATCH_SYNC__block = (block);    \
+        dispatch_queue_t DISPATCH_SYNC__queue = (queue);    \
+        if (dispatch_get_current_queue() ==                 \
+            DISPATCH_SYNC__queue) {                         \
+            DISPATCH_SYNC__block();                         \
+        }                                                   \
+        else {                                              \
+            dispatch_##method(DISPATCH_SYNC__queue,         \
+                              DISPATCH_SYNC__block);        \
+        }                                                   \
+    }
+
+#define DISPATCH_SYNC(queue, block)                         \
+    DISPATCH_SYNC_OR_ASYNC(queue, block, sync)
+
+#define DISPATCH_ASYNC(queue, block)                        \
+    DISPATCH_SYNC_OR_ASYNC(queue, block, async)
+
+EmiBinding::Timer::Timer(EmiDispatchQueueWrapper *timerCookie) :
+_timerQueue(timerCookie->queue), _timer(NULL) {
+    ASSERT(_timerQueue);
+    dispatch_retain(_timerQueue);
+}
+
+EmiBinding::Timer::~Timer() {
+    deschedule_();
+    dispatch_release(_timerQueue);
+}
+
+void EmiBinding::Timer::deschedule_() {
+    if (_timer) {
+        dispatch_source_cancel(_timer);
+        dispatch_release(_timer);
+        _timer = NULL;
+    }
+}
+
+void EmiBinding::Timer::schedule(TimerCb *timerCb, void *data, EmiTimeInterval interval,
+                                 bool repeating, bool reschedule) {
+    DISPATCH_SYNC(_timerQueue, ^{
+        if (!reschedule && _timer) {
+            // We were told not to re-schedule the timer. 
+            // The timer is already active, so do nothing.
+            return;
+        }
+        
+        if (!_timer) {
+            _timer = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, NULL, /*mask:*/0, _timerQueue);
+            dispatch_resume(_timer);
+        }
+        
+        dispatch_source_set_timer(_timer, dispatch_time(DISPATCH_TIME_NOW, interval * NSEC_PER_SEC),
+                                  interval * NSEC_PER_SEC, /*leeway:*/0);
+        dispatch_source_set_event_handler(_timer, ^{
+            timerCb([NSDate timeIntervalSinceReferenceDate], this, data);
+            
+            if (!repeating) {
+                deschedule_();
+            }
+        });
+    });
+}
+
+void EmiBinding::Timer::deschedule() {
+    DISPATCH_SYNC(_timerQueue, ^{
+        deschedule_();
+    });
+}
+
+bool EmiBinding::Timer::isActive() const {
+    __block BOOL active;
+    DISPATCH_SYNC(_timerQueue, ^{
+        active = !!_timer;
+    });
+    return active;
+}
+
 void EmiBinding::hmacHash(const uint8_t *key, size_t keyLength,
                           const uint8_t *data, size_t dataLength,
                           uint8_t *buf, size_t bufLen) {
@@ -27,64 +106,6 @@ void EmiBinding::hmacHash(const uint8_t *key, size_t keyLength,
 
 void EmiBinding::randomBytes(uint8_t *buf, size_t bufSize) {
     ASSERT(0 == SecRandomCopyBytes(kSecRandomDefault, bufSize, buf));
-}
-
-
-@interface EmiBindingTimer : NSObject {
-    EmiBinding::Timer *_timer;
-}
-
-- (id)initWithTimer:(EmiBinding::Timer *)timer;
-
-- (void)timerFired:(NSTimer *)timer;
-
-@end
-
-@implementation EmiBindingTimer
-
-- (id)initWithTimer:(EmiBinding::Timer *)timer {
-    if (self = [super init]) {
-        _timer = timer;
-    }
-    
-    return self;
-}
-
-- (void)timerFired:(NSTimer *)nsTimer {
-    _timer->timerCb([NSDate timeIntervalSinceReferenceDate], _timer, _timer->data);
-}
-
-@end
-
-EmiBinding::Timer *EmiBinding::makeTimer() {
-    return new Timer();
-}
-
-void EmiBinding::freeTimer(Timer *timer) {
-    delete timer;
-}
-
-void EmiBinding::scheduleTimer(Timer *timer, TimerCb *timerCb, void *data, EmiTimeInterval interval, bool repeating) {
-    [timer->timer invalidate];
-    timer->data = data;
-    timer->timerCb = timerCb;
-    
-    EmiBindingTimer *ebt = [[EmiBindingTimer alloc] initWithTimer:timer];
-    
-    timer->timer = [NSTimer scheduledTimerWithTimeInterval:interval
-                                                    target:ebt
-                                                  selector:@selector(timerFired:)
-                                                  userInfo:nil
-                                                   repeats:repeating];
-}
-
-void EmiBinding::descheduleTimer(Timer *timer) {
-    [timer->timer invalidate];
-    timer->timer = nil;
-}
-
-bool EmiBinding::timerIsActive(Timer *timer) {
-    return timer->timer && [timer->timer isValid];
 }
 
 bool EmiBinding::getNetworkInterfaces(NetworkInterfaces& ni, Error& err) {

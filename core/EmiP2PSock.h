@@ -37,8 +37,9 @@ public:
     static const size_t          EMI_P2P_COOKIE_SIZE = EMI_P2P_RAND_NUM_SIZE + Binding::HMAC_HASH_SIZE;
     
 protected:
-    typedef typename Binding::TemporaryData    TemporaryData;
-    typedef typename Binding::Error            Error;
+    typedef typename Binding::TemporaryData TemporaryData;
+    typedef typename Binding::Error         Error;
+    typedef typename Binding::TimerCookie   TimerCookie;
     
     typedef EmiP2PConn<Binding, EmiP2PSock, EMI_P2P_RAND_NUM_SIZE> Conn;
     typedef EmiUdpSocket<Binding> EUS;
@@ -54,6 +55,8 @@ private:
     // Private copy constructor and assignment operator
     inline EmiP2PSock(const EmiP2PSock& other);
     inline EmiP2PSock& operator=(const EmiP2PSock& other);
+    
+    TimerCookie _timerCookie;
     
     sockaddr_storage _address;
     
@@ -200,7 +203,8 @@ private:
             else {
                 // There was no connection open with this cookie. Open a new one
                 
-                conn = new Conn(*this, initialSequenceNumber,
+                conn = new Conn(*this, _timerCookie,
+                                initialSequenceNumber,
                                 cc, cookieIsComplementary,
                                 sock, remoteAddress,
                                 config.connectionTimeout,
@@ -276,8 +280,8 @@ public:
     
     const SockConfig config;
     
-    EmiP2PSock(const SockConfig& config_) :
-    _socket(NULL), config(config_) {
+    EmiP2PSock(const SockConfig& config_, const TimerCookie& timerCookie) :
+    _timerCookie(timerCookie), _socket(NULL), config(config_) {
         Binding::randomBytes(_serverSecret, sizeof(_serverSecret));
     }
     virtual ~EmiP2PSock() {

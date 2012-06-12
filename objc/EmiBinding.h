@@ -28,21 +28,27 @@ public:
     class Timer;
     typedef void (TimerCb)(EmiTimeInterval now, Timer *timer, void *data);
     class Timer {
+        dispatch_queue_t  _timerQueue;
+        dispatch_source_t _timer;
+        
     private:
         // Private copy constructor and assignment operator
         inline Timer(const Timer& other);
         inline Timer& operator=(const Timer& other);
-    public:
-        Timer() : data(NULL), timer(nil), timerCb(NULL) {}
-        virtual ~Timer() {
-            [timer invalidate];
-            timer = nil;
-        }
         
-        void *data;
-        NSTimer *timer;
-        TimerCb *timerCb;
+        // Non thread safe version
+        void deschedule_();
+        
+    public:
+        Timer(EmiDispatchQueueWrapper *timerCookie);
+        virtual ~Timer();
+        
+        void schedule(TimerCb *timerCb, void *data, EmiTimeInterval interval,
+                      bool repeating, bool reschedule);
+        void deschedule();
+        bool isActive() const;
     };
+    typedef EmiDispatchQueueWrapper* TimerCookie;
     
     typedef __strong NSError* Error;
     typedef GCDAsyncUdpSocket SocketHandle;
@@ -98,11 +104,22 @@ public:
                          uint8_t *buf, size_t bufLen);
     static void randomBytes(uint8_t *buf, size_t bufSize);
     
-    static Timer *makeTimer();
-    static void freeTimer(Timer *timer);
-    static void scheduleTimer(Timer *timer, TimerCb *timerCb, void *data, EmiTimeInterval interval, bool repeating);
-    static void descheduleTimer(Timer *timer);
-    static bool timerIsActive(Timer *timer);
+    inline static Timer *makeTimer(EmiDispatchQueueWrapper *timerCookie) {
+        return new Timer(timerCookie);
+    }
+    inline static void freeTimer(Timer *timer) {
+        delete timer;
+    }
+    inline static void scheduleTimer(Timer *timer, TimerCb *timerCb, void *data, EmiTimeInterval interval,
+                                     bool repeating, bool reschedule) {
+        timer->schedule(timerCb, data, interval, repeating, reschedule);
+    }
+    static void descheduleTimer(Timer *timer) {
+        timer->deschedule();
+    }
+    static bool timerIsActive(Timer *timer) {
+        return timer->isActive();
+    }
     
     typedef std::pair<ifaddrs*, ifaddrs*> NetworkInterfaces;
     static bool getNetworkInterfaces(NetworkInterfaces& ni, Error& err);

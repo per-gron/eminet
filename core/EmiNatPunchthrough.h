@@ -27,6 +27,7 @@ template<class Binding, class Delegate>
 class EmiNatPunchthrough {
     
     typedef EmiRtoTimer<Binding, EmiNatPunchthrough> ERT;
+    typedef typename Binding::TimerCookie TimerCookie;
     
     friend class EmiRtoTimer<Binding, EmiNatPunchthrough>;
     
@@ -162,6 +163,7 @@ public:
     
     EmiNatPunchthrough(EmiTimeInterval connectionTimeout,
                        Delegate& delegate,
+                       const TimerCookie& timerCookie,
                        EmiSequenceNumber initialSequenceNumber,
                        const sockaddr_storage& mediatorAddress,
                        const EmiP2PData& p2p,
@@ -175,7 +177,8 @@ public:
     _p2p(p2p),
     _time(),
     _rtoTimer(/*disable connection warning:*/-1, connectionTimeout,
-              /*initialConnectionTimeout:*/connectionTimeout, _time, *this),
+              /*initialConnectionTimeout:*/connectionTimeout, _time,
+              timerCookie, *this),
     _isInProxyTeardownPhase(false),
     _myEndpointPair((uint8_t *)malloc(myEndpointPairLength)),
     _myEndpointPairLength(myEndpointPairLength),

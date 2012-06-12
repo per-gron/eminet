@@ -16,7 +16,8 @@
 template<class Binding, class Delegate>
 class EmiRtoTimer {
     
-    typedef typename Binding::Timer Timer;
+    typedef typename Binding::Timer       Timer;
+    typedef typename Binding::TimerCookie TimerCookie;
     
     EmiConnTime&           _time;
     Timer                 *_rtoTimer;
@@ -61,7 +62,7 @@ private:
         ert->_issuedConnectionWarning = true;
         Binding::scheduleTimer(ert->_connectionTimer, connectionTimeoutCallback, ert,
                                ert->getConnectionTimeout() - ert->_timeBeforeConnectionWarning,
-                               /*repeating:*/false);
+                               /*repeating:*/false, /*reschedule:*/true);
         
         ert->_delegate.connectionLost();
     }
@@ -72,11 +73,13 @@ private:
         if (_timeBeforeConnectionWarning >= 0 &&
             _timeBeforeConnectionWarning < connectionTimeout) {
             Binding::scheduleTimer(_connectionTimer, connectionWarningCallback,
-                                   this, _timeBeforeConnectionWarning, /*repeating:*/false);
+                                   this, _timeBeforeConnectionWarning,
+                                   /*repeating:*/false, /*reschedule:*/true);
         }
         else {
             Binding::scheduleTimer(_connectionTimer, connectionTimeoutCallback,
-                                   this, connectionTimeout, /*repeating:*/false);
+                                   this, connectionTimeout,
+                                   /*repeating:*/false, /*reschedule:*/true);
         }
         
         if (_issuedConnectionWarning) {
@@ -92,11 +95,12 @@ public:
                 EmiTimeInterval connectionTimeout,
                 EmiTimeInterval initialConnectionTimeout,
                 EmiConnTime& time,
+                const TimerCookie& timerCookie,
                 Delegate &delegate) :
     _time(time),
-    _rtoTimer(Binding::makeTimer()),
+    _rtoTimer(Binding::makeTimer(timerCookie)),
     _rtoWhenRtoTimerWasScheduled(0),
-    _connectionTimer(Binding::makeTimer()),
+    _connectionTimer(Binding::makeTimer(timerCookie)),
     _timeBeforeConnectionWarning(timeBeforeConnectionWarning),
     _connectionTimeout(connectionTimeout),
     _initialConnectionTimeout(initialConnectionTimeout),
@@ -118,17 +122,14 @@ public:
     
     void updateRtoTimeout() {
         if (!_delegate.senderBufferIsEmpty(*this)) {
-            if (!Binding::timerIsActive(_rtoTimer)) {
-                
-                // this._rto will likely change before the timeout fires. When
-                // the timeout fires we want the value of _rto at the time
-                // the timeout was set, not when it fires. That's why we store
-                // rto here.
-                _rtoWhenRtoTimerWasScheduled = _time.getRto();
-                Binding::scheduleTimer(_rtoTimer, rtoTimeoutCallback,
-                                       this, _rtoWhenRtoTimerWasScheduled,
-                                       /*repeating:*/false);
-            }
+            // this._rto will likely change before the timeout fires. When
+            // the timeout fires we want the value of _rto at the time
+            // the timeout was set, not when it fires. That's why we store
+            // rto here.
+            _rtoWhenRtoTimerWasScheduled = _time.getRto();
+            Binding::scheduleTimer(_rtoTimer, rtoTimeoutCallback,
+                                   this, _rtoWhenRtoTimerWasScheduled,
+                                   /*repeating:*/false, /*reschedule:*/false);
         }
         else {
             // The queue is empty. Clear the timer

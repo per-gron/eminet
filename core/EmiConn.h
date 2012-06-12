@@ -30,6 +30,7 @@ template<class SockDelegate, class ConnDelegate>
 class EmiConn {
     typedef typename SockDelegate::Binding   Binding;
     typedef typename Binding::Error          Error;
+    typedef typename Binding::TimerCookie    TimerCookie;
     typedef typename Binding::PersistentData PersistentData;
     typedef typename Binding::TemporaryData  TemporaryData;
     
@@ -45,6 +46,8 @@ class EmiConn {
     
     // For makeServerConnection
     friend class EmiMessageHandler<EmiConn, EmiConn, Binding>;
+    
+    ConnDelegate _delegate;
     
     uint16_t               _inboundPort;
     // This gets set when we receive the first packet from the other host.
@@ -69,8 +72,6 @@ class EmiConn {
     
     ECT _timers;
     typename Binding::Timer *_forceCloseTimer;
-    
-    ConnDelegate _delegate;
         
 private:
     // Private copy constructor and assignment operator
@@ -174,7 +175,7 @@ public:
     _receiverBuffer(config_.receiverBufferSize, *this),
     _sendQueue(*this, config_.mtu),
     _congestionControl(),
-    _timers(config_, *this),
+    _timers(config_, _delegate.getTimerCookie(), *this),
     _forceCloseTimer(NULL),
     config(config_) {
         EmiNetUtil::anyAddr(0, AF_INET, &_localAddress);
@@ -421,7 +422,7 @@ public:
     }
     inline void gotPrxRstSynAck(EmiTimeInterval now, const uint8_t *data, size_t len) {
         if (_conn) {
-            _conn->gotPrxRstSynAck(now, data, len);
+            _conn->gotPrxRstSynAck(now, _delegate.getTimerCookie(), data, len);
         }
     }
     inline void gotPrxSyn(const sockaddr_storage& remoteAddr,
@@ -506,9 +507,10 @@ public:
         // on. This guarantees that we don't deallocate this object while
         // there are references to it left on the stack.
         if (!_forceCloseTimer) {
-            _forceCloseTimer = Binding::makeTimer();
+            _forceCloseTimer = Binding::makeTimer(_delegate.getTimerCookie());
             Binding::scheduleTimer(_forceCloseTimer, forceCloseTimeoutCallback,
-                                   this, /*time:*/0, /*repeating:*/false);
+                                   this, /*time:*/0,
+                                   /*repeating:*/false, /*reschedule:*/true);
         }
     }
     

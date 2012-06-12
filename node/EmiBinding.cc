@@ -47,7 +47,7 @@ static void timer_cb(uv_timer_t *handle, int status) {
     timerCb(EmiNodeUtil::now(), handle, handle->data);
 }
 
-EmiBinding::Timer *EmiBinding::makeTimer() {
+EmiBinding::Timer *EmiBinding::makeTimer(void *timerCookie) {
     EmiBinding::Timer *timer = (uv_timer_t *)malloc(sizeof(uv_timer_t)+sizeof(TimerCb*));
     
     uv_timer_init(uv_default_loop(), timer);
@@ -60,7 +60,14 @@ void EmiBinding::freeTimer(Timer *timer) {
     uv_close((uv_handle_t *)timer, close_cb);
 }
 
-void EmiBinding::scheduleTimer(Timer *timer, TimerCb *timerCb, void *data, EmiTimeInterval interval, bool repeating) {
+void EmiBinding::scheduleTimer(Timer *timer, TimerCb *timerCb, void *data, EmiTimeInterval interval,
+                               bool repeating, bool reschedule) {
+    if (!reschedule && uv_is_active((uv_handle_t *)timer)) {
+        // We were told not to re-schedule the timer. 
+        // The timer is already active, so do nothing.
+        return;
+    }
+    
     uv_timer_stop(timer);
     
     *(reinterpret_cast<TimerCb**>(timer+1)) = timerCb;

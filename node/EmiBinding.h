@@ -30,6 +30,7 @@ public:
     typedef v8::Local<v8::Object>      TemporaryData;
     typedef v8::Persistent<v8::Object> PersistentData;
     typedef uv_timer_t                 Timer;
+    typedef void*                      TimerCookie;
     typedef void (TimerCb)(EmiTimeInterval now, Timer *timer, void *data);
     
     typedef void (EmiOnMessage)(uv_udp_t *socket,
@@ -65,9 +66,10 @@ public:
                          uint8_t *buf, size_t bufLen);
     static void randomBytes(uint8_t *buf, size_t bufSize);
     
-    static Timer *makeTimer();
+    static Timer *makeTimer(void *timerCookie);
     static void freeTimer(Timer *timer);
-    static void scheduleTimer(Timer *timer, TimerCb *timerCb, void *data, EmiTimeInterval interval, bool repeating);
+    static void scheduleTimer(Timer *timer, TimerCb *timerCb, void *data, EmiTimeInterval interval,
+                              bool repeating, bool reschedule);
     static void descheduleTimer(Timer *timer);
     static bool timerIsActive(Timer *timer);
     

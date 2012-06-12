@@ -29,6 +29,7 @@ class EmiLogicalConnection {
     typedef typename Binding::Error          Error;
     typedef typename Binding::PersistentData PersistentData;
     typedef typename Binding::TemporaryData  TemporaryData;
+    typedef typename Binding::TimerCookie    TimerCookie;
     typedef typename SockDelegate::ConnectionOpenedCallbackCookie ConnectionOpenedCallbackCookie;
     typedef EmiMessage<Binding>                 EM;
     typedef EmiConn<SockDelegate, ConnDelegate> EC;
@@ -272,7 +273,8 @@ public:
                           EMI_REASON_OTHER_HOST_CLOSED);
     }
     
-    void gotPrxRstSynAck(EmiTimeInterval now, const uint8_t *data, size_t len) {
+    void gotPrxRstSynAck(EmiTimeInterval now, const TimerCookie& timerCookie,
+                         const uint8_t *data, size_t len) {
         
         /// Parse the incoming data
         
@@ -309,6 +311,7 @@ public:
         if (!_natPunchthrough) {
             _natPunchthrough = new ENP(_conn->config.connectionTimeout,
                                        *this,
+                                       timerCookie,
                                        _initialSequenceNumber,
                                        _conn->getRemoteAddress(),
                                        _conn->getP2PData(),

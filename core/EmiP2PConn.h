@@ -47,6 +47,7 @@ private:
     typedef typename Binding::SocketHandle    SocketHandle;
     typedef typename Binding::TemporaryData   TemporaryData;
     typedef typename Binding::Timer           Timer;
+    typedef typename Binding::TimerCookie     TimerCookie;
     
     typedef EmiRtoTimer<Binding, EmiP2PConn> ERT;
     
@@ -142,6 +143,7 @@ public:
     const ConnCookieRandNum cookie;
     
     EmiP2PConn(Delegate& delegate,
+               const TimerCookie& timerCookie,
                EmiSequenceNumber initialSequenceNumber,
                const ConnCookieRandNum &cookie_,
                bool firstPeerHadComplementaryCookie,
@@ -157,9 +159,9 @@ public:
     _times(),
     _rateLimit(rateLimit),
     _bytesSentSinceRateLimitTimeout(0),
-    _rtoTimer0(/*timeBeforeConnectionWarning:*/-1, connectionTimeout, initialConnectionTimeout, _times[0], *this),
-    _rtoTimer1(/*timeBeforeConnectionWarning:*/-1, connectionTimeout, initialConnectionTimeout, _times[1], *this),
-    _rateLimitTimer(rateLimit ? Binding::makeTimer() : NULL) {
+    _rtoTimer0(/*timeBeforeConnectionWarning:*/-1, connectionTimeout, initialConnectionTimeout, _times[0], timerCookie, *this),
+    _rtoTimer1(/*timeBeforeConnectionWarning:*/-1, connectionTimeout, initialConnectionTimeout, _times[1], timerCookie, *this),
+    _rateLimitTimer(rateLimit ? Binding::makeTimer(timerCookie) : NULL) {
         int family = firstPeer.ss_family;
         
         _peers[0] = firstPeer;
@@ -176,7 +178,7 @@ public:
         
         if (rateLimit) {
             Binding::scheduleTimer(_rateLimitTimer, rateLimitTimeoutCallback,
-                                   this, 1, /*repeating:*/true);
+                                   this, 1, /*repeating:*/true, /*reschedule:*/true);
         }
     }
     
