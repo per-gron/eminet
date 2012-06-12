@@ -10,6 +10,7 @@
 #define roshambo_EmiBinding_h
 
 #import "EmiSocketUserDataWrapper.h"
+#include "EmiDispatchTimer.h"
 
 #include "EmiTypes.h"
 #import <Foundation/Foundation.h>
@@ -25,29 +26,7 @@ private:
     inline EmiBinding();
 public:
     
-    class Timer;
-    typedef void (TimerCb)(EmiTimeInterval now, Timer *timer, void *data);
-    class Timer {
-        dispatch_queue_t  _timerQueue;
-        dispatch_source_t _timer;
-        
-    private:
-        // Private copy constructor and assignment operator
-        inline Timer(const Timer& other);
-        inline Timer& operator=(const Timer& other);
-        
-        // Non thread safe version
-        void deschedule_();
-        
-    public:
-        Timer(EmiDispatchQueueWrapper *timerCookie);
-        virtual ~Timer();
-        
-        void schedule(TimerCb *timerCb, void *data, EmiTimeInterval interval,
-                      bool repeating, bool reschedule);
-        void deschedule();
-        bool isActive() const;
-    };
+    typedef EmiDispatchTimer         Timer;
     typedef EmiDispatchQueueWrapper* TimerCookie;
     
     typedef __strong NSError* Error;
