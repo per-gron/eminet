@@ -36,12 +36,17 @@ class EmiSockDelegate {
     typedef EmiConn<EmiSockDelegate, EmiConnDelegate> EC;
     
     EmiSocket *_socket;
+    dispatch_group_t _dispatchGroup;
 public:
     
     typedef EmiBinding Binding;
     typedef void (^__strong ConnectionOpenedCallbackCookie)(NSError *err, EmiConnection *connection);
     
     EmiSockDelegate(EmiSocket *socket);
+    virtual ~EmiSockDelegate();
+    
+    EmiSockDelegate(const EmiSockDelegate& other);
+    EmiSockDelegate& operator=(const EmiSockDelegate& other);
         
     EC *makeConnection(const EmiConnParams<EmiBinding>& params);
     

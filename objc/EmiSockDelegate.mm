@@ -13,7 +13,31 @@
 #import "EmiSocketInternal.h"
 #import "EmiConnectionInternal.h"
 
-EmiSockDelegate::EmiSockDelegate(EmiSocket *socket) : _socket(socket) {}
+EmiSockDelegate::EmiSockDelegate(EmiSocket *socket) :
+_socket(socket),
+_dispatchGroup(dispatch_group_create()) {}
+
+EmiSockDelegate::~EmiSockDelegate() {
+    dispatch_group_wait(_dispatchGroup, DISPATCH_TIME_FOREVER);
+    dispatch_release(_dispatchGroup);
+}
+
+EmiSockDelegate::EmiSockDelegate(const EmiSockDelegate& other) :
+_socket(other._socket),
+_dispatchGroup(other._dispatchGroup) {
+    dispatch_retain(_dispatchGroup);
+}
+
+EmiSockDelegate& EmiSockDelegate::operator=(const EmiSockDelegate& other) {
+    if (_dispatchGroup) {
+        dispatch_release(_dispatchGroup);
+    }
+    
+    _socket = other._socket;
+    _dispatchGroup = other._dispatchGroup;
+    dispatch_retain(_dispatchGroup);
+    return *this;
+}
 
 EC *EmiSockDelegate::makeConnection(const EmiConnParams<EmiBinding>& params) {
     dispatch_queue_t connQueue = NULL;
@@ -41,7 +65,7 @@ void EmiSockDelegate::gotServerConnection(EC& conn) {
     __block EC& blockConn = conn;
     
     if (sockQueue) {
-        dispatch_async(sockQueue, ^{
+        dispatch_group_async(_dispatchGroup, sockQueue, ^{
             [sockDelegate emiSocket:_socket gotConnection:blockConn.getDelegate().getConn()];
         });
     }
@@ -74,7 +98,7 @@ void EmiSockDelegate::connectionGotMessage(EC *conn,
     // This method is invoked in the EmiSocket's socketQueue. We want to
     // invoke onMessage on the EmiConnection's connectionQueue.
     dispatch_queue_t connectionQueue = conn->getDelegate().getConn().connectionQueue;
-    dispatch_async(connectionQueue, ^{
+    dispatch_group_async(_dispatchGroup, connectionQueue, ^{
         conn->onMessage(now, socket,
                         inboundAddress, remoteAddress,
                         data, offset, len);
