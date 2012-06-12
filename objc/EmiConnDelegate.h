@@ -15,10 +15,15 @@
 class EmiConnDelegate {
     EmiConnection *_conn;
     EmiDispatchQueueWrapper *_queueWrapper;
+    dispatch_group_t _dispatchGroup;
     
 public:
     
     EmiConnDelegate(EmiConnection *conn);
+    virtual ~EmiConnDelegate();
+    
+    EmiConnDelegate(const EmiConnDelegate& other);
+    EmiConnDelegate& operator=(const EmiConnDelegate& other);
     
     void invalidate();
     
@@ -38,6 +43,8 @@ public:
     inline EmiDispatchQueueWrapper *getTimerCookie() {
         return _queueWrapper;
     }
+    
+    void waitForDelegateBlocks();
 };
 
 #endif

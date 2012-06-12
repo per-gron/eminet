@@ -13,7 +13,34 @@
 
 EmiConnDelegate::EmiConnDelegate(EmiConnection *conn) :
 _conn(conn),
-_queueWrapper([[EmiDispatchQueueWrapper alloc] initWithQueue:conn.connectionQueue]) {}
+_queueWrapper([[EmiDispatchQueueWrapper alloc] initWithQueue:conn.connectionQueue]),
+_dispatchGroup(dispatch_group_create()) {
+    
+}
+
+EmiConnDelegate::~EmiConnDelegate() {
+    dispatch_group_wait(_dispatchGroup, DISPATCH_TIME_FOREVER);
+    dispatch_release(_dispatchGroup);
+}
+
+EmiConnDelegate::EmiConnDelegate(const EmiConnDelegate& other) :
+_conn(other._conn),
+_queueWrapper(other._queueWrapper),
+_dispatchGroup(other._dispatchGroup) {
+    dispatch_retain(_dispatchGroup);
+}
+
+EmiConnDelegate& EmiConnDelegate::operator=(const EmiConnDelegate& other) {
+    if (_dispatchGroup) {
+        dispatch_release(_dispatchGroup);
+    }
+    
+    _conn = other._conn;
+    _queueWrapper = other._queueWrapper;
+    _dispatchGroup = other._dispatchGroup;
+    dispatch_retain(_dispatchGroup);
+    return *this;
+}
 
 void EmiConnDelegate::invalidate() {
     if (!_conn) {
@@ -27,20 +54,14 @@ void EmiConnDelegate::invalidate() {
         });
     }
     
-    // Just to be sure, since the ivar is __unsafe_unretained
-    // Note that this code would be incorrect if connections supported reconnecting; It's correct only because after a forceClose, the delegate will never be called again.
-    _conn.delegate = nil;
-    
     // Because this is a strong reference, we need to nil it out to let ARC deallocate this connection for us
     _conn = nil;
 }
 
 void EmiConnDelegate::emiConnMessage(EmiChannelQualifier channelQualifier, NSData *data, NSUInteger offset, NSUInteger size) {
-    id<EmiConnectionDelegate> connDelegate = _conn.delegate;
-    dispatch_queue_t connDelegateQueue = _conn.delegateQueue;
-    
-    if (connDelegateQueue) {
-        dispatch_async(connDelegateQueue, ^{
+    if (_conn.delegateQueue) {
+        id<EmiConnectionDelegate> connDelegate = _conn.delegate;
+        dispatch_group_async(_dispatchGroup, _conn.delegateQueue, ^{
             [connDelegate emiConnectionMessage:_conn
                               channelQualifier:channelQualifier
                                           data:[data subdataWithRange:NSMakeRange(offset, size)]];
@@ -49,44 +70,36 @@ void EmiConnDelegate::emiConnMessage(EmiChannelQualifier channelQualifier, NSDat
 }
 
 void EmiConnDelegate::emiConnLost() {
-    id<EmiConnectionDelegate> connDelegate = _conn.delegate;
-    dispatch_queue_t connDelegateQueue = _conn.delegateQueue;
-    
-    if (connDelegateQueue) {
-        dispatch_async(connDelegateQueue, ^{
+    if (_conn.delegateQueue) {
+        id<EmiConnectionDelegate> connDelegate = _conn.delegate;
+        dispatch_group_async(_dispatchGroup, _conn.delegateQueue, ^{
             [connDelegate emiConnectionLost:_conn];
         });
     }
 }
 
 void EmiConnDelegate::emiConnRegained() {
-    id<EmiConnectionDelegate> connDelegate = _conn.delegate;
-    dispatch_queue_t connDelegateQueue = _conn.delegateQueue;
-    
-    if (connDelegateQueue) {
-        dispatch_async(connDelegateQueue, ^{
+    if (_conn.delegateQueue) {
+        id<EmiConnectionDelegate> connDelegate = _conn.delegate;
+        dispatch_group_async(_dispatchGroup, _conn.delegateQueue, ^{
             [connDelegate emiConnectionRegained:_conn];
         });
     }
 }
 
 void EmiConnDelegate::emiConnDisconnect(EmiDisconnectReason reason) {
-    id<EmiConnectionDelegate> connDelegate = _conn.delegate;
-    dispatch_queue_t connDelegateQueue = _conn.delegateQueue;
-    
-    if (connDelegateQueue) {
-        dispatch_async(connDelegateQueue, ^{
+    if (_conn.delegateQueue) {
+        id<EmiConnectionDelegate> connDelegate = _conn.delegate;
+        dispatch_group_async(_dispatchGroup, _conn.delegateQueue, ^{
             [connDelegate emiConnectionDisconnect:_conn forReason:reason];
         });
     }
 }
 
 void EmiConnDelegate::emiNatPunchthroughFinished(bool success) {
-    id<EmiConnectionDelegate> connDelegate = _conn.delegate;
-    dispatch_queue_t connDelegateQueue = _conn.delegateQueue;
-    
-    if (connDelegateQueue) {
-        dispatch_async(connDelegateQueue, ^{
+    if (_conn.delegateQueue) {
+        id<EmiConnectionDelegate> connDelegate = _conn.delegate;
+        dispatch_group_async(_dispatchGroup, _conn.delegateQueue, ^{
             if (success) {
                 if ([connDelegate respondsToSelector:@selector(emiP2PConnectionEstablished:)]) {
                     [connDelegate emiP2PConnectionEstablished:_conn];
@@ -99,4 +112,8 @@ void EmiConnDelegate::emiNatPunchthroughFinished(bool success) {
             }
         });
     }
+}
+
+void EmiConnDelegate::waitForDelegateBlocks() {
+    dispatch_group_wait(_dispatchGroup, DISPATCH_TIME_FOREVER);
 }
