@@ -36,6 +36,8 @@
             _connectionQueue = dispatch_queue_create("EmiConnection", NULL);
         }
         
+        _delegateQueue = NULL;
+        
         _ec = new EC(EmiConnDelegate(self), socket.sock->config, *params);
     }
     
@@ -43,19 +45,19 @@
 }
 
 - (void)dealloc {
-	self.delegate = nil;
 	if (_delegateQueue) {
 		dispatch_release(_delegateQueue);
-        _delegateQueue = NULL;
-    }
-	
-	if (_connectionQueue) {
-		dispatch_release(_connectionQueue);
-        _connectionQueue = NULL;
     }
     
-    ((EC *)_ec)->getDelegate().invalidate();
-    delete (EC *)_ec;
+    dispatch_queue_t connQueue = _connectionQueue;
+    EC *ec = ((EC *)_ec);
+    
+    dispatch_async(connQueue, ^{
+        dispatch_release(connQueue);
+        
+        ec->getDelegate().invalidate();
+        delete (EC *)ec;
+    });
 }
 
 - (EmiTimeInterval)_now {
@@ -208,6 +210,7 @@
 
 - (void)setDelegate:(id<EmiConnectionDelegate>)delegate {
 	DISPATCH_SYNC(_connectionQueue, ^{
+        ((EC *)_ec)->getDelegate().waitForDelegateBlocks();
         _delegate = delegate;
 	});
 }
@@ -225,6 +228,7 @@
 - (void)setDelegateQueue:(dispatch_queue_t)delegateQueue {
 	DISPATCH_SYNC(_connectionQueue, ^{
 		if (_delegateQueue) {
+            ((EC *)_ec)->getDelegate().waitForDelegateBlocks();
 			dispatch_release(_delegateQueue);
         }
 		
