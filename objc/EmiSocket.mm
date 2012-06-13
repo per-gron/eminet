@@ -318,11 +318,14 @@ withFilterContext:(id)filterContext {
         result = [self connectToAddress:address
                                  cookie:wrapper.cookie
                            sharedSecret:wrapper.sharedSecret
-                                  block:block
+                                  block:block blockQueue:wrapper.blockQueue
                                   error:&err];
     }
     else {
-        result = [self connectToAddress:address block:block error:&err];
+        result = [self connectToAddress:address
+                                 cookie:nil sharedSecret:nil
+                                  block:block blockQueue:wrapper.blockQueue
+                                  error:&err];
     }
     
     if (!result) {
