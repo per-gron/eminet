@@ -61,8 +61,9 @@ void EmiConnDelegate::invalidate() {
 void EmiConnDelegate::emiConnMessage(EmiChannelQualifier channelQualifier, NSData *data, NSUInteger offset, NSUInteger size) {
     if (_conn.delegateQueue) {
         id<EmiConnectionDelegate> connDelegate = _conn.delegate;
+        EmiConnection *conn = _conn;
         dispatch_group_async(_dispatchGroup, _conn.delegateQueue, ^{
-            [connDelegate emiConnectionMessage:_conn
+            [connDelegate emiConnectionMessage:conn
                               channelQualifier:channelQualifier
                                           data:[data subdataWithRange:NSMakeRange(offset, size)]];
         });
@@ -72,8 +73,9 @@ void EmiConnDelegate::emiConnMessage(EmiChannelQualifier channelQualifier, NSDat
 void EmiConnDelegate::emiConnLost() {
     if (_conn.delegateQueue) {
         id<EmiConnectionDelegate> connDelegate = _conn.delegate;
+        EmiConnection *conn = _conn;
         dispatch_group_async(_dispatchGroup, _conn.delegateQueue, ^{
-            [connDelegate emiConnectionLost:_conn];
+            [connDelegate emiConnectionLost:conn];
         });
     }
 }
@@ -81,8 +83,9 @@ void EmiConnDelegate::emiConnLost() {
 void EmiConnDelegate::emiConnRegained() {
     if (_conn.delegateQueue) {
         id<EmiConnectionDelegate> connDelegate = _conn.delegate;
+        EmiConnection *conn = _conn;
         dispatch_group_async(_dispatchGroup, _conn.delegateQueue, ^{
-            [connDelegate emiConnectionRegained:_conn];
+            [connDelegate emiConnectionRegained:conn];
         });
     }
 }
@@ -90,8 +93,9 @@ void EmiConnDelegate::emiConnRegained() {
 void EmiConnDelegate::emiConnDisconnect(EmiDisconnectReason reason) {
     if (_conn.delegateQueue) {
         id<EmiConnectionDelegate> connDelegate = _conn.delegate;
+        EmiConnection *conn = _conn;
         dispatch_group_async(_dispatchGroup, _conn.delegateQueue, ^{
-            [connDelegate emiConnectionDisconnect:_conn forReason:reason];
+            [connDelegate emiConnectionDisconnect:conn forReason:reason];
         });
     }
 }
@@ -99,15 +103,16 @@ void EmiConnDelegate::emiConnDisconnect(EmiDisconnectReason reason) {
 void EmiConnDelegate::emiNatPunchthroughFinished(bool success) {
     if (_conn.delegateQueue) {
         id<EmiConnectionDelegate> connDelegate = _conn.delegate;
+        EmiConnection *conn = _conn;
         dispatch_group_async(_dispatchGroup, _conn.delegateQueue, ^{
             if (success) {
                 if ([connDelegate respondsToSelector:@selector(emiP2PConnectionEstablished:)]) {
-                    [connDelegate emiP2PConnectionEstablished:_conn];
+                    [connDelegate emiP2PConnectionEstablished:conn];
                 }
             }
             else {
                 if ([connDelegate respondsToSelector:@selector(emiP2PConnectionNotEstablished:)]) {
-                    [connDelegate emiP2PConnectionNotEstablished:_conn];
+                    [connDelegate emiP2PConnectionNotEstablished:conn];
                 }
             }
         });
