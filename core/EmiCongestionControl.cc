@@ -14,6 +14,13 @@
 #include <algorithm>
 #include <cmath>
 
+// Set this to non-zero to add a few asserts regarding
+// sequence numbers. Warning: Do not enable these in
+// production builds! The asserts might trigger even
+// in normal circumstances (but it's rare enough to
+// make the asserts useful for debugging).
+#define DEBUG_SEQUENCE_NUMBERS 0
+
 void EmiCongestionControl::endSlowStartPhase() {
     _sendingRate = _remoteDataArrivalRate;
 }
@@ -159,6 +166,11 @@ void EmiCongestionControl::gotPacket(EmiTimeInterval now, EmiTimeInterval rtt,
         if (-1 == _newestSeenAckSN ||
             EmiNetUtil::cyclicDifference24Signed(packetHeader.ack,
                                                  _newestSeenAckSN) > 0) {
+#if DEBUG_SEQUENCE_NUMBERS
+            ASSERT(-1 == _newestSeenAckSN ||
+                   EmiNetUtil::cyclicDifference24Signed(packetHeader.ack,
+                                                        _newestSeenAckSN) < 100);
+#endif
             _newestSeenAckSN = packetHeader.ack;
         }
         
@@ -172,6 +184,11 @@ void EmiCongestionControl::gotPacket(EmiTimeInterval now, EmiTimeInterval rtt,
     if (packetHeader.flags & EMI_SEQUENCE_NUMBER_PACKET_FLAG) {
         if (-1 == _newestSeenSN ||
             EmiNetUtil::cyclicDifference24Signed(packetHeader.sequenceNumber, _newestSeenSN) > 0) {
+#if DEBUG_SEQUENCE_NUMBERS
+            ASSERT(-1 == _newestSeenSN ||
+                   EmiNetUtil::cyclicDifference24Signed(packetHeader.sequenceNumber,
+                                                        _newestSeenSN) < 100);
+#endif
             _newestSeenSN = packetHeader.sequenceNumber;
         }
     }
