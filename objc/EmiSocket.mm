@@ -11,6 +11,7 @@
 #import "EmiConnectionInternal.h"
 #import "EmiSocketConfigInternal.h"
 #import "EmiSocketUserDataWrapper.h"
+#import "EmiConnectionOpenedBlockWrapper.h"
 #include "EmiSendQueue.h"
 #include "EmiConnDelegate.h"
 #include "EmiObjCBindingHelper.h"
@@ -18,77 +19,6 @@
 #import "GCDAsyncUdpSocket.h"
 #include <map>
 #include <set>
-
-#pragma mark - Helper classes
-
-@interface EmiConnectionOpenedBlockWrapper : NSObject {
-    EmiConnectionOpenedBlock _block;
-    dispatch_queue_t _blockQueue;
-    NSData *_cookie;
-    NSData *_sharedSecret;
-}
-
-- (id)initWithBlock:(EmiConnectionOpenedBlock)block
-         blockQueue:(dispatch_queue_t)blockQueue
-             cookie:(NSData *)cookie
-       sharedSecret:(NSData *)sharedSecret;
-
-+ (EmiConnectionOpenedBlockWrapper *)wrapperWithBlock:(EmiConnectionOpenedBlock)block
-                                           blockQueue:(dispatch_queue_t)blockQueue
-                                               cookie:(NSData *)cookie
-                                         sharedSecret:(NSData *)sharedSecret;
-
-@property (nonatomic, retain, readonly) EmiConnectionOpenedBlock block;
-@property (nonatomic, assign, readonly) dispatch_queue_t blockQueue;
-@property (nonatomic, retain, readonly) NSData *cookie;
-@property (nonatomic, retain, readonly) NSData *sharedSecret;
-
-@end
-
-@implementation EmiConnectionOpenedBlockWrapper
-
-@synthesize block = _block;
-@synthesize blockQueue = _blockQueue;
-@synthesize cookie = _cookie;
-@synthesize sharedSecret = _sharedSecret;
-
-- (id)initWithBlock:(EmiConnectionOpenedBlock)block
-         blockQueue:(dispatch_queue_t)blockQueue
-             cookie:(NSData *)cookie
-       sharedSecret:(NSData *)sharedSecret {
-    if (self = [super init]) {
-        _block = [block copy];
-        _blockQueue = blockQueue;
-        if (_blockQueue) {
-            dispatch_retain(_blockQueue);
-        }
-        _cookie = cookie;
-        _sharedSecret = sharedSecret;
-    }
-    
-    return self;
-}
-
-- (void)dealloc {
-    if (_blockQueue) {
-        dispatch_release(_blockQueue);
-    }
-}
-
-+ (EmiConnectionOpenedBlockWrapper *)wrapperWithBlock:(EmiConnectionOpenedBlock)block
-                                           blockQueue:(dispatch_queue_t)blockQueue
-                                               cookie:(NSData *)cookie
-                                         sharedSecret:(NSData *)sharedSecret {
-    return [[EmiConnectionOpenedBlockWrapper alloc] initWithBlock:block
-                                                       blockQueue:blockQueue
-                                                           cookie:cookie
-                                                     sharedSecret:sharedSecret];
-}
-
-@end
-
-
-#pragma mark - EmiSocket implementation
 
 @implementation EmiSocket
 
@@ -139,11 +69,8 @@
 }
 
 - (void)dealloc {
-    self.delegate = nil;
-    if (_delegateQueue) {
-        dispatch_release(_delegateQueue);
-        _delegateQueue = NULL;
-    }
+    // This releases _delegateQueue
+    [self setDelegate:nil delegateQueue:NULL];
     
     if (_socketQueue) {
         dispatch_release(_socketQueue);
@@ -154,45 +81,6 @@
         delete (S *)_sock;
         _sock = NULL;
     }
-    
-    _delegate = nil;
-}
-
-- (BOOL)connectToAddress:(NSData *)address
-                  cookie:(NSData *)cookie
-            sharedSecret:(NSData *)sharedSecret
-                   block:(EmiConnectionOpenedBlock)block
-              blockQueue:(dispatch_queue_t)blockQueue
-                   error:(NSError **)errPtr {
-    if ((!cookie || !sharedSecret) &&
-        ( cookie ||  sharedSecret)) {
-        [NSException raise:@"EmiSocketException" format:@"Invalid arguments"];
-    }
-    
-    __block EmiConnectionOpenedBlock unwrappedBlock = block;
-    if (blockQueue) {
-        block = ^(NSError *err, EmiConnection *connection) {
-            DISPATCH_ASYNC(blockQueue, ^{
-                unwrappedBlock(err, connection);
-            });
-        };
-    }
-    
-    sockaddr_storage ss;
-    memcpy(&ss, [address bytes], MIN([address length], sizeof(sockaddr_storage)));
-    
-    __block NSError *err = nil;
-    __block BOOL retVal;
-    
-    DISPATCH_SYNC(_socketQueue, ^{
-        retVal = ((S *)_sock)->connect([NSDate timeIntervalSinceReferenceDate], ss,
-                                       (const uint8_t *)[cookie bytes], [cookie length],
-                                       (const uint8_t *)[sharedSecret bytes], [sharedSecret length],
-                                       block, err);
-        *errPtr = err;
-    });
-    
-    return retVal;
 }
 
 
@@ -218,39 +106,73 @@
 }
 
 - (BOOL)connectToAddress:(NSData *)address
-                   block:(EmiConnectionOpenedBlock)block
+                delegate:(__unsafe_unretained id<EmiConnectionDelegate>)delegate
+           delegateQueue:(dispatch_queue_t)delegateQueue
+                userData:(id)userData
                    error:(NSError **)errPtr {
     return [self connectToAddress:address
                            cookie:nil sharedSecret:nil
-                            block:block blockQueue:dispatch_get_current_queue()
+                         delegate:delegate delegateQueue:delegateQueue
+                         userData:userData
                             error:errPtr];
 }
 
 - (BOOL)connectToAddress:(NSData *)address
                   cookie:(NSData *)cookie
             sharedSecret:(NSData *)sharedSecret
-                   block:(EmiConnectionOpenedBlock)block
+                delegate:(__unsafe_unretained id<EmiConnectionDelegate>)delegate
+           delegateQueue:(dispatch_queue_t)delegateQueue
+                userData:(id)userData
                    error:(NSError **)errPtr {
-    return [self connectToAddress:address
-                           cookie:cookie sharedSecret:sharedSecret
-                            block:block blockQueue:dispatch_get_current_queue()
-                            error:errPtr];
+    if ((!cookie || !sharedSecret) &&
+        ( cookie ||  sharedSecret)) {
+        [NSException raise:@"EmiSocketException" format:@"Invalid arguments"];
+    }
+    
+    EmiConnectionOpenedBlockWrapper *wrapper =
+        [EmiConnectionOpenedBlockWrapper wrapperWithDelegate:delegate
+                                               delegateQueue:delegateQueue
+                                                      cookie:cookie
+                                                sharedSecret:sharedSecret
+                                                    userData:userData];
+    
+    sockaddr_storage ss;
+    memcpy(&ss, [address bytes], MIN([address length], sizeof(sockaddr_storage)));
+    
+    __block NSError *err = nil;
+    __block BOOL retVal;
+    
+    DISPATCH_SYNC(_socketQueue, ^{
+        retVal = ((S *)_sock)->connect([NSDate timeIntervalSinceReferenceDate], ss,
+                                       (const uint8_t *)[cookie bytes], [cookie length],
+                                       (const uint8_t *)[sharedSecret bytes], [sharedSecret length],
+                                       wrapper, err);
+        *errPtr = err;
+    });
+    
+    return retVal;
 }
 
 - (BOOL)connectToHost:(NSString *)host
                onPort:(uint16_t)port
-                block:(EmiConnectionOpenedBlock)block
+             delegate:(__unsafe_unretained id<EmiConnectionDelegate>)delegate
+        delegateQueue:(dispatch_queue_t)delegateQueue
+             userData:(id)userData
                 error:(NSError **)err {
     return [self connectToHost:host onPort:port
                         cookie:nil sharedSecret:nil
-                         block:block error:err];
+                      delegate:delegate delegateQueue:delegateQueue
+                      userData:userData
+                         error:err];
 }
 
 - (BOOL)connectToHost:(NSString *)host
                onPort:(uint16_t)port
                cookie:(NSData *)cookie
          sharedSecret:(NSData *)sharedSecret
-                block:(EmiConnectionOpenedBlock)block
+             delegate:(__unsafe_unretained id<EmiConnectionDelegate>)delegate
+        delegateQueue:(dispatch_queue_t)delegateQueue
+             userData:(id)userData
                 error:(NSError **)err {
     if ((!cookie || !sharedSecret) &&
         ( cookie ||  sharedSecret)) {
@@ -259,18 +181,17 @@
     
     __block BOOL ret;
     
-    dispatch_queue_t blockQueue = dispatch_get_current_queue();
-    
 	DISPATCH_SYNC(_socketQueue, ^{
         // We use the connect functionality of GCDAsyncUdpSocket only to get access to the DNS
         // resolve functions.
         _resolveSocket = [[GCDAsyncUdpSocket alloc] initWithDelegate:self
                                                        delegateQueue:_socketQueue
                                                          socketQueue:_socketQueue];
-        _resolveSocket.userData = [EmiConnectionOpenedBlockWrapper wrapperWithBlock:block
-                                                                         blockQueue:blockQueue
-                                                                             cookie:cookie
-                                                                       sharedSecret:sharedSecret];
+        _resolveSocket.userData = [EmiConnectionOpenedBlockWrapper wrapperWithDelegate:delegate
+                                                                         delegateQueue:delegateQueue
+                                                                                cookie:cookie
+                                                                          sharedSecret:sharedSecret
+                                                                              userData:userData];
         ret = [_resolveSocket connectToHost:host onPort:port error:err];
 	});
     
@@ -307,7 +228,6 @@ withFilterContext:(id)filterContext {
     ASSERT(dispatch_get_current_queue() == _socketQueue);
     
     EmiConnectionOpenedBlockWrapper *wrapper = sock.userData;
-    EmiConnectionOpenedBlock block = wrapper.block;
     
     _resolveSocket = nil;
     
@@ -318,19 +238,21 @@ withFilterContext:(id)filterContext {
         result = [self connectToAddress:address
                                  cookie:wrapper.cookie
                            sharedSecret:wrapper.sharedSecret
-                                  block:block blockQueue:wrapper.blockQueue
+                               delegate:wrapper.delegate delegateQueue:wrapper.delegateQueue
+                               userData:wrapper.userData
                                   error:&err];
     }
     else {
         result = [self connectToAddress:address
                                  cookie:nil sharedSecret:nil
-                                  block:block blockQueue:wrapper.blockQueue
+                               delegate:wrapper.delegate delegateQueue:wrapper.delegateQueue
+                               userData:wrapper.userData
                                   error:&err];
     }
     
     if (!result) {
-        DISPATCH_ASYNC(wrapper.blockQueue, ^{
-            block(err, nil);
+        DISPATCH_ASYNC(wrapper.delegateQueue, ^{
+            [wrapper.delegate emiConnectionFailedToConnect:self error:err userData:wrapper.userData];
         });
     }
     else {
@@ -344,12 +266,11 @@ withFilterContext:(id)filterContext {
     ASSERT(dispatch_get_current_queue() == _socketQueue);
     
     EmiConnectionOpenedBlockWrapper *wrapper = sock.userData;
-    EmiConnectionOpenedBlock block = wrapper.block;
     
     _resolveSocket = nil;
     
-    DISPATCH_ASYNC(wrapper.blockQueue, ^{
-        block(error, nil);
+    DISPATCH_ASYNC(wrapper.delegateQueue, ^{
+        [wrapper.delegate emiConnectionFailedToConnect:self error:error userData:wrapper.userData];
     });
 }
 
@@ -409,8 +330,17 @@ withFilterContext:(id)filterContext {
     return result;
 }
 
-- (void)setDelegate:(id<EmiSocketDelegate>)delegate {
+- (void)setDelegate:(id<EmiSocketDelegate>)delegate delegateQueue:(dispatch_queue_t)delegateQueue {
 	DISPATCH_SYNC(_socketQueue, ^{
+		if (_delegateQueue) {
+			dispatch_release(_delegateQueue);
+        }
+		
+		if (delegateQueue) {
+			dispatch_retain(delegateQueue);
+        }
+		
+		_delegateQueue = delegateQueue;
         _delegate = delegate;
 	});
 }
@@ -423,20 +353,6 @@ withFilterContext:(id)filterContext {
     });
     
     return result;
-}
-
-- (void)setDelegateQueue:(dispatch_queue_t)delegateQueue {
-	DISPATCH_SYNC(_socketQueue, ^{
-		if (_delegateQueue) {
-			dispatch_release(_delegateQueue);
-        }
-		
-		if (delegateQueue) {
-			dispatch_retain(delegateQueue);
-        }
-		
-		_delegateQueue = delegateQueue;
-	});
 }
 
 - (dispatch_queue_t)socketQueue {

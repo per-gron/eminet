@@ -17,6 +17,9 @@
 typedef void (^EmiConnectionSendFinishedBlock)(NSError *err);
 
 @protocol EmiConnectionDelegate <NSObject>
+- (void)emiConnectionOpened:(EmiConnection *)connection userData:(id)userData;
+- (void)emiConnectionFailedToConnect:(EmiSocket *)socket error:(NSError *)error userData:(id)userData;
+
 - (void)emiConnectionLost:(EmiConnection *)connection;
 - (void)emiConnectionRegained:(EmiConnection *)connection;
 - (void)emiConnectionDisconnect:(EmiConnection *)connection forReason:(EmiDisconnectReason)reason;
@@ -77,9 +80,13 @@ typedef void (^EmiConnectionSendFinishedBlock)(NSError *err);
 - (void)send:(NSData *)data channelQualifier:(EmiChannelQualifier)channelQualifier
     priority:(EmiPriority)priority finished:(EmiConnectionSendFinishedBlock)block;
 
+// Synchronously sets both the delegate and the delegate queue
+- (void)setDelegate:(id<EmiConnectionDelegate>)delegate
+      delegateQueue:(dispatch_queue_t)delegateQueue;
 
-@property (nonatomic, unsafe_unretained) id<EmiConnectionDelegate> delegate;
-@property (nonatomic, assign) dispatch_queue_t delegateQueue;
+
+@property (nonatomic, readonly, unsafe_unretained) id<EmiConnectionDelegate> delegate;
+@property (nonatomic, readonly, assign) dispatch_queue_t delegateQueue;
 @property (nonatomic, readonly, assign) dispatch_queue_t connectionQueue;
 
 @property (nonatomic, readonly, assign) BOOL issuedConnectionWarning;

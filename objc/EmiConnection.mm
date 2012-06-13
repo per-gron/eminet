@@ -202,6 +202,22 @@
 
 #pragma mark - Properties
 
+- (void)setDelegate:(id<EmiConnectionDelegate>)delegate delegateQueue:(dispatch_queue_t)delegateQueue {
+	DISPATCH_SYNC(_connectionQueue, ^{
+        if (_delegateQueue) {
+            ((EC *)_ec)->getDelegate().waitForDelegateBlocks();
+			dispatch_release(_delegateQueue);
+        }
+		
+		if (delegateQueue) {
+			dispatch_retain(delegateQueue);
+        }
+		
+        _delegate = delegate;
+		_delegateQueue = delegateQueue;
+	});
+}
+
 - (id<EmiConnectionDelegate>)delegate {
     __block id<EmiConnectionDelegate> result;
     
@@ -212,13 +228,6 @@
     return result;
 }
 
-- (void)setDelegate:(id<EmiConnectionDelegate>)delegate {
-	DISPATCH_SYNC(_connectionQueue, ^{
-        ((EC *)_ec)->getDelegate().waitForDelegateBlocks();
-        _delegate = delegate;
-	});
-}
-
 - (dispatch_queue_t)delegateQueue {
     __block dispatch_queue_t result;
     
@@ -227,21 +236,6 @@
     });
     
     return result;
-}
-
-- (void)setDelegateQueue:(dispatch_queue_t)delegateQueue {
-	DISPATCH_SYNC(_connectionQueue, ^{
-		if (_delegateQueue) {
-            ((EC *)_ec)->getDelegate().waitForDelegateBlocks();
-			dispatch_release(_delegateQueue);
-        }
-		
-		if (delegateQueue) {
-			dispatch_retain(delegateQueue);
-        }
-		
-		_delegateQueue = delegateQueue;
-	});
 }
 
 - (dispatch_queue_t)connectionQueue {

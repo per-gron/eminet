@@ -20,6 +20,7 @@ struct sockaddr_storage;
 @class EmiSocket;
 @class EmiConnection;
 @class GCDAsyncUdpSocket;
+@class EmiConnectionOpenedBlockWrapper;
 class EmiSockDelegate;
 class EmiConnDelegate;
 template<class SockDelegate, class ConnDelegate>
@@ -40,7 +41,7 @@ class EmiSockDelegate {
 public:
     
     typedef EmiBinding Binding;
-    typedef void (^__strong ConnectionOpenedCallbackCookie)(NSError *err, EmiConnection *connection);
+    typedef EmiConnectionOpenedBlockWrapper *__strong ConnectionOpenedCallbackCookie;
     
     EmiSockDelegate(EmiSocket *socket);
     virtual ~EmiSockDelegate();

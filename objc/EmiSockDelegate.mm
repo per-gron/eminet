@@ -12,6 +12,8 @@
 #include "EmiNetUtil.h"
 #import "EmiSocketInternal.h"
 #import "EmiConnectionInternal.h"
+#import "EmiConnectionOpenedBlockWrapper.h"
+#include "EmiObjCBindingHelper.h"
 
 EmiSockDelegate::EmiSockDelegate(EmiSocket *socket) :
 _socket(socket),
@@ -76,15 +78,29 @@ void EmiSockDelegate::connectionOpened(ConnectionOpenedCallbackCookie& cookie, b
     // get is a wrapper that invokes the real cookie in the correct queue. See
     // EmiSocket's connectToAddress:cookie:sharedSecret:block:blockQueue:error:
     // method.
-    if (cookie) {
+    
+    EmiConnectionOpenedBlockWrapper *wrapper = cookie;
+    cookie = nil; // Release the block memory
+    
+    EmiConnection *conn = ec.getDelegate().getConn();
+    
+    // It is crucial that delegate and delegateQueue are set here, before
+    // anything else can happen, and in particular before we do any async
+    // thing. Otherwise we'll have a race condition where the connection
+    // might receive messages before the delegate is set.
+    [conn setDelegate:wrapper.delegate delegateQueue:wrapper.delegateQueue];
+    
+    DISPATCH_ASYNC(wrapper.delegateQueue, ^{
         if (error) {
-            cookie(EmiBinding::makeError("com.emilir.eminet.disconnect", reason), nil);
+            [wrapper.delegate emiConnectionFailedToConnect:conn.emiSocket
+                                                     error:EmiBinding::makeError("com.emilir.eminet.disconnect", reason)
+                                                  userData:wrapper.userData];
         }
         else {
-            cookie(nil, ec.getDelegate().getConn());
+            [wrapper.delegate emiConnectionOpened:conn
+                                         userData:wrapper.userData];
         }
-        cookie = nil; // Release the block memory
-    }
+    });
 }
 
 void EmiSockDelegate::connectionGotMessage(EC *conn,

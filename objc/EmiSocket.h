@@ -7,6 +7,7 @@
 //
 
 #include "EmiTypes.h"
+#import "EmiConnection.h"
 
 #import <Foundation/Foundation.h>
 
@@ -14,8 +15,6 @@
 @class GCDAsyncUdpSocket;
 @class EmiSocketConfig;
 @class EmiSocket;
-
-typedef void (^EmiConnectionOpenedBlock)(NSError *err, EmiConnection *connection);
 
 @protocol EmiSocketDelegate <NSObject>
 - (void)emiSocket:(EmiSocket *)socket gotConnection:(EmiConnection *)connection;
@@ -74,43 +73,48 @@ typedef void (^EmiConnectionOpenedBlock)(NSError *err, EmiConnection *connection
 // Returns YES on success
 - (BOOL)startWithConfig:(EmiSocketConfig *)config error:(NSError **)error;
 
-// block is invoked in the same GCD queue as the method is called
 - (BOOL)connectToAddress:(NSData *)address
-                   block:(EmiConnectionOpenedBlock)block
+                delegate:(__unsafe_unretained id<EmiConnectionDelegate>)delegate
+           delegateQueue:(dispatch_queue_t)delegateQueue
+                userData:(id)userData
                    error:(NSError **)errPtr;
 // P2P connect.
-//
-// block is invoked in the same GCD queue as the method is called
 - (BOOL)connectToAddress:(NSData *)address
                   cookie:(NSData *)cookie
             sharedSecret:(NSData *)sharedSecret
-                   block:(EmiConnectionOpenedBlock)block
+                delegate:(__unsafe_unretained id<EmiConnectionDelegate>)delegate
+           delegateQueue:(dispatch_queue_t)delegateQueue
+                userData:(id)userData
                    error:(NSError **)errPtr;
 // If an obvious error is detected, this method immediately returns NO and sets err.
 // If you don't care about the error, you can pass nil for errPtr.
 // Otherwise, this method returns YES and begins the asynchronous connection process.
-//
-// block is invoked in the same GCD queue as the method is called
 - (BOOL)connectToHost:(NSString *)host
                onPort:(uint16_t)port
-                block:(EmiConnectionOpenedBlock)block
+             delegate:(__unsafe_unretained id<EmiConnectionDelegate>)delegate
+        delegateQueue:(dispatch_queue_t)delegateQueue
+             userData:(id)userData
                 error:(NSError **)errPtr;
 // P2P connect.
 // 
 // If an obvious error is detected, this method immediately returns NO and sets err.
 // If you don't care about the error, you can pass nil for errPtr.
 // Otherwise, this method returns YES and begins the asynchronous connection process.
-//
-// block is invoked in the same GCD queue as the method is called
 - (BOOL)connectToHost:(NSString *)host
                onPort:(uint16_t)port
                cookie:(NSData *)cookie
          sharedSecret:(NSData *)sharedSecret
-                block:(EmiConnectionOpenedBlock)block
+             delegate:(__unsafe_unretained id<EmiConnectionDelegate>)delegate
+        delegateQueue:(dispatch_queue_t)delegateQueue
+             userData:(id)userData
                 error:(NSError **)errPtr;
 
-@property (nonatomic, unsafe_unretained) id<EmiSocketDelegate> delegate;
-@property (nonatomic, assign) dispatch_queue_t delegateQueue;
+// Synchronously sets both the delegate and the delegate queue
+- (void)setDelegate:(id<EmiConnectionDelegate>)delegate
+      delegateQueue:(dispatch_queue_t)delegateQueue;
+
+@property (nonatomic, readonly, unsafe_unretained) id<EmiSocketDelegate> delegate;
+@property (nonatomic, readonly, assign) dispatch_queue_t delegateQueue;
 @property (nonatomic, readonly, assign) dispatch_queue_t socketQueue;
 
 @property (nonatomic, readonly, strong) NSData *serverAddress;
