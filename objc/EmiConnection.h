@@ -90,5 +90,6 @@ typedef void (^EmiConnectionSendFinishedBlock)(NSError *err);
 @property (nonatomic, readonly, assign) BOOL open;
 @property (nonatomic, readonly, assign) BOOL opening;
 @property (nonatomic, readonly, assign) EmiP2PState p2pState;
+@property (nonatomic, readonly, assign) EmiConnectionType type;
 
 @end

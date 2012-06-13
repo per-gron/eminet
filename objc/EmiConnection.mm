@@ -192,6 +192,10 @@
     SYNC_RETURN(EmiP2PState, ((EC *)_ec)->getP2PState());
 }
 
+- (EmiConnectionType)type {
+    SYNC_RETURN(EmiConnectionType, ((EC *)_ec)->getType());
+}
+
 - (EC *)conn {
     return (EC *)_ec;
 }
