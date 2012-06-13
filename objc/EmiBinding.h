@@ -96,9 +96,6 @@ public:
     static void descheduleTimer(Timer *timer) {
         timer->deschedule();
     }
-    static bool timerIsActive(Timer *timer) {
-        return timer->isActive();
-    }
     
     typedef std::pair<ifaddrs*, ifaddrs*> NetworkInterfaces;
     static bool getNetworkInterfaces(NetworkInterfaces& ni, Error& err);

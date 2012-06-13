@@ -37,7 +37,6 @@ public:
     void schedule(TimerCb *timerCb, void *data, EmiTimeInterval interval,
                   bool repeating, bool reschedule);
     void deschedule();
-    bool isActive() const;
 };
 
 #endif

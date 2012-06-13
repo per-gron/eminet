@@ -71,7 +71,6 @@ public:
     static void scheduleTimer(Timer *timer, TimerCb *timerCb, void *data, EmiTimeInterval interval,
                               bool repeating, bool reschedule);
     static void descheduleTimer(Timer *timer);
-    static bool timerIsActive(Timer *timer);
     
     // TODO Begin to use this code once stable node has libuv with uv_interface_address_t
 #if NODES_LIBV_HAS_UV_INTERFACE_ADDRESS_T

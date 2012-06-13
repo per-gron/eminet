@@ -84,10 +84,6 @@ void EmiBinding::descheduleTimer(Timer *timer) {
     uv_timer_stop(timer);
 }
 
-bool EmiBinding::timerIsActive(Timer *timer) {
-    return uv_is_active((uv_handle_t *)timer);
-}
-
 // TODO Begin to use this code once stable node has libuv with uv_interface_address_t
 #if NODES_LIBV_HAS_UV_INTERFACE_ADDRESS_T
 

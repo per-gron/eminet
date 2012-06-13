@@ -39,13 +39,12 @@ void EmiDispatchTimer::schedule_(TimerCb *timerCb, void *data, EmiTimeInterval i
         return;
     }
     
-    if (!_timer) {
-        _timer = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, NULL, /*mask:*/0, _timerQueue);
-    }
-    else {
+    if (_timer) {
         dispatch_source_cancel(_timer);
-        dispatch_suspend(_timer);
+        dispatch_release(_timer);
     }
+    
+    _timer = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, NULL, /*mask:*/0, _timerQueue);
     
     dispatch_source_set_timer(_timer, dispatch_time(DISPATCH_TIME_NOW, interval * NSEC_PER_SEC),
                               interval * NSEC_PER_SEC, /*leeway:*/0);
@@ -63,7 +62,7 @@ void EmiDispatchTimer::schedule_(TimerCb *timerCb, void *data, EmiTimeInterval i
 }
 
 void EmiDispatchTimer::schedule(TimerCb *timerCb, void *data, EmiTimeInterval interval,
-                                 bool repeating, bool reschedule) {
+                                bool repeating, bool reschedule) {
     DISPATCH_SYNC(_timerQueue, ^{
         schedule_(timerCb, data, interval, repeating, reschedule);
     });
@@ -73,12 +72,4 @@ void EmiDispatchTimer::deschedule() {
     DISPATCH_SYNC(_timerQueue, ^{
         deschedule_();
     });
-}
-
-bool EmiDispatchTimer::isActive() const {
-    __block BOOL active;
-    DISPATCH_SYNC(_timerQueue, ^{
-        active = !!_timer;
-    });
-    return active;
 }
