@@ -46,8 +46,12 @@ var gotConnection = function(sock, sockHandle, connHandle) {
   return conn;
 };
 
-var connectionMessage = function(conn, connHandle, channelQualifier, slowBuffer, offset, length) {
-  conn && conn.emit('message', channelQualifier, new Buffer(slowBuffer, length, offset));
+var connectionMessage = function(conn, connHandle,
+                                 channelQualifier, sequenceNumber,
+                                 slowBuffer, offset, length) {
+  conn && conn.emit('message', channelQualifier,
+                    new Buffer(slowBuffer, length, offset),
+                    sequenceNumber);
 };
 
 var connectionLost = function(conn, connHandle) {

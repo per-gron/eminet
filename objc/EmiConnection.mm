@@ -200,6 +200,7 @@
     return (EC *)_ec;
 }
 
+
 #pragma mark - Properties
 
 - (void)setDelegate:(id<EmiConnectionDelegate>)delegate delegateQueue:(dispatch_queue_t)delegateQueue {
@@ -240,6 +241,21 @@
 
 - (dispatch_queue_t)connectionQueue {
     return _connectionQueue;
+}
+
+
+#pragma mark - Utilities
+
++ (int32_t)sequenceNumber:(int32_t)a difference:(int32_t)b {
+    return EmiNetUtil::cyclicDifference16(a, b);
+}
+
++ (int32_t)sequenceNumber:(int32_t)a signedDifference:(int32_t)b {
+    return EmiNetUtil::cyclicDifference16Signed(a, b);
+}
+
++ (int32_t)sequenceNumber:(int32_t)a max:(int32_t)b {
+    return EmiNetUtil::cyclicMax16(a, b);
 }
 
 @end

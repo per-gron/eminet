@@ -58,13 +58,15 @@ void EmiConnDelegate::invalidate() {
     _conn = nil;
 }
 
-void EmiConnDelegate::emiConnMessage(EmiChannelQualifier channelQualifier, NSData *data, NSUInteger offset, NSUInteger size) {
+void EmiConnDelegate::emiConnMessage(EmiChannelQualifier channelQualifier, EmiSequenceNumber sequenceNumber,
+                                     NSData *data, NSUInteger offset, NSUInteger size) {
     if (_conn.delegateQueue) {
         id<EmiConnectionDelegate> connDelegate = _conn.delegate;
         EmiConnection *conn = _conn;
         dispatch_group_async(_dispatchGroup, _conn.delegateQueue, ^{
             [connDelegate emiConnectionMessage:conn
                               channelQualifier:channelQualifier
+                                sequenceNumber:sequenceNumber
                                           data:[data subdataWithRange:NSMakeRange(offset, size)]];
         });
     }

@@ -27,16 +27,18 @@ void EmiConnDelegate::invalidate() {
 }
 
 void EmiConnDelegate::emiConnMessage(EmiChannelQualifier channelQualifier,
+                                     EmiSequenceNumber sequenceNumber,
                                      const v8::Local<v8::Object>& data,
                                      size_t offset,
                                      size_t size) {
     HandleScope scope;
     
-    const unsigned argc = 6;
+    const unsigned argc = 7;
     Handle<Value> argv[argc] = {
         _conn._jsHandle.IsEmpty() ? Handle<Value>(Undefined()) : _conn._jsHandle,
         _conn.handle_,
         Number::New(channelQualifier),
+        Number::New(sequenceNumber),
         data,
         Number::New(offset),
         Number::New(size)
