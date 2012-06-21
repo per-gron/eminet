@@ -98,7 +98,7 @@ private:
     
     static EmiSequenceNumber generateSequenceNumber() {
         // Right shifting a bit because apparently the low bits are usually not that random
-        return arc4random() >> 5;
+        return (arc4random() >> 5) & EMI_HEADER_SEQUENCE_NUMBER_MASK;
     }
     
     int32_t sequenceNumberDifference(const EmiMessageHeader& header, bool updateExpectedSequenceNumber) {
@@ -108,10 +108,12 @@ private:
         EmiSequenceNumber expectedSequenceNumber = (end == cur ? _otherHostInitialSequenceNumber : (*cur).second);
         
         if (updateExpectedSequenceNumber) {
-            _otherHostSequenceMemo[header.channelQualifier] = EmiNetUtil::cyclicMax16(expectedSequenceNumber, header.sequenceNumber+1);
+            _otherHostSequenceMemo[header.channelQualifier] =
+                EmiNetUtil::cyclicMax24(expectedSequenceNumber,
+                                        (header.sequenceNumber+1) & EMI_HEADER_SEQUENCE_NUMBER_MASK);
         }
         
-        return EmiNetUtil::cyclicDifference16Signed(expectedSequenceNumber, header.sequenceNumber);
+        return EmiNetUtil::cyclicDifference24Signed(expectedSequenceNumber, header.sequenceNumber);
     }
     
     EmiSequenceNumber sequenceMemoForChannelQualifier(EmiChannelQualifier cq) {
@@ -430,7 +432,7 @@ public:
         else if (EMI_CHANNEL_TYPE_RELIABLE_ORDERED == channelType) {
             if (header.flags & EMI_SACK_FLAG) EMI_GOT_INVALID_PACKET("SACK is not implemented");
             
-            bool hasSequenceNumber = -1 != header.sequenceNumber;
+            bool hasSequenceNumber = (-1 != header.sequenceNumber);
             int32_t seqDiff = 0;
             if (hasSequenceNumber) {
                 seqDiff = sequenceNumberDifference(header, false);
@@ -458,7 +460,7 @@ public:
             }
             
             if (hasSequenceNumber) {
-                _otherHostSequenceMemo[channelQualifier] = header.sequenceNumber+1;
+                _otherHostSequenceMemo[channelQualifier] = (header.sequenceNumber+1) & EMI_HEADER_SEQUENCE_NUMBER_MASK;
             }
             
             // A packet with zero length indicates that it is just an ACK packet
@@ -527,7 +529,7 @@ public:
                                       sequenceMemoForChannelQualifier(channelQualifier),
                                       data,
                                       priority);
-        _sequenceMemo[channelQualifier] = msg->sequenceNumber+1;
+        _sequenceMemo[channelQualifier] = (msg->sequenceNumber+1) & EMI_HEADER_SEQUENCE_NUMBER_MASK;
         
         EmiChannelType channelType = EMI_CHANNEL_QUALIFIER_TYPE(channelQualifier);
         

@@ -51,7 +51,7 @@ protected:
             if (acq < bcq) return true;
             else if (acq > bcq) return false;
             else {
-                return EmiNetUtil::cyclicDifference16Signed(a->header.sequenceNumber, b->header.sequenceNumber) < 0;
+                return EmiNetUtil::cyclicDifference24Signed(a->header.sequenceNumber, b->header.sequenceNumber) < 0;
             }
         }
     };
@@ -133,7 +133,7 @@ public:
         EmiReceiverBufferTreeIter end = _tree.end();
         
         std::vector<Entry *> toBeRemoved;
-        EmiSequenceNumber expectedSequenceNumber = sequenceNumber+1;
+        EmiSequenceNumber expectedSequenceNumber = (sequenceNumber+1) & EMI_HEADER_SEQUENCE_NUMBER_MASK;
         
         Entry *entry;
         while (iter != end &&
@@ -147,7 +147,7 @@ public:
             
             if (entry->header.sequenceNumber == expectedSequenceNumber) {
                 _receiver.gotReceiverBufferMessage(now, entry);
-                expectedSequenceNumber++;
+                expectedSequenceNumber = (expectedSequenceNumber+1) & EMI_HEADER_SEQUENCE_NUMBER_MASK;
             }
             
             ++iter;

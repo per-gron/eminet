@@ -27,7 +27,7 @@
 #define EMI_PACKET_PAIR_INTERVAL          (16)
 #define EMI_PACKET_SEQUENCE_NUMBER_LENGTH (3)
 #define EMI_PACKET_SEQUENCE_NUMBER_MASK   ((1 << (8*EMI_PACKET_SEQUENCE_NUMBER_LENGTH))-1)
-#define EMI_HEADER_SEQUENCE_NUMBER_LENGTH (2)
+#define EMI_HEADER_SEQUENCE_NUMBER_LENGTH (3)
 #define EMI_HEADER_SEQUENCE_NUMBER_MASK   ((1 << (8*EMI_HEADER_SEQUENCE_NUMBER_LENGTH))-1)
 #define EMI_TICK_TIME        (0.01)
 #define EMI_MIN_RTO          (0.1)
@@ -80,7 +80,7 @@ typedef enum {
     EMI_P2P_STATE_FAILED           = 3
 } EmiP2PState;
 
-typedef uint16_t EmiSequenceNumber;
+typedef uint32_t EmiSequenceNumber; // Represents a 24 bit number
 typedef int32_t  EmiPacketSequenceNumber; // Represents a 24 bit number. -1 means no value
 typedef uint8_t  EmiChannelQualifier;
 typedef uint16_t EmiTimestamp;

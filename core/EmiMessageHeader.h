@@ -21,7 +21,7 @@
 struct EmiMessageHeader {
     EmiMessageFlags flags;
     EmiChannelQualifier channelQualifier;
-    // This is int32_t and not EmiChannelQualifier because it has to be capable of
+    // This is int32_t and not EmiSequenceNumber because it has to be capable of
     // holding -1, which means that the header had no sequence number
     int32_t sequenceNumber;
     size_t headerLength;

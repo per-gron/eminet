@@ -171,8 +171,8 @@ public:
         
         size_t sequenceNumberFieldSize =
             ((0 != dataLength ||
-              ((flags & EMI_SYN_FLAG) && !(flags & EMI_PRX_FLAG))) ? 2 : 0);
-        size_t ackSize = (hasAck ? 2 : 0);
+              ((flags & EMI_SYN_FLAG) && !(flags & EMI_PRX_FLAG))) ? EMI_HEADER_SEQUENCE_NUMBER_LENGTH : 0);
+        size_t ackSize = (hasAck ? EMI_HEADER_SEQUENCE_NUMBER_LENGTH : 0);
         
         if (bufSize-pos <= (EMI_MESSAGE_HEADER_MIN_LENGTH +
                             sequenceNumberFieldSize +
@@ -186,10 +186,10 @@ public:
         *((uint8_t*)  (buf+pos)) = std::max(0, channelQualifier); pos += 1; // channelQualifier == -1 means SYN/RST message
         *((uint16_t*) (buf+pos)) = htons(dataLength); pos += 2;
         if (sequenceNumberFieldSize) {
-            *((uint16_t*) (buf+pos)) = htons(sequenceNumber); pos += sequenceNumberFieldSize;
+            EmiNetUtil::write24(buf+pos, sequenceNumber); pos += sequenceNumberFieldSize;
         }
         if (ackSize) {
-            *((uint16_t*) (buf+pos)) = htons(ack); pos += ackSize;
+            EmiNetUtil::write24(buf+pos, ack); pos += ackSize;
         }
         if (dataLength) {
             memcpy(buf+pos, data, dataLength); pos += dataLength;

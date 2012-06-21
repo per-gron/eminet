@@ -34,7 +34,7 @@ class EmiSenderBuffer {
                 if (acq < bcq) return true;
                 else if (acq > bcq) return false;
                 else {
-                    return EmiNetUtil::cyclicDifference16Signed(a->sequenceNumber, b->sequenceNumber) < 0;
+                    return EmiNetUtil::cyclicDifference24Signed(a->sequenceNumber, b->sequenceNumber) < 0;
                 }
             }
         }
@@ -48,7 +48,7 @@ class EmiSenderBuffer {
             if (acq < bcq) return true;
             else if (acq > bcq) return false;
             else {
-                return EmiNetUtil::cyclicDifference16Signed(a->sequenceNumber, b->sequenceNumber) < 0;
+                return EmiNetUtil::cyclicDifference24Signed(a->sequenceNumber, b->sequenceNumber) < 0;
             }
         }
     };
@@ -147,7 +147,7 @@ public:
             if (channelQualifier != msg->channelQualifier) {
                 break;
             }
-            if (msg->sequenceNumber > sequenceNumber) {
+            if (EmiNetUtil::cyclicDifference24Signed(msg->sequenceNumber, sequenceNumber) > 0) {
                 // This can happen because we used lower_bound.
                 // It should not happen more than once, though.
                 //

@@ -480,7 +480,7 @@ public:
         // is nothing more to send.
         bool packetWasSent;
         do {
-            if (0 == (_packetSequenceNumber % 16)) {
+            if (0 == (_packetSequenceNumber % EMI_PACKET_PAIR_INTERVAL)) {
                 /// Send a packet pair, for link capacity estimation
                 
                 size_t firstPacketSize = fillPacket(_buf, _bufLength,
@@ -561,7 +561,7 @@ public:
             _acks[channelQualifier] = sequenceNumber;
         }
         else {
-            _acks[channelQualifier] = EmiNetUtil::cyclicMax16((*ackCur).second, sequenceNumber);
+            _acks[channelQualifier] = EmiNetUtil::cyclicMax24((*ackCur).second, sequenceNumber);
         }
         
         return !_acks.empty();

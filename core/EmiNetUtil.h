@@ -33,20 +33,6 @@ public:
     
     static const uint64_t ARC4RANDOM_MAX;
     
-    inline static int32_t cyclicDifference16(int32_t a, int32_t b) {
-        return (a>=b ? a-b : 0xffff-b+a) & 0xffff;
-    }
-    
-    inline static int32_t cyclicDifference16Signed(int32_t a, int32_t b) {
-        int32_t res = cyclicDifference16(a, b);
-        return res > 0x7fff ? res-0xffff : res;
-    }
-    
-    inline static int32_t cyclicMax16(int32_t a, int32_t b) {
-        int32_t res = cyclicDifference16Signed(a, b);
-        return res > 0 ? a : b;
-    }
-    
     inline static int32_t cyclicDifference24(int32_t a, int32_t b) {
         return (a>=b ? a-b : 0xffffff-b+a) & 0xffffff;
     }

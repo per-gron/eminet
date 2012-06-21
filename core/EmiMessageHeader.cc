@@ -8,6 +8,8 @@
 
 #include "EmiMessageHeader.h"
 
+#include "EmiNetUtil.h"
+
 bool EmiMessageHeader::parse(const uint8_t *buf, size_t bufSize, EmiMessageHeader& header) {
     if (bufSize < EMI_MESSAGE_HEADER_MIN_LENGTH) return false;
     
@@ -23,17 +25,29 @@ bool EmiMessageHeader::parse(const uint8_t *buf, size_t bufSize, EmiMessageHeade
     // connection ack message, not a normal message with ack
     bool messageHasAckData = ackFlag && !(rstFlag && synFlag) && !prxFlag;
     
+    bool messageHasSequenceNumber = (length || (synFlag && !prxFlag));
+    
     size_t lengthOffset = (length || synFlag) ? EMI_HEADER_SEQUENCE_NUMBER_LENGTH : 0;
-    size_t headerLength = EMI_MESSAGE_HEADER_MIN_LENGTH + lengthOffset + (messageHasAckData ? 2 : 0);
+    size_t headerLength = EMI_MESSAGE_HEADER_MIN_LENGTH + lengthOffset + (messageHasAckData ? EMI_HEADER_SEQUENCE_NUMBER_LENGTH : 0);
     
     if (headerLength > bufSize) return false;
     
     header.flags = connByte;
     header.channelQualifier = buf[1];
-    header.sequenceNumber = (length || (synFlag && !prxFlag)) ? ntohs(*((uint16_t *)(buf+4))) : -1;
+    if (messageHasSequenceNumber) {
+        header.sequenceNumber = EmiNetUtil::read24(buf+EMI_MESSAGE_HEADER_MIN_LENGTH);
+    }
+    else {
+        header.sequenceNumber = -1;
+    }
     header.headerLength = headerLength;
     header.length = length;
-    header.ack = messageHasAckData ? ntohs(*((uint16_t *)(buf+4+lengthOffset))) : -1;
+    if (messageHasAckData) {
+        header.ack = EmiNetUtil::read24(buf+EMI_MESSAGE_HEADER_MIN_LENGTH+lengthOffset);
+    }
+    else {
+        header.ack = -1;
+    }
     
     return true;
 }
