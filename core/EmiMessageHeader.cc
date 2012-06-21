@@ -23,7 +23,7 @@ bool EmiMessageHeader::parse(const uint8_t *buf, size_t bufSize, EmiMessageHeade
     // connection ack message, not a normal message with ack
     bool messageHasAckData = ackFlag && !(rstFlag && synFlag) && !prxFlag;
     
-    size_t lengthOffset = length ? 3 : (synFlag ? 2 : 0);
+    size_t lengthOffset = (length || synFlag) ? EMI_HEADER_SEQUENCE_NUMBER_LENGTH : 0;
     size_t headerLength = EMI_MESSAGE_HEADER_MIN_LENGTH + lengthOffset + (messageHasAckData ? 2 : 0);
     
     if (headerLength > bufSize) return false;
@@ -31,7 +31,6 @@ bool EmiMessageHeader::parse(const uint8_t *buf, size_t bufSize, EmiMessageHeade
     header.flags = connByte;
     header.channelQualifier = buf[1];
     header.sequenceNumber = (length || (synFlag && !prxFlag)) ? ntohs(*((uint16_t *)(buf+4))) : -1;
-    header.splitId = length ? buf[6] : -1;
     header.headerLength = headerLength;
     header.length = length;
     header.ack = messageHasAckData ? ntohs(*((uint16_t *)(buf+4+lengthOffset))) : -1;

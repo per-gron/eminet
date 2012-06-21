@@ -24,9 +24,6 @@ struct EmiMessageHeader {
     // This is int32_t and not EmiChannelQualifier because it has to be capable of
     // holding -1, which means that the header had no sequence number
     int32_t sequenceNumber;
-    // This is int32_t and not EmiSplitId because it has to be capable of
-    // holding -1, which means that the header had no split id
-    int32_t splitId;
     size_t headerLength;
     // length is 0 if the message has no content
     size_t length;

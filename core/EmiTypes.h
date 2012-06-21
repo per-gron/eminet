@@ -27,6 +27,8 @@
 #define EMI_PACKET_PAIR_INTERVAL          (16)
 #define EMI_PACKET_SEQUENCE_NUMBER_LENGTH (3)
 #define EMI_PACKET_SEQUENCE_NUMBER_MASK   ((1 << (8*EMI_PACKET_SEQUENCE_NUMBER_LENGTH))-1)
+#define EMI_HEADER_SEQUENCE_NUMBER_LENGTH (2)
+#define EMI_HEADER_SEQUENCE_NUMBER_MASK   ((1 << (8*EMI_HEADER_SEQUENCE_NUMBER_LENGTH))-1)
 #define EMI_TICK_TIME        (0.01)
 #define EMI_MIN_RTO          (0.1)
 #define EMI_MAX_RTO          (20.0)
@@ -84,7 +86,6 @@ typedef uint8_t  EmiChannelQualifier;
 typedef uint16_t EmiTimestamp;
 typedef uint8_t  EmiMessageFlags;
 typedef uint8_t  EmiPacketFlags;
-typedef uint8_t  EmiSplitId;
 typedef double   EmiTimeInterval;
 
 typedef enum {

@@ -172,12 +172,10 @@ public:
         size_t sequenceNumberFieldSize =
             ((0 != dataLength ||
               ((flags & EMI_SYN_FLAG) && !(flags & EMI_PRX_FLAG))) ? 2 : 0);
-        size_t splitIdFieldSize = (0 != dataLength ? 1 : 0);
         size_t ackSize = (hasAck ? 2 : 0);
         
         if (bufSize-pos <= (EMI_MESSAGE_HEADER_MIN_LENGTH +
                             sequenceNumberFieldSize +
-                            splitIdFieldSize +
                             ackSize +
                             dataLength)) {
             // Buffer not big enough
@@ -189,9 +187,6 @@ public:
         *((uint16_t*) (buf+pos)) = htons(dataLength); pos += 2;
         if (sequenceNumberFieldSize) {
             *((uint16_t*) (buf+pos)) = htons(sequenceNumber); pos += sequenceNumberFieldSize;
-        }
-        if (splitIdFieldSize) {
-            *((uint8_t*) (buf+pos)) = 0; pos += splitIdFieldSize; // Split id
         }
         if (ackSize) {
             *((uint16_t*) (buf+pos)) = htons(ack); pos += ackSize;
