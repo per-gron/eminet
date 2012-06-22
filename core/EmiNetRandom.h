@@ -41,7 +41,7 @@ class EmiNetRandom {
     
 public:
     
-    static const uint64_t RANDOM_MAX = 0x100000000UL;
+    static const uint64_t RANDOM_MAX = 0x100000000ULL;
     
     static uint32_t random() {
         uint32_t r = 0;
