@@ -23,7 +23,6 @@ template<class Binding>
 class EmiUdpSocket;
 
 class EmiSockDelegate {
-    typedef EmiSock<EmiSockDelegate, EmiConnDelegate> ES;
     typedef EmiConn<EmiSockDelegate, EmiConnDelegate> EC;
     
     typedef EmiBinding::Error   Error;

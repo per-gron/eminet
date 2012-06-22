@@ -12,14 +12,14 @@
 #include <node.h>
 
 class EmiSocket : public EmiObjectWrap {
-    typedef EmiSock<EmiSockDelegate, EmiConnDelegate> ES;
+    typedef EmiSock<EmiSockDelegate, EmiConnDelegate> EmiS;
     
     friend class EmiConnDelegate;
     friend class EmiSockDelegate;
     friend class EmiBinding;
     
 private:
-    ES _sock;
+    EmiS _sock;
     v8::Persistent<v8::Object> _jsHandle;
     
     static v8::Persistent<v8::String> mtuSymbol;
@@ -59,8 +59,8 @@ public:
     static v8::Persistent<v8::Function> natPunchthroughFinished;
     static v8::Persistent<v8::Function> connectionError;
     
-    inline ES& getSock() { return _sock; }
-    inline const ES& getSock() const { return _sock; }
+    inline EmiS& getSock() { return _sock; }
+    inline const EmiS& getSock() const { return _sock; }
     inline v8::Handle<v8::Object> getJsHandle() const { return _jsHandle; }
 };
 
