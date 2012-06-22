@@ -13,8 +13,6 @@
 #include <cstdio>
 #include <cstring>
 
-const uint64_t EmiNetUtil::ARC4RANDOM_MAX = 0x100000000;
-
 void EmiNetUtil::addrSetPort(sockaddr_storage& ss, uint16_t port) {
     if (AF_INET == ss.ss_family) {
         struct sockaddr_in& addr(*((struct sockaddr_in *)&ss));
@@ -35,7 +33,9 @@ void EmiNetUtil::anyAddr(uint16_t port,
                          sockaddr_storage *out) {
     if (AF_INET6 == family) {
         struct sockaddr_in6& addr6(*((struct sockaddr_in6 *)out));
+#ifdef SIN6_LEN
         addr6.sin6_len       = sizeof(struct sockaddr_in6);
+#endif
         addr6.sin6_family    = AF_INET6;
         addr6.sin6_port      = htons(port);
         addr6.sin6_flowinfo  = 0;
@@ -44,7 +44,9 @@ void EmiNetUtil::anyAddr(uint16_t port,
     }
     else if (AF_INET == family) {
         struct sockaddr_in& addr(*((struct sockaddr_in *)out));
+#ifdef SIN6_LEN
         addr.sin_len         = sizeof(struct sockaddr_in);
+#endif
         addr.sin_family      = AF_INET;
         addr.sin_port        = htons(port);
         addr.sin_addr.s_addr = htonl(INADDR_ANY);
@@ -144,7 +146,9 @@ void EmiNetUtil::makeAddress(int family, const uint8_t *ip, size_t ipLen, uint16
         ASSERT(16 == ipLen);
         
         struct sockaddr_in6& addr6(*((struct sockaddr_in6 *)out));
+#ifdef SIN6_LEN
         addr6.sin6_len       = sizeof(struct sockaddr_in6);
+#endif
         addr6.sin6_family    = AF_INET6;
         addr6.sin6_port      = port;
         addr6.sin6_flowinfo  = 0;
@@ -155,7 +159,9 @@ void EmiNetUtil::makeAddress(int family, const uint8_t *ip, size_t ipLen, uint16
         ASSERT(4 == ipLen);
         
         struct sockaddr_in& addr(*((struct sockaddr_in *)out));
+#ifdef SIN6_LEN
         addr.sin_len         = sizeof(struct sockaddr_in);
+#endif
         addr.sin_family      = AF_INET;
         addr.sin_port        = port;
         addr.sin_addr.s_addr = *((uint32_t *)ip);

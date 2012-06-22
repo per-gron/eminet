@@ -16,6 +16,7 @@
 #include "EmiAddressCmp.h"
 #include "EmiUdpSocket.h"
 #include "EmiNetUtil.h"
+#include "EmiNetRandom.h"
 #include "EmiMessageHandler.h"
 
 #include <map>
@@ -172,7 +173,7 @@ private:
     inline bool shouldArtificiallyDropPacket() const {
         if (0 == config.fabricatedPacketDropRate) return false;
         
-        return ((float)arc4random() / EmiNetUtil::ARC4RANDOM_MAX) < config.fabricatedPacketDropRate;
+        return EmiNetRandom<Binding>::randomFloat() < config.fabricatedPacketDropRate;
     }
     
 public:

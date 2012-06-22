@@ -18,6 +18,7 @@
 #include "EmiAddressCmp.h"
 #include "EmiUdpSocket.h"
 #include "EmiPacketHeader.h"
+#include "EmiNetRandom.h"
 
 #include <algorithm>
 #include <cmath>
@@ -71,7 +72,7 @@ private:
     inline bool shouldArtificiallyDropPacket() const {
         if (0 == config.fabricatedPacketDropRate) return false;
         
-        return ((float)arc4random() / EmiNetUtil::ARC4RANDOM_MAX) < config.fabricatedPacketDropRate;
+        return EmiNetRandom<Binding>::randomFloat() < config.fabricatedPacketDropRate;
     }
     
     void hashCookie(EmiTimeInterval stamp, const uint8_t *randNum,

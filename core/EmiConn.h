@@ -22,6 +22,8 @@
 #include "EmiConnParams.h"
 #include "EmiUdpSocket.h"
 #include "EmiMessageHandler.h"
+#include "EmiNetUtil.h"
+#include "EmiNetRandom.h"
 
 class EmiPacketHeader;
 class EmiMessageHeader;
@@ -68,7 +70,7 @@ class EmiConn {
     ERB _receiverBuffer;
     ESQ _sendQueue;
     
-    EmiCongestionControl _congestionControl;
+    EmiCongestionControl<Binding> _congestionControl;
     
     ECT _timers;
     typename Binding::Timer *_forceCloseTimer;
@@ -113,7 +115,7 @@ private:
     inline bool shouldArtificiallyDropPacket() const {
         if (0 == config.fabricatedPacketDropRate) return false;
         
-        return ((float)arc4random() / EmiNetUtil::ARC4RANDOM_MAX) < config.fabricatedPacketDropRate;
+        return EmiNetRandom<Binding>::randomFloat() < config.fabricatedPacketDropRate;
     }
     
     static void onMessage(EUS *socket,

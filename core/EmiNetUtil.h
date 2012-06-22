@@ -10,6 +10,8 @@
 #define emilir_EmiNetUtil_h
 
 #include <netinet/in.h>
+#include <stdlib.h>
+#include <stdio.h>
 
 // Have our own assert, so we are sure it does not get optimized away in
 // a release build.
@@ -30,8 +32,6 @@ private:
     inline EmiNetUtil();
     
 public:
-    
-    static const uint64_t ARC4RANDOM_MAX;
     
     inline static int32_t cyclicDifference24(int32_t a, int32_t b) {
         return (a>=b ? a-b : 0xffffff-b+a) & 0xffffff;

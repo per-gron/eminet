@@ -11,6 +11,7 @@
 
 #include "EmiMessage.h"
 #include "EmiNetUtil.h"
+#include "EmiNetRandom.h"
 #include "EmiNatPunchthrough.h"
 #include "EmiMessageHeader.h"
 
@@ -97,8 +98,7 @@ private:
     }
     
     static EmiSequenceNumber generateSequenceNumber() {
-        // Right shifting a bit because apparently the low bits are usually not that random
-        return (arc4random() >> 5) & EMI_HEADER_SEQUENCE_NUMBER_MASK;
+        return EmiNetRandom<Binding>::random() & EMI_HEADER_SEQUENCE_NUMBER_MASK;
     }
     
     int32_t sequenceNumberDifference(const EmiMessageHeader& header, bool updateExpectedSequenceNumber) {

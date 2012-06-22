@@ -11,6 +11,7 @@
 
 #include "EmiMessage.h"
 #include "EmiNetUtil.h"
+#include "EmiNetRandom.h"
 #include "EmiPacketHeader.h"
 #include "EmiCongestionControl.h"
 
@@ -99,6 +100,7 @@ class EmiSendQueue {
     typedef typename Binding::Error          Error;
     typedef typename Binding::PersistentData PersistentData;
     typedef EmiMessage<Binding>              EM;
+    typedef EmiCongestionControl<Binding>    ECC;
     
     typedef std::deque<EM *> SendQueueDeque;
     typedef typename SendQueueDeque::iterator SendQueueDequeIter;
@@ -157,7 +159,7 @@ private:
         _packetSequenceNumber = (_packetSequenceNumber+1) & EMI_PACKET_SEQUENCE_NUMBER_MASK;
     }
     
-    void sendDatagram(EmiCongestionControl& congestionControl,
+    void sendDatagram(ECC& congestionControl,
                       const uint8_t *buf, size_t bufSize) {
         congestionControl.onDataSent(_packetSequenceNumber, bufSize);
         
@@ -166,7 +168,7 @@ private:
         _bytesSentCounter.sendData(bufSize);
     }
     
-    void sendMessageInSeparatePacket(EmiCongestionControl& congestionControl, const EM *msg) {
+    void sendMessageInSeparatePacket(ECC& congestionControl, const EM *msg) {
         const uint8_t *data = Binding::extractData(msg->data);
         size_t dataLen = Binding::extractLength(msg->data);
         
@@ -179,7 +181,7 @@ private:
     }
     
     void fillPacketHeaderData(EmiTimeInterval now,
-                              EmiCongestionControl& congestionControl,
+                              ECC& congestionControl,
                               EmiConnTime& connTime,
                               EmiPacketHeader& packetHeader) {
         packetHeader.flags |= EMI_SEQUENCE_NUMBER_PACKET_FLAG;
@@ -241,7 +243,7 @@ private:
     // If fillPacket fails, it returns 0
     size_t fillPacket(uint8_t *buf,
                       size_t bufLength,
-                      EmiCongestionControl& congestionControl,
+                      ECC& congestionControl,
                       EmiConnTime& connTime,
                       EmiTimeInterval now,
                       bool ignoreCongestionControl = false) {
@@ -396,7 +398,7 @@ private:
     }
     
     // Returns true if a packet was sent
-    bool flush(EmiCongestionControl& congestionControl,
+    bool flush(ECC& congestionControl,
                EmiConnTime& connTime,
                EmiTimeInterval now) {
         size_t packetSize = fillPacket(_buf, _bufLength, congestionControl, connTime, now);
@@ -416,7 +418,7 @@ public:
     
     EmiSendQueue(EC& conn, size_t mtu) :
     _conn(conn),
-    _packetSequenceNumber(arc4random() & EMI_PACKET_SEQUENCE_NUMBER_MASK),
+    _packetSequenceNumber(EmiNetRandom<Binding>::random() & EMI_PACKET_SEQUENCE_NUMBER_MASK),
     _rttResponseSequenceNumber(-1),
     _rttResponseRegisterTime(0),
     _enqueueHeartbeat(false),
@@ -449,7 +451,7 @@ public:
     }
     
     // Returns the number of bytes sent
-    size_t sendHeartbeat(EmiCongestionControl& congestionControl,
+    size_t sendHeartbeat(ECC& congestionControl,
                          EmiConnTime& connTime,
                          EmiTimeInterval now) {
         EmiPacketHeader ph;
@@ -468,7 +470,7 @@ public:
     }
     
     // Returns true if something has been sent since the last tick
-    bool tick(EmiCongestionControl& congestionControl,
+    bool tick(ECC& congestionControl,
               EmiConnTime& connTime,
               EmiTimeInterval now) {
         _enqueuePacketAck = true;
@@ -577,7 +579,7 @@ public:
     }
     
     bool enqueueMessage(EM *msg,
-                        EmiCongestionControl& congestionControl,
+                        ECC& congestionControl,
                         EmiConnTime& connTime,
                         EmiTimeInterval now,
                         Error& err) {
