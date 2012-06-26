@@ -225,6 +225,12 @@ public:
                       ConnRtoTimer& connRtoTimer,
                       sockaddr_storage *connsRemoteAddr,
                       EmiConnTime *connsTime) {
+        if (_isInProxyTeardownPhase) {
+            // We have already received and processed a PRX-SYN-ACK packet.
+            // This is a duplicate, and we can safely ignore it.
+            return;
+        }
+        
         /// Check that the hash is correct
         uint8_t hashBuf[Binding::HMAC_HASH_SIZE];
         hashForPrxSynAck(hashBuf, sizeof(hashBuf), _peerEndpointPair, _peerEndpointPairLength);
