@@ -179,7 +179,23 @@ public:
                    const EmiPacketHeader& packetHeader,
                    size_t packetLength) {
         if (EmiNetUtil::isAnyAddr(_localAddress)) {
-            _localAddress = inboundAddress;
+            // We want to set _localAddress here, because it is guaranteed to
+            // be before the packet is interpreted by the congestion control
+            // algorithm. This makes it clear that _localAddress is always
+            // set when packet sequence numbers are handled in the congestion
+            // control algorithm.
+            //
+            // However, to avoid messing up the P2P handshake, we only set
+            // _localAddress if the packet has a sequence number. From the
+            // reasoning above it should be clear that this is sufficient to
+            // maintain correct congestion control behavior.
+            //
+            // The P2P handshake mess-up occurs when the clients bind to
+            // multiple network interfaces, and more than one network
+            // interface can reach the P2P mediator.
+            if (packetHeader.flags & EMI_SEQUENCE_NUMBER_PACKET_FLAG) {
+                _localAddress = inboundAddress;
+            }
         }
         else if (0 != EmiAddressCmp::compare(_localAddress, inboundAddress)) {
             return false;
@@ -379,6 +395,7 @@ public:
     bool gotSynRst(EmiTimeInterval now,
                    const sockaddr_storage& inboundAddr,
                    EmiSequenceNumber otherHostInitialSequenceNumber) {
+        _localAddress = inboundAddr;
         return _conn && _conn->gotSynRst(now, inboundAddr, otherHostInitialSequenceNumber);
     }
     // Delegates to EmiLogicalConnection
