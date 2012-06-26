@@ -99,7 +99,7 @@ private:
         
         Binding::hmacHash(_p2p.sharedSecret, _p2p.sharedSecretLength,
                           toBeHashed, endpointPairLen+strlen(EMI_NAT_PUNCHTHROUGH_PRX_SYN_ACK_SALT),
-                          hashBuf, sizeof(hashBuf));
+                          hashBuf, hashBufLen);
     }
     
     void sendPrxSynAckPacket(const sockaddr_storage& remoteAddr) {
