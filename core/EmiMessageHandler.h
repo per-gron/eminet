@@ -62,7 +62,7 @@ private:
 #define ENSURE_CONN(msg)                                    \
         ENSURE_CONN_TEST(conn && !unexpectedRemoteHost, msg)
 #define ENSURE_CONN_ALLOW_UNEXPECTED_REMOTE_HOST(msg)       \
-        ENSURE_CONN_TEST(conn && !unexpectedRemoteHost, msg)
+        ENSURE_CONN_TEST(conn, msg)
 #define ENSURE(check, errStr)           \
         do {                            \
             if (!(check)) {             \
