@@ -44,6 +44,8 @@
 @end
 
 @interface EmiSocket : NSObject {
+    // TODO Hey, isn't it fundamentally incorrect to have one socket
+    // instance variable for resolving hosts, potentially in parallel?
     GCDAsyncUdpSocket *_resolveSocket;
     
     void *_sock;
