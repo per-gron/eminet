@@ -85,26 +85,26 @@ private:
                 
                 conn->gotPrx(now);
             }
-            if (synFlag && rstFlag && ackFlag) {
+            else if (synFlag && rstFlag && ackFlag) {
                 ENSURE_CONN("PRX-RST-SYN-ACK");
                 
                 conn->gotPrxRstSynAck(now, rawData+actualRawDataOffset, header.length);
             }
-            if (!synFlag && rstFlag && ackFlag) {
+            else if (!synFlag && rstFlag && ackFlag) {
                 // We want to accept PRX-RST-ACK packets from hosts other than the
                 // current remote host of the connection.
                 ENSURE_CONN_ALLOW_UNEXPECTED_REMOTE_HOST("PRX-RST-ACK");
                 
                 conn->gotPrxRstAck(remoteAddress);
             }
-            if (synFlag && !rstFlag && !ackFlag) {
+            else if (synFlag && !rstFlag && !ackFlag) {
                 // We want to accept PRX-SYN packets from hosts other than the
                 // current remote host of the connection.
                 ENSURE_CONN_ALLOW_UNEXPECTED_REMOTE_HOST("PRX-SYN");
                 
                 conn->gotPrxSyn(remoteAddress, rawData+actualRawDataOffset, header.length);
             }
-            if (synFlag && !rstFlag && ackFlag) {
+            else if (synFlag && !rstFlag && ackFlag) {
                 // We want to accept PRX-SYN-ACK packets from hosts other than the
                 // current remote host of the connection.
                 ENSURE_CONN_ALLOW_UNEXPECTED_REMOTE_HOST("PRX-SYN-ACK");
