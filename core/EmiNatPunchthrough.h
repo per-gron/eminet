@@ -15,6 +15,7 @@
 #include "EmiP2PData.h"
 #include "EmiMessage.h"
 #include "EmiAddressCmp.h"
+#include "EmiP2PEndpoints.h"
 
 #include <netinet/in.h>
 
@@ -47,10 +48,7 @@ private:
     
     bool _isInProxyTeardownPhase;
     
-    uint8_t* const         _myEndpointPair;
-    const size_t           _myEndpointPairLength;
-    uint8_t* const         _peerEndpointPair;
-    const size_t           _peerEndpointPairLength;
+    EmiP2PEndpoints        _endpoints;
     const sockaddr_storage _peerInnerAddr;
     const sockaddr_storage _peerOuterAddr;
     
@@ -68,7 +66,7 @@ private:
         uint8_t hashBuf[Binding::HMAC_HASH_SIZE];
         
         Binding::hmacHash(_p2p.sharedSecret, _p2p.sharedSecretLength,
-                          _myEndpointPair, _myEndpointPairLength,
+                          _endpoints.myEndpointPair, _endpoints.myEndpointPairLength,
                           hashBuf, sizeof(hashBuf));
         
         /// Prepare the message headers
@@ -86,8 +84,9 @@ private:
         }
     }
     
-    void hashForPrxSynAck(uint8_t *hashBuf, size_t hashBufLen,
-                          uint8_t *endpointPair, size_t endpointPairLen) {
+    static void hashForPrxSynAck(const EmiP2PData& p2p,
+                                 uint8_t *hashBuf, size_t hashBufLen,
+                                 uint8_t *endpointPair, size_t endpointPairLen) {
         uint8_t toBeHashed[128];
         ASSERT(sizeof(toBeHashed) >= endpointPairLen+strlen(EMI_NAT_PUNCHTHROUGH_PRX_SYN_ACK_SALT));
         memcpy(toBeHashed, endpointPair, endpointPairLen);
@@ -97,23 +96,28 @@ private:
         
         ASSERT(hashBufLen >= Binding::HMAC_HASH_SIZE);
         
-        Binding::hmacHash(_p2p.sharedSecret, _p2p.sharedSecretLength,
+        Binding::hmacHash(p2p.sharedSecret, p2p.sharedSecretLength,
                           toBeHashed, endpointPairLen+strlen(EMI_NAT_PUNCHTHROUGH_PRX_SYN_ACK_SALT),
                           hashBuf, hashBufLen);
     }
     
-    void sendPrxSynAckPacket(const sockaddr_storage& remoteAddr) {
-        uint8_t hashBuf[Binding::HMAC_HASH_SIZE];
-        hashForPrxSynAck(hashBuf, sizeof(hashBuf), _myEndpointPair, _myEndpointPairLength);
+    static void sendPrxSynAckPacket(Delegate& delegate,
+                                    const EmiP2PData& p2p,
+                                    const EmiP2PEndpoints& endpoints,
+                                    const sockaddr_storage& remoteAddr) {
+        uint8_t responseHashBuf[Binding::HMAC_HASH_SIZE];
+        hashForPrxSynAck(p2p, responseHashBuf, sizeof(responseHashBuf),
+                         endpoints.myEndpointPair, endpoints.myEndpointPairLength);
         
         /// Prepare the message headers
         EmiMessageFlags flags(EMI_PRX_FLAG | EMI_SYN_FLAG | EMI_ACK_FLAG);
         uint8_t buf[128];
-        size_t size = EmiMessage<Binding>::writeControlPacketWithData(flags, buf, sizeof(buf), hashBuf, sizeof(hashBuf));
+        size_t size = EmiMessage<Binding>::writeControlPacketWithData(flags, buf, sizeof(buf),
+                                                                      responseHashBuf, sizeof(responseHashBuf));
         ASSERT(0 != size); // size == 0 when the buffer was too small
         
         /// Actually send the packet
-        _delegate.sendNatPunchthroughPacket(remoteAddr, buf, size);
+        delegate.sendNatPunchthroughPacket(remoteAddr, buf, size);
     }
     
     // Invoked by EmiRtoTimer, but this shouldn't happen
@@ -167,8 +171,7 @@ public:
                        EmiSequenceNumber initialSequenceNumber,
                        const sockaddr_storage& mediatorAddress,
                        const EmiP2PData& p2p,
-                       const uint8_t *myEndpointPair, size_t myEndpointPairLength,
-                       const uint8_t *peerEndpointPair, size_t peerEndpointPairLength,
+                       const EmiP2PEndpoints& endpoints,
                        const sockaddr_storage& peerInnerAddr,
                        const sockaddr_storage& peerOuterAddr) :
     _delegate(delegate),
@@ -180,32 +183,35 @@ public:
               /*initialConnectionTimeout:*/connectionTimeout, _time,
               timerCookie, *this),
     _isInProxyTeardownPhase(false),
-    _myEndpointPair((uint8_t *)malloc(myEndpointPairLength)),
-    _myEndpointPairLength(myEndpointPairLength),
-    _peerEndpointPair((uint8_t *)malloc(peerEndpointPairLength)),
-    _peerEndpointPairLength(peerEndpointPairLength),
+    _endpoints(endpoints),
     _peerInnerAddr(peerInnerAddr),
     _peerOuterAddr(peerOuterAddr) {
-        memcpy(_myEndpointPair,   myEndpointPair,   myEndpointPairLength);
-        memcpy(_peerEndpointPair, peerEndpointPair, peerEndpointPairLength);
-        
         _rtoTimer.updateRtoTimeout();
         
         sendPrxSynPackets();
     }
     
-    virtual ~EmiNatPunchthrough() {
-        free(_myEndpointPair);
-    }
-    
-    void gotPrxSyn(const sockaddr_storage& remoteAddr,
-                   const uint8_t *data,
-                   size_t len) {
+    // The enpoints parameter must have non-NULL endpoints in it
+    //
+    // This method is static because even in valid circumstances,
+    // a P2P connection might receive PRX-SYN messages after the
+    // P2P connection is already set up and the mediator
+    // connection is torn down from its perspective. In such cases,
+    // this EmiNatPunchthrough object will have been deleted, but
+    // the connection must be able to respond with a valid
+    // PRX-SYN-ACK packet anyway.
+    static void gotPrxSyn(Delegate& delegate,
+                          const EmiP2PData& p2p,
+                          const EmiP2PEndpoints& endpoints,
+                          const sockaddr_storage& remoteAddr,
+                          const uint8_t *data, size_t len) {
+        ASSERT(endpoints.myEndpointPair && endpoints.peerEndpointPair);
+        
         /// Check that the hash is correct
         uint8_t hashBuf[Binding::HMAC_HASH_SIZE];
         
-        Binding::hmacHash(_p2p.sharedSecret, _p2p.sharedSecretLength,
-                          _peerEndpointPair, _peerEndpointPairLength,
+        Binding::hmacHash(p2p.sharedSecret, p2p.sharedSecretLength,
+                          endpoints.peerEndpointPair, endpoints.peerEndpointPairLength,
                           hashBuf, sizeof(hashBuf));
         
         if (len != sizeof(hashBuf) ||
@@ -215,7 +221,8 @@ public:
         }
         
         /// Respond with PRX-SYN-ACK packet
-        sendPrxSynAckPacket(remoteAddr);
+        sendPrxSynAckPacket(delegate, p2p,
+                            endpoints, remoteAddr);
     }
     
     template<class ConnRtoTimer>
@@ -233,7 +240,8 @@ public:
         
         /// Check that the hash is correct
         uint8_t hashBuf[Binding::HMAC_HASH_SIZE];
-        hashForPrxSynAck(hashBuf, sizeof(hashBuf), _peerEndpointPair, _peerEndpointPairLength);
+        hashForPrxSynAck(_p2p, hashBuf, sizeof(hashBuf),
+                         _endpoints.peerEndpointPair, _endpoints.peerEndpointPairLength);
         
         if (len != sizeof(hashBuf) ||
             0 != memcmp(data, hashBuf, len)) {

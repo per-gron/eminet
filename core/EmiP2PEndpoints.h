@@ -1,0 +1,92 @@
+//
+//  EmiP2PEndpoints.h
+//  rock
+//
+//  Created by Per Eckerdal on 2012-06-27.
+//  Copyright (c) 2012 __MyCompanyName__. All rights reserved.
+//
+
+#ifndef rock_EmiP2PEndpoints_h
+#define rock_EmiP2PEndpoints_h
+
+#include <cstring>
+
+// The purpose of this class is to encapsulate the memory
+// management of the P2P endpoint pairs
+//
+// FIXME This is pretty much a 100% duplicate of EmiP2PData.
+// Deduplicate.
+class EmiP2PEndpoints {
+public:
+    EmiP2PEndpoints() :
+    myEndpointPair(NULL),
+    myEndpointPairLength(0),
+    peerEndpointPair(NULL),
+    peerEndpointPairLength(0) {}
+    
+    EmiP2PEndpoints(const uint8_t *myEndpointPair_, size_t myEndpointPairLength_,
+                    const uint8_t *peerEndpointPair_, size_t peerEndpointPairLength_) :
+    myEndpointPair(myEndpointPair_ ? (uint8_t *)malloc(myEndpointPairLength_) : NULL),
+    myEndpointPairLength(myEndpointPairLength_),
+    peerEndpointPair(peerEndpointPair_ ? (uint8_t *)malloc(peerEndpointPairLength_) : NULL),
+    peerEndpointPairLength(peerEndpointPairLength_) {
+        if (myEndpointPair_) {
+            std::memcpy(myEndpointPair, myEndpointPair_, myEndpointPairLength_);
+        }
+        if (peerEndpointPair_) {
+            std::memcpy(peerEndpointPair, peerEndpointPair_, peerEndpointPairLength_);
+        }
+    }
+    
+    ~EmiP2PEndpoints() {
+        if (myEndpointPair) {
+            free(myEndpointPair);
+        }
+        if (peerEndpointPair) {
+            free(peerEndpointPair);
+        }
+    }
+    
+    EmiP2PEndpoints(const EmiP2PEndpoints& other) :
+    myEndpointPair(other.myEndpointPair ? (uint8_t *)malloc(other.myEndpointPairLength) : NULL),
+    myEndpointPairLength(other.myEndpointPairLength),
+    peerEndpointPair(other.peerEndpointPair ? (uint8_t *)malloc(other.peerEndpointPairLength) : NULL),
+    peerEndpointPairLength(other.peerEndpointPairLength) {
+        if (myEndpointPair) {
+            std::memcpy(myEndpointPair, other.myEndpointPair, myEndpointPairLength);
+        }
+        
+        if (peerEndpointPair) {
+            std::memcpy(peerEndpointPair, other.peerEndpointPair, peerEndpointPairLength);
+        }
+    }
+    EmiP2PEndpoints& operator=(const EmiP2PEndpoints& other) {
+        if (myEndpointPair) {
+            free(myEndpointPair);
+        }
+        if (peerEndpointPair) {
+            free(peerEndpointPair);
+        }
+        
+        myEndpointPairLength = other.myEndpointPairLength;
+        myEndpointPair = other.myEndpointPair ? (uint8_t *)malloc(other.myEndpointPairLength) : NULL;
+        if (myEndpointPair) {
+            memcpy(myEndpointPair, other.myEndpointPair, other.myEndpointPairLength);
+        }
+        
+        peerEndpointPairLength = other.peerEndpointPairLength;
+        peerEndpointPair = other.peerEndpointPair ? (uint8_t *)malloc(other.peerEndpointPairLength) : NULL;
+        if (peerEndpointPair) {
+            memcpy(peerEndpointPair, other.peerEndpointPair, other.peerEndpointPairLength);
+        }
+        
+        return *this;
+    }
+    
+    uint8_t *myEndpointPair;
+    size_t myEndpointPairLength;
+    uint8_t *peerEndpointPair;
+    size_t peerEndpointPairLength;
+};
+
+#endif

@@ -14,6 +14,7 @@
 #include "EmiNetRandom.h"
 #include "EmiNatPunchthrough.h"
 #include "EmiMessageHeader.h"
+#include "EmiP2PEndpoints.h"
 
 #include <map>
 
@@ -42,6 +43,7 @@ class EmiLogicalConnection {
     
     bool _closing;
     EC *_conn;
+    EmiP2PEndpoints   _p2pEndpoints;
     EmiSequenceNumber _initialSequenceNumber;
     EmiSequenceNumber _otherHostInitialSequenceNumber;
     
@@ -163,6 +165,7 @@ public:
                          EmiSequenceNumber sequenceNumber) :
     _receiverBuffer(receiverBuffer),
     _closing(false), _conn(connection),
+    _p2pEndpoints(),
     _otherHostInitialSequenceNumber(sequenceNumber),
     _sendingSyn(false), _connectionOpenedCallbackCookie() {
         ASSERT(EMI_CONNECTION_TYPE_SERVER == _conn->getType());
@@ -183,6 +186,7 @@ public:
                          const ConnectionOpenedCallbackCookie& connectionOpenedCallbackCookie) :
     _receiverBuffer(receiverBuffer),
     _closing(false), _conn(connection),
+    _p2pEndpoints(),
     _otherHostInitialSequenceNumber(0),
     _sendingSyn(true), _connectionOpenedCallbackCookie(connectionOpenedCallbackCookie) {
         ASSERT(EMI_CONNECTION_TYPE_SERVER != _conn->getType());
@@ -311,14 +315,16 @@ public:
         /// Initiate NAT punch through
         
         if (!_natPunchthrough) {
+            _p2pEndpoints = EmiP2PEndpoints(/*myEndpointPair:*/data, endpointPairLen,
+                                            /*peerEndpointPair:*/data+endpointPairLen, endpointPairLen);
+            
             _natPunchthrough = new ENP(_conn->config.connectionTimeout,
                                        *this,
                                        timerCookie,
                                        _initialSequenceNumber,
                                        _conn->getRemoteAddress(),
                                        _conn->getP2PData(),
-                                       /*myEndpointPair:*/data, endpointPairLen,
-                                       /*peerEndpointPair:*/data+endpointPairLen, endpointPairLen,
+                                       _p2pEndpoints,
                                        /*peerInnerAddr:*/addrs[0],
                                        /*peerOuterAddr:*/addrs[1]);
         }
@@ -327,8 +333,11 @@ public:
     inline void gotPrxSyn(const sockaddr_storage& remoteAddr,
                           const uint8_t *data,
                           size_t len) {
-        if (_natPunchthrough) {
-            _natPunchthrough->gotPrxSyn(remoteAddr, data, len);
+        if (_p2pEndpoints.myEndpointPair &&
+            _p2pEndpoints.peerEndpointPair) {
+            ENP::gotPrxSyn(*this, _conn->getP2PData(),
+                           _p2pEndpoints,
+                           remoteAddr, data, len);
         }
     }
     
