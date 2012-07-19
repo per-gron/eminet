@@ -25,7 +25,6 @@ typedef void (^EmiConnectionSendFinishedBlock)(NSError *err);
 - (void)emiConnectionDisconnect:(EmiConnection *)connection forReason:(EmiDisconnectReason)reason;
 - (void)emiConnectionMessage:(EmiConnection *)connection
             channelQualifier:(EmiChannelQualifier)channelQualifier
-              sequenceNumber:(EmiSequenceNumber)sequenceNumber
                         data:(NSData *)data;
 
 @optional
@@ -84,10 +83,6 @@ typedef void (^EmiConnectionSendFinishedBlock)(NSError *err);
 // Synchronously sets both the delegate and the delegate queue
 - (void)setDelegate:(id<EmiConnectionDelegate>)delegate
       delegateQueue:(dispatch_queue_t)delegateQueue;
-
-+ (int32_t)sequenceNumber:(int32_t)a difference:(int32_t)b;
-+ (int32_t)sequenceNumber:(int32_t)a signedDifference:(int32_t)b;
-+ (int32_t)sequenceNumber:(int32_t)a max:(int32_t)b;
 
 
 @property (nonatomic, readonly, unsafe_unretained) id<EmiConnectionDelegate> delegate;

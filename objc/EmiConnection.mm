@@ -243,19 +243,4 @@
     return _connectionQueue;
 }
 
-
-#pragma mark - Utilities
-
-+ (int32_t)sequenceNumber:(int32_t)a difference:(int32_t)b {
-    return EmiNetUtil::cyclicDifference24(a, b);
-}
-
-+ (int32_t)sequenceNumber:(int32_t)a signedDifference:(int32_t)b {
-    return EmiNetUtil::cyclicDifference24Signed(a, b);
-}
-
-+ (int32_t)sequenceNumber:(int32_t)a max:(int32_t)b {
-    return EmiNetUtil::cyclicMax24(a, b);
-}
-
 @end

@@ -408,8 +408,7 @@ public:
                 return false;
             }
             
-            _conn->emitMessage(channelQualifier, header.sequenceNumber,
-                               data, offset, header.length);
+            _conn->emitMessage(channelQualifier, data, offset, header.length);
         }
         else if (EMI_CHANNEL_TYPE_RELIABLE_SEQUENCED == channelType) {
             if (header.flags & EMI_SACK_FLAG) EMI_GOT_INVALID_PACKET("SACK does not make sense on RELIABLE_SEQUENCED channels");
@@ -434,8 +433,7 @@ public:
             // A packet with zero length indicates that it is just an ACK packet
             if (0 != header.length) {
                 size_t realOffset = offset + (header.flags & EMI_ACK_FLAG ? 2 : 0);
-                _conn->emitMessage(channelQualifier, header.sequenceNumber,
-                                   data, realOffset, header.length);
+                _conn->emitMessage(channelQualifier, data, realOffset, header.length);
             }
         }
         else if (EMI_CHANNEL_TYPE_RELIABLE_ORDERED == channelType) {
@@ -474,8 +472,7 @@ public:
             
             // A packet with zero length indicates that it is just an ACK packet
             if (0 != header.length) {
-                _conn->emitMessage(channelQualifier, header.sequenceNumber,
-                                   data, offset, header.length);
+                _conn->emitMessage(channelQualifier, data, offset, header.length);
                 
                 // The connection might have been closed in the message event handler,
                 // that's why we check that _conn is non-NULL.

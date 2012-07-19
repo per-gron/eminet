@@ -18,7 +18,6 @@ public:
     void invalidate();
     
     void emiConnMessage(EmiChannelQualifier channelQualifier,
-                        EmiSequenceNumber sequenceNumber,
                         const v8::Local<v8::Object>& data,
                         size_t offset,
                         size_t size);

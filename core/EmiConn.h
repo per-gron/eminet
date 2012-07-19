@@ -488,10 +488,8 @@ public:
     void emitDisconnect(EmiDisconnectReason reason) {
         _delegate.emiConnDisconnect(reason);
     }
-    void emitMessage(EmiChannelQualifier channelQualifier, EmiSequenceNumber sequenceNumber,
-                     const TemporaryData& data, size_t offset, size_t size) {
-        _delegate.emiConnMessage(channelQualifier, sequenceNumber,
-                                 data, offset, size);
+    void emitMessage(EmiChannelQualifier channelQualifier, const TemporaryData& data, size_t offset, size_t size) {
+        _delegate.emiConnMessage(channelQualifier, data, offset, size);
     }
     void emitNatPunchthroughFinished(bool success) {
         _delegate.emiNatPunchthroughFinished(success);
