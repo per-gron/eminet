@@ -46,6 +46,10 @@ var gotConnection = function(sock, sockHandle, connHandle) {
   return conn;
 };
 
+var connectionPacketLoss = function(conn, connHandle, channelQualifier, packetsLost) {
+  conn && conn.emit('loss', channelQualifier, packetsLost);
+};
+
 var connectionMessage = function(conn, connHandle, channelQualifier, slowBuffer, offset, length) {
   conn && conn.emit('message', channelQualifier, new Buffer(slowBuffer, length, offset));
 };
@@ -78,6 +82,7 @@ var p2pSockError = function() {
 
 EmiNetAddon.setCallbacks(
   gotConnection,
+  connectionPacketLoss,
   connectionMessage,
   connectionLost,
   connectionRegained,

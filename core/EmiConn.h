@@ -488,6 +488,10 @@ public:
     void emitDisconnect(EmiDisconnectReason reason) {
         _delegate.emiConnDisconnect(reason);
     }
+    void emitPacketLoss(EmiChannelQualifier channelQualifier,
+                        EmiSequenceNumber packetsLost) {
+        _delegate.emiConnPacketLoss(channelQualifier, packetsLost);
+    }
     void emitMessage(EmiChannelQualifier channelQualifier, const TemporaryData& data, size_t offset, size_t size) {
         _delegate.emiConnMessage(channelQualifier, data, offset, size);
     }

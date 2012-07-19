@@ -58,6 +58,21 @@ void EmiConnDelegate::invalidate() {
     _conn = nil;
 }
 
+void EmiConnDelegate::emiConnPacketLoss(EmiChannelQualifier channelQualifier,
+                                        EmiSequenceNumber packetsLost) {
+    if (_conn.delegateQueue) {
+        id<EmiConnectionDelegate> connDelegate = _conn.delegate;
+        EmiConnection *conn = _conn;
+        dispatch_group_async(_dispatchGroup, _conn.delegateQueue, ^{
+            if (connDelegate && [connDelegate respondsToSelector:@selector(emiConnectionPacketLoss:channelQualifier:packetsLost:)]) {
+                [connDelegate emiConnectionPacketLoss:conn
+                                     channelQualifier:channelQualifier
+                                          packetsLost:packetsLost];
+            }
+        });
+    }
+}
+
 void EmiConnDelegate::emiConnMessage(EmiChannelQualifier channelQualifier, NSData *data, NSUInteger offset, NSUInteger size) {
     if (_conn.delegateQueue) {
         id<EmiConnectionDelegate> connDelegate = _conn.delegate;

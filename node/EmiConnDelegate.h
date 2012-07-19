@@ -17,6 +17,8 @@ public:
     
     void invalidate();
     
+    void emiConnPacketLoss(EmiChannelQualifier channelQualifier,
+                           EmiSequenceNumber packetsLost);
     void emiConnMessage(EmiChannelQualifier channelQualifier,
                         const v8::Local<v8::Object>& data,
                         size_t offset,

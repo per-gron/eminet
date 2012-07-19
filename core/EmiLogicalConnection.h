@@ -398,26 +398,29 @@ public:
         EmiChannelQualifier channelQualifier = header.channelQualifier;
         EmiChannelType channelType = EMI_CHANNEL_QUALIFIER_TYPE(channelQualifier);
         
-        if (EMI_CHANNEL_TYPE_UNRELIABLE == channelType || EMI_CHANNEL_TYPE_UNRELIABLE_SEQUENCED == channelType) {
-            if (header.flags & EMI_ACK_FLAG) EMI_GOT_INVALID_PACKET("Got unreliable message with ACK flag");
-            if (header.flags & EMI_SACK_FLAG) EMI_GOT_INVALID_PACKET("Got unreliable message with SACK flag");
+        if ((EMI_CHANNEL_TYPE_UNRELIABLE_SEQUENCED == channelType ||
+             EMI_CHANNEL_TYPE_RELIABLE_SEQUENCED   == channelType) &&
+            -1 != header.sequenceNumber) {
+            int32_t snDiff = sequenceNumberDifference(header, true);
             
-            if (EMI_CHANNEL_TYPE_UNRELIABLE_SEQUENCED == channelType &&
-                0 < sequenceNumberDifference(header, true)) {
+            if (snDiff > 0) {
                 // The packet arrived out of order; drop it
                 return false;
             }
+            else if (snDiff < 0) {
+                // We have lost one or more packets.
+                _conn->emitPacketLoss(channelQualifier, -snDiff);
+            }
+        }
+        
+        if (EMI_CHANNEL_TYPE_UNRELIABLE == channelType || EMI_CHANNEL_TYPE_UNRELIABLE_SEQUENCED == channelType) {
+            if (header.flags & EMI_ACK_FLAG) EMI_GOT_INVALID_PACKET("Got unreliable message with ACK flag");
+            if (header.flags & EMI_SACK_FLAG) EMI_GOT_INVALID_PACKET("Got unreliable message with SACK flag");
             
             _conn->emitMessage(channelQualifier, data, offset, header.length);
         }
         else if (EMI_CHANNEL_TYPE_RELIABLE_SEQUENCED == channelType) {
             if (header.flags & EMI_SACK_FLAG) EMI_GOT_INVALID_PACKET("SACK does not make sense on RELIABLE_SEQUENCED channels");
-            
-            if (-1 != header.sequenceNumber &&
-                0 < sequenceNumberDifference(header, true)) {
-                // The packet arrived out of order; drop it
-                return false;
-            }
             
             _conn->enqueueAck(channelQualifier, header.sequenceNumber);
             

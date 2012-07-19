@@ -29,6 +29,7 @@ EXPAND_SYMS
 #undef EXPAND_SYM
 
 Persistent<Function> EmiSocket::gotConnection;
+Persistent<Function> EmiSocket::connectionPacketLoss;
 Persistent<Function> EmiSocket::connectionMessage;
 Persistent<Function> EmiSocket::connectionLost;
 Persistent<Function> EmiSocket::connectionRegained;
@@ -76,7 +77,7 @@ void EmiSocket::Init(Handle<Object> target) {
 Handle<Value> EmiSocket::SetCallbacks(const Arguments& args) {
     HandleScope scope;
     
-    ENSURE_NUM_ARGS(7, args);
+    ENSURE_NUM_ARGS(8, args);
     
     if (!args[0]->IsFunction() ||
         !args[1]->IsFunction() ||
@@ -94,12 +95,13 @@ Handle<Value> EmiSocket::SetCallbacks(const Arguments& args) {
     name = Persistent<Function>::New(name##Fn);
     
     X(gotConnection, 0);
-    X(connectionMessage, 1);
-    X(connectionLost, 2);
-    X(connectionRegained, 3);
-    X(connectionDisconnect, 4);
-    X(natPunchthroughFinished, 5);
-    X(connectionError, 6);
+    X(connectionPacketLoss, 1);
+    X(connectionMessage, 2);
+    X(connectionLost, 3);
+    X(connectionRegained, 4);
+    X(connectionDisconnect, 5);
+    X(natPunchthroughFinished, 6);
+    X(connectionError, 7);
     
 #undef X
     

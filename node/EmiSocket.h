@@ -52,6 +52,7 @@ public:
     static void Init(v8::Handle<v8::Object> target);
     
     static v8::Persistent<v8::Function> gotConnection;
+    static v8::Persistent<v8::Function> connectionPacketLoss;
     static v8::Persistent<v8::Function> connectionMessage;
     static v8::Persistent<v8::Function> connectionLost;
     static v8::Persistent<v8::Function> connectionRegained;

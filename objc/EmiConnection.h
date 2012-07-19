@@ -28,6 +28,11 @@ typedef void (^EmiConnectionSendFinishedBlock)(NSError *err);
                         data:(NSData *)data;
 
 @optional
+
+- (void)emiConnectionPacketLoss:(EmiConnection *)connection
+               channelQualifier:(EmiChannelQualifier)channelQualifier
+                    packetsLost:(EmiSequenceNumber)packetsLost;
+
 - (void)emiP2PConnectionEstablished:(EmiConnection *)connection;
 - (void)emiP2PConnectionNotEstablished:(EmiConnection *)connection;
 

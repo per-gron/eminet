@@ -27,6 +27,8 @@ public:
     
     void invalidate();
     
+    void emiConnPacketLoss(EmiChannelQualifier channelQualifier,
+                           EmiSequenceNumber packetsLost);
     void emiConnMessage(EmiChannelQualifier channelQualifier, NSData *data, NSUInteger offset, NSUInteger size);
     
     void emiConnLost();

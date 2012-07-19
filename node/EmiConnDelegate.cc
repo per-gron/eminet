@@ -26,6 +26,20 @@ void EmiConnDelegate::invalidate() {
     _conn.Unref();
 }
 
+void EmiConnDelegate::emiConnPacketLoss(EmiChannelQualifier channelQualifier,
+                                        EmiSequenceNumber packetsLost) {
+    HandleScope scope;
+    
+    const unsigned argc = 4;
+    Handle<Value> argv[argc] = {
+        _conn._jsHandle.IsEmpty() ? Handle<Value>(Undefined()) : _conn._jsHandle,
+        _conn.handle_,
+        Number::New(channelQualifier),
+        Number::New(packetsLost)
+    };
+    EmiSocket::connectionPacketLoss->Call(Context::GetCurrent()->Global(), argc, argv);
+}
+
 void EmiConnDelegate::emiConnMessage(EmiChannelQualifier channelQualifier,
                                      const v8::Local<v8::Object>& data,
                                      size_t offset,
