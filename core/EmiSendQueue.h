@@ -31,6 +31,17 @@ class EmiConn;
 template<class SockDelegate, class ConnDelegate>
 class EmiSendQueue {
     
+    typedef typename SockDelegate::Binding   Binding;
+    typedef typename Binding::Error          Error;
+    typedef typename Binding::PersistentData PersistentData;
+    typedef EmiMessage<Binding>              EM;
+    typedef EmiCongestionControl<Binding>    ECC;
+    
+    typedef std::map<EmiChannelQualifier, EmiSequenceNumber> SendQueueAcksMap;
+    typedef typename SendQueueAcksMap::iterator SendQueueAcksMapIter;
+    typedef std::set<EmiChannelQualifier> SendQueueAcksSet;
+    typedef EmiConn<SockDelegate, ConnDelegate> EC;
+    
     // The purpose of BytesSentTheLastNTicks is to increase the
     // precision of the congestion control algorithm: The congestion
     // control works by telling EmiSendQueue how many bytes it is
@@ -44,7 +55,7 @@ class EmiSendQueue {
     // at MTU/EMI_TICK_TIME, which for a MTU of 576 and tick time
     // of 10ms is more than 50KB/s.
     //
-    // Because data rates far below 50KB are to be expected in
+    // Because data rates far below 50KB/s are to be expected in
     // congested mobile data networks, we need a way to increase
     // the precision.
     //
@@ -96,26 +107,156 @@ class EmiSendQueue {
         }
     };
     
-    typedef typename SockDelegate::Binding   Binding;
-    typedef typename Binding::Error          Error;
-    typedef typename Binding::PersistentData PersistentData;
-    typedef EmiMessage<Binding>              EM;
-    typedef EmiCongestionControl<Binding>    ECC;
+    // The purpose of this class is to encapsulate the memory management
+    // and priority aspects of the queue.
+    class SendQueue {
+        typedef std::deque<EM *> SendQueueDeque;
+        typedef typename SendQueueDeque::iterator SendQueueDequeIter;
+        
+        SendQueueDeque _queues[EMI_NUMBER_OF_PRIORITIES];
+        size_t _queueSize;
+        
+    public:
+        
+        class iterator {
+            friend class SendQueue;
+            
+            SendQueue& _queue;
+            
+            uint32_t _prioIndices[EMI_NUMBER_OF_PRIORITIES];
+            
+            int currentPriority() const {
+                for (int i=0; i<EMI_NUMBER_OF_PRIORITIES; i++) {
+                    if (_prioIndices[i] >= _queue._queues[i].size()) {
+                        // There are no more messages with this priority
+                        continue;
+                    }
+                    
+                    if (i < EMI_NUMBER_OF_PRIORITIES-1 &&
+                        _prioIndices[i] > _prioIndices[i+1]*2+1) {
+                        // We have sent more than twice as many messages of
+                        // this priority compared to the next (lower) priority.
+                        //
+                        // It is time to let lower priority messages go through.
+                        continue;
+                    }
+                    
+                    return i;
+                }
+                
+                // There are no messages left
+                return -1;
+            }
+            
+            void increment() {
+                int cp = currentPriority();
+                ASSERT(-1 != cp);
+                _prioIndices[cp] += 1;
+            }
+            
+        public:
+            typedef EM*  value_type;
+            typedef EM*& reference_type;
+            typedef EM** pointer;
+            typedef std::forward_iterator_tag iterator_category;
+            
+            iterator(SendQueue& queue) : _queue(queue) {
+                for (int i=0; i<EMI_NUMBER_OF_PRIORITIES; i++) {
+                    _prioIndices[i] = 0;
+                }
+            }
+            
+            value_type operator*() const {
+                int cp = currentPriority();
+                ASSERT(-1 != cp);
+                return _queue._queues[cp][_prioIndices[cp]];
+            }
+            
+            value_type& operator*() {
+                int cp = currentPriority();
+                ASSERT(-1 != cp);
+                return _queue._queues[cp][_prioIndices[cp]];
+            }
+            
+            iterator& operator++() { // Prefix
+                increment();
+                
+                return *this;
+            }
+            
+            iterator operator++(int) { // Postfix
+                iterator copy(*this);
+                
+                increment();
+                
+                return copy;
+            }
+            
+            bool isAtEnd() const {
+                return -1 == currentPriority();
+            }
+        };
+        
+        SendQueue() : _queueSize(0) {}
+        
+        void eraseUntil(const iterator& iter) {
+            for (int i=0; i<EMI_NUMBER_OF_PRIORITIES; i++) {
+                SendQueueDeque &queue(_queues[i]);
+                
+                SendQueueDequeIter dequeIter = queue.begin();
+                for (int j=0; j<iter._prioIndices[i]; j++) {
+                    EM *msg = *dequeIter;
+                    _queueSize -= msg->approximateSize();
+                    msg->release();
+                    ++dequeIter;
+                }
+                
+                // Optimize for common special case
+                if (queue.end() == dequeIter) {
+                    queue.clear();
+                }
+                else {
+                    queue.erase(queue.begin(), dequeIter);
+                }
+            }
+        }
+        
+        iterator begin() {
+            return iterator(*this);
+        }
+        
+        void clear() {
+            for (int i=0; i<EMI_NUMBER_OF_PRIORITIES; i++) {
+                _queues[i].clear();
+            }
+        }
+        
+        size_t sizeInBytes() const {
+            return _queueSize;
+        }
+        
+        bool empty() const {
+            return 0 == _queueSize;
+        }
+        
+        void push(EM *msg) {
+            size_t msgSize = msg->approximateSize();
+            ASSERT(0 != msgSize); // The empty method requires this
+            
+            msg->retain();
+            _queues[msg->priority].push_back(msg);
+            _queueSize += msgSize;
+        }
+    };
     
-    typedef std::deque<EM *> SendQueueDeque;
-    typedef typename SendQueueDeque::iterator SendQueueDequeIter;
-    typedef std::map<EmiChannelQualifier, EmiSequenceNumber> SendQueueAcksMap;
-    typedef typename SendQueueAcksMap::iterator SendQueueAcksMapIter;
-    typedef std::set<EmiChannelQualifier> SendQueueAcksSet;
-    typedef EmiConn<SockDelegate, ConnDelegate> EC;
+    typedef typename SendQueue::iterator SendQueueIter;
     
     EC& _conn;
     
     EmiPacketSequenceNumber _packetSequenceNumber;
     EmiPacketSequenceNumber _rttResponseSequenceNumber;
     EmiTimeInterval _rttResponseRegisterTime;
-    SendQueueDeque _queue;
-    size_t _queueSize;
+    SendQueue _queue;
     SendQueueAcksMap _acks;
     // This set is intended to ensure that only one ack is sent per channel per tick
     SendQueueAcksSet _acksSentInThisTick;
@@ -132,28 +273,6 @@ private:
     // Private copy constructor and assignment operator
     inline EmiSendQueue(const EmiSendQueue& other);
     inline EmiSendQueue& operator=(const EmiSendQueue& other);
-    
-    void clearQueue(SendQueueDequeIter begin, SendQueueDequeIter end) {
-        SendQueueDequeIter iter(begin);
-        while (iter != end) {
-            EM *msg = *iter;
-            _queueSize -= msg->approximateSize();
-            msg->release();
-            ++iter;
-        }
-        
-        // Optimize for common special case
-        if (_queue.begin() == begin && _queue.end() == end) {
-            _queue.clear();
-        }
-        else {
-            _queue.erase(begin, end);
-        }
-    }
-    
-    void clearQueue() {
-        clearQueue(_queue.begin(), _queue.end());
-    }
     
     inline void incrementSequenceNumber() {
         _packetSequenceNumber = (_packetSequenceNumber+1) & EMI_PACKET_SEQUENCE_NUMBER_MASK;
@@ -282,9 +401,8 @@ private:
         
         /// Send the enqueued messages
         SendQueueAcksMapIter noAck = _acks.end();
-        SendQueueDequeIter   iter  = _queue.begin(); // Note: iter is used below this loop
-        SendQueueDequeIter   end   = _queue.end();
-        while (iter != end) {
+        SendQueueIter        iter  = _queue.begin(); // Note: iter is used below this loop
+        while (!iter.isAtEnd()) {
             EM *msg = *iter;
             // We need to increment iter here, because we might break
             // out of the loop early, and there is code later on that
@@ -386,13 +504,13 @@ private:
         if (packetHeaderLength != pos) {
             ASSERT(pos <= bufLength);
             
-            clearQueue(_queue.begin(), iter);
+            _queue.eraseUntil(iter);
             
-            // Return true to signify that a packet was sent
+            // Return non-zero to signify that a packet was written
             return pos;
         }
         else {
-            // Return false to signify that no packet was sent
+            // Return 0 to signify that no packet was written
             return 0;
         }
     }
@@ -424,14 +542,13 @@ public:
     _enqueueHeartbeat(false),
     _enqueuePacketAck(false),
     _enqueuedNak(-1),
-    _bytesSentCounter(),
-    _queueSize(0) {
+    _bytesSentCounter() {
         _bufLength = mtu;
         _buf = (uint8_t *)malloc(_bufLength*2);
         _otherBuf = _buf+_bufLength;
     }
     virtual ~EmiSendQueue() {
-        clearQueue();
+        _queue.clear();
         
         _enqueueHeartbeat = false;
         
@@ -591,21 +708,17 @@ public:
             sendMessageInSeparatePacket(congestionControl, msg);
         }
         else {
-            // Only EMI_PRIORITY_HIGH messages are implemented
-            ASSERT(EMI_PRIORITY_HIGH == msg->priority);
-            
             size_t msgSize = msg->approximateSize();
             
             // _bufLength is the MTU of the EmiSocket.
             // mss is short for maximum segment size.
             size_t mss = _bufLength - EMI_PACKET_HEADER_MAX_LENGTH - EMI_UDP_HEADER_SIZE;
-            if (_queueSize + msgSize >= mss) {
+            if (_queue.sizeInBytes() + msgSize >= mss ||
+                EMI_PRIORITY_IMMEDIATE == msg->priority) {
                 flush(congestionControl, connTime, now);
             }
             
-            msg->retain();
-            _queue.push_back(msg);
-            _queueSize += msgSize;
+            _queue.push(msg);
         }
         
         return true;

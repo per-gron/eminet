@@ -39,7 +39,7 @@
 #define EMI_CHANNEL_QUALIFIER(type, number) (((number) & 0x1f) | (((type) & 0x3) << 6))
 
 // To be changed when priorities are actually implemented
-#define EMI_PRIORITY_DEFAULT          (EMI_PRIORITY_HIGH)
+#define EMI_PRIORITY_DEFAULT          (EMI_PRIORITY_MEDIUM)
 #define EMI_CHANNEL_TYPE_DEFAULT      (EMI_CHANNEL_TYPE_RELIABLE_ORDERED)
 #define EMI_DEFAULT_CHANNEL           (0)
 #define EMI_CHANNEL_QUALIFIER_DEFAULT EMI_CHANNEL_QUALIFIER(EMI_CHANNEL_TYPE_DEFAULT, EMI_DEFAULT_CHANNEL)
@@ -48,7 +48,8 @@ typedef enum {
     EMI_PRIORITY_IMMEDIATE = 0,
     EMI_PRIORITY_HIGH      = 1,
     EMI_PRIORITY_MEDIUM    = 2,
-    EMI_PRIORITY_LOW       = 3
+    EMI_PRIORITY_LOW       = 3,
+    EMI_NUMBER_OF_PRIORITIES = 4
 } EmiPriority;
 
 typedef enum {
