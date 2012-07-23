@@ -417,6 +417,11 @@ public:
             if (header.flags & EMI_ACK_FLAG) EMI_GOT_INVALID_PACKET("Got unreliable message with ACK flag");
             if (header.flags & EMI_SACK_FLAG) EMI_GOT_INVALID_PACKET("Got unreliable message with SACK flag");
             
+            if (0 == header.length) {
+                // Unreliable packets with zero header length are nonsensical
+                return false;
+            }
+            
             _conn->emitMessage(channelQualifier, data, offset, header.length);
         }
         else if (EMI_CHANNEL_TYPE_RELIABLE_SEQUENCED == channelType) {
