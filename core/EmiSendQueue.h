@@ -131,6 +131,8 @@ class EmiSendQueue {
             uint32_t _prioIndices[EMI_NUMBER_OF_PRIORITIES];
             
             int currentPriority() const {
+                int possibleResult = -1;
+                
                 for (int i=0; i<EMI_NUMBER_OF_PRIORITIES; i++) {
                     if (_prioIndices[i] >= _queue._queues[i].size()) {
                         // There are no more messages with this priority
@@ -143,14 +145,18 @@ class EmiSendQueue {
                         // this priority compared to the next (lower) priority.
                         //
                         // It is time to let lower priority messages go through.
+                        
+                        // If we find no messages in lower priorities, we need
+                        // to pick this priority.
+                        possibleResult = i;
+                        
                         continue;
                     }
                     
                     return i;
                 }
                 
-                // There are no messages left
-                return -1;
+                return possibleResult;
             }
             
             void increment() {
