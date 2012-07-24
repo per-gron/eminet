@@ -110,6 +110,11 @@ class EmiSendQueue {
     // The purpose of this class is to encapsulate the memory management
     // and priority aspects of the queue.
     class SendQueue {
+    private:
+        // Private copy constructor and assignment operator
+        inline SendQueue(const SendQueue& other);
+        inline SendQueue& operator=(const SendQueue& other);
+        
         typedef std::deque<EM *> SendQueueDeque;
         typedef typename SendQueueDeque::iterator SendQueueDequeIter;
         
@@ -155,24 +160,18 @@ class EmiSendQueue {
             }
             
         public:
-            typedef EM*  value_type;
-            typedef EM*& reference_type;
-            typedef EM** pointer;
-            typedef std::forward_iterator_tag iterator_category;
             
             iterator(SendQueue& queue) : _queue(queue) {
-                for (int i=0; i<EMI_NUMBER_OF_PRIORITIES; i++) {
-                    _prioIndices[i] = 0;
-                }
+                std::fill(_prioIndices, _prioIndices+EMI_NUMBER_OF_PRIORITIES, 0);
             }
             
-            value_type operator*() const {
+            const EM* operator*() const {
                 int cp = currentPriority();
                 ASSERT(-1 != cp);
                 return _queue._queues[cp][_prioIndices[cp]];
             }
             
-            value_type& operator*() {
+            EM* operator*() {
                 int cp = currentPriority();
                 ASSERT(-1 != cp);
                 return _queue._queues[cp][_prioIndices[cp]];
@@ -206,6 +205,7 @@ class EmiSendQueue {
                 SendQueueDequeIter dequeIter = queue.begin();
                 for (int j=0; j<iter._prioIndices[i]; j++) {
                     EM *msg = *dequeIter;
+                    
                     _queueSize -= msg->approximateSize();
                     msg->release();
                     ++dequeIter;
@@ -227,8 +227,20 @@ class EmiSendQueue {
         
         void clear() {
             for (int i=0; i<EMI_NUMBER_OF_PRIORITIES; i++) {
-                _queues[i].clear();
+                SendQueueDeque &queue(_queues[i]);
+                
+                SendQueueDequeIter iter = queue.begin();
+                SendQueueDequeIter end  = queue.end();
+                while (iter != end) {
+                    EM *msg = *iter;
+                    msg->release();
+                    ++iter;
+                }
+                
+                queue.clear();
             }
+            
+            _queueSize = 0;
         }
         
         size_t sizeInBytes() const {
@@ -242,6 +254,7 @@ class EmiSendQueue {
         void push(EM *msg) {
             size_t msgSize = msg->approximateSize();
             ASSERT(0 != msgSize); // The empty method requires this
+            ASSERT(msg->priority >= 0 && msg->priority < EMI_NUMBER_OF_PRIORITIES);
             
             msg->retain();
             _queues[msg->priority].push_back(msg);
