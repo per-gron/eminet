@@ -77,6 +77,12 @@ private:
         bool ackFlag  = header.flags & EMI_ACK_FLAG;
         bool sackFlag = header.flags & EMI_SACK_FLAG;
         
+        if (!prxFlag && unexpectedRemoteHost) {
+            ENSURE_CONN_ALLOW_UNEXPECTED_REMOTE_HOST("non-PRX");
+            
+            return conn->gotNonPrxMessageFromUnexpectedRemoteHost(remoteAddress);
+        }
+        
         if (prxFlag) {
             // This is some kind of proxy/P2P connection message
             
@@ -118,8 +124,7 @@ private:
         }
         else if (synFlag && !rstFlag) {
             // This is an initiate connection message
-            ENSURE(!unexpectedRemoteHost,
-                   "Got SYN from unexpected remote host");
+            ASSERT(!unexpectedRemoteHost);
             ENSURE(0 == header.length,
                    "Got SYN message with message length != 0");
             ENSURE(!ackFlag, "Got SYN message with ACK flag");
@@ -153,12 +158,11 @@ private:
             }
         }
         else if (synFlag && rstFlag) {
+            ASSERT(!unexpectedRemoteHost);
             if (ackFlag) {
                 // This is a close connection ack message
                 
                 ENSURE(!sackFlag, "Got SYN-RST-ACK message with SACK flag");
-                ENSURE(!unexpectedRemoteHost,
-                       "Got SYN-RST-ACK from unexpected remote host");
                 ENSURE(conn,
                        "Got SYN-RST-ACK message but has no open \
                        connection for that address. Ignoring the \
@@ -185,10 +189,9 @@ private:
         else if (!synFlag && rstFlag) {
             // This is a close connection message
             
+            ASSERT(!unexpectedRemoteHost);
             ENSURE(!ackFlag, "Got RST message with ACK flag");
             ENSURE(!sackFlag, "Got RST message with SACK flag");
-            ENSURE(!unexpectedRemoteHost,
-                   "Got RST from unexpected remote host");
             
             // Regardless of whether we still have a connection up,
             // respond with a SYN-RST-ACK message.
@@ -214,6 +217,7 @@ private:
         }
         else if (!synFlag && !rstFlag) {
             // This is a data message
+            ASSERT(!unexpectedRemoteHost);
             ENSURE_CONN("data");
             
             conn->gotMessage(now, header, data, offset+actualRawDataOffset, /*dontFlush:*/false);

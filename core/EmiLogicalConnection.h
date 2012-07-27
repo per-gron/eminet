@@ -346,12 +346,72 @@ public:
             _natPunchthrough->gotPrxSynAck(remoteAddr, data, len,
                                            connRtoTimer, connsRemoteAddr, connsTime);
         }
+        else if (_conn &&
+                 EMI_CONNECTION_TYPE_P2P == _conn->getType() &&
+                 ENP::prxSynAckIsValid(_conn->getP2PData(), _p2pEndpoints, data, len)) {
+            sockaddr_storage peerInnerEndpoint;
+            sockaddr_storage peerOuterEndpoint;
+            _p2pEndpoints.extractPeerInnerAddress(&peerInnerEndpoint);
+            _p2pEndpoints.extractPeerOuterAddress(&peerOuterEndpoint);
+            
+            if (0 == EmiAddressCmp::compare(remoteAddr, peerInnerEndpoint) &&
+                0 == EmiAddressCmp::compare(_conn->getRemoteAddress(), peerOuterEndpoint)) {
+                // This probably demands some explanation. Given the fact that the NAT punch
+                // through works by sending two PRX-SYN packets in parallel, one to the inner
+                // endpoint, and one to the outer endpoint, which independently get their own
+                // PRX-SYN-ACK response, there is a race condition which might lead to one
+                // peer finishing its part of the NAT punch through process with the inner
+                // endpoint, while the other picks the outer endpoint.
+                //
+                // When this happens, the connection is in effect dropped, because both peers
+                // will reject packets coming from the other peer because of their "invalid"
+                // remote address.
+                //
+                // To work around this, the protocol specifies that the inner endpoint has
+                // priority. This is achieved through two steps, this being one of them.
+                // If a valid PRX-SYN-ACK message is received from the other peer's inner
+                // endpoint, we will use the inner endpoint, even if the NAT punch through
+                // process form our point of view has decided to use the outer endpoint.
+                //
+                // (The other thing that needs to be done is that a peer that has concluded
+                // to use the inner endpoint looks for non-PRX packets from the outer
+                // endpoint and respond to them by sending a PRX-SYN-ACK message to the inner
+                // endpoint)
+                
+                // Switch to the inner endpoint
+                
+                memcpy(connsRemoteAddr, &remoteAddr, sizeof(sockaddr_storage));
+            }
+        }
     }
     
     inline void gotPrxRstAck(const sockaddr_storage& remoteAddr) {
         if (_natPunchthrough) {
             _natPunchthrough->gotPrxRstAck(remoteAddr);
         }
+    }
+    
+    bool gotNonPrxMessageFromUnexpectedRemoteHost(const sockaddr_storage& remoteAddr) {
+        // See gotPrxSynAck for a description of what we're doing here.
+        
+        if (!_conn || EMI_CONNECTION_TYPE_P2P != _conn->getType()) {
+            return false;
+        }
+        
+        sockaddr_storage peerInnerEndpoint;
+        sockaddr_storage peerOuterEndpoint;
+        _p2pEndpoints.extractPeerInnerAddress(&peerInnerEndpoint);
+        _p2pEndpoints.extractPeerOuterAddress(&peerOuterEndpoint);
+        
+        if (0 != EmiAddressCmp::compare(remoteAddr, peerOuterEndpoint) ||
+            0 != EmiAddressCmp::compare(_conn->getRemoteAddress(), peerInnerEndpoint)) {
+            return false;
+        }
+        
+        ENP::sendPrxSynAckPacket(*this, _conn->getP2PData(),
+                                 _p2pEndpoints, peerInnerEndpoint);
+        
+        return true;
     }
     
     // Returns false if the connection is not in the opening state (that's an error)

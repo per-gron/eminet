@@ -101,25 +101,6 @@ private:
                           hashBuf, hashBufLen);
     }
     
-    static void sendPrxSynAckPacket(Delegate& delegate,
-                                    const EmiP2PData& p2p,
-                                    const EmiP2PEndpoints& endpoints,
-                                    const sockaddr_storage& remoteAddr) {
-        uint8_t responseHashBuf[Binding::HMAC_HASH_SIZE];
-        hashForPrxSynAck(p2p, responseHashBuf, sizeof(responseHashBuf),
-                         endpoints.myEndpointPair, endpoints.myEndpointPairLength);
-        
-        /// Prepare the message headers
-        EmiMessageFlags flags(EMI_PRX_FLAG | EMI_SYN_FLAG | EMI_ACK_FLAG);
-        uint8_t buf[128];
-        size_t size = EmiMessage<Binding>::writeControlPacketWithData(flags, buf, sizeof(buf),
-                                                                      responseHashBuf, sizeof(responseHashBuf));
-        ASSERT(0 != size); // size == 0 when the buffer was too small
-        
-        /// Actually send the packet
-        delegate.sendNatPunchthroughPacket(remoteAddr, buf, size);
-    }
-    
     // Invoked by EmiRtoTimer, but this shouldn't happen
     // because connection warnings are disabled when _rtoTimer
     // is initialized.
@@ -189,6 +170,25 @@ public:
         _rtoTimer.updateRtoTimeout();
         
         sendPrxSynPackets();
+    }
+    
+    static void sendPrxSynAckPacket(Delegate& delegate,
+                                    const EmiP2PData& p2p,
+                                    const EmiP2PEndpoints& endpoints,
+                                    const sockaddr_storage& remoteAddr) {
+        uint8_t responseHashBuf[Binding::HMAC_HASH_SIZE];
+        hashForPrxSynAck(p2p, responseHashBuf, sizeof(responseHashBuf),
+                         endpoints.myEndpointPair, endpoints.myEndpointPairLength);
+        
+        /// Prepare the message headers
+        EmiMessageFlags flags(EMI_PRX_FLAG | EMI_SYN_FLAG | EMI_ACK_FLAG);
+        uint8_t buf[128];
+        size_t size = EmiMessage<Binding>::writeControlPacketWithData(flags, buf, sizeof(buf),
+                                                                      responseHashBuf, sizeof(responseHashBuf));
+        ASSERT(0 != size); // size == 0 when the buffer was too small
+        
+        /// Actually send the packet
+        delegate.sendNatPunchthroughPacket(remoteAddr, buf, size);
     }
     
     // The endpoints parameter must have non-NULL endpoints in it

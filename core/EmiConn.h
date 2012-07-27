@@ -463,6 +463,14 @@ public:
             _conn->gotPrxRstAck(remoteAddr);
         }
     }
+    inline bool gotNonPrxMessageFromUnexpectedRemoteHost(const sockaddr_storage& remoteAddr) {
+        if (_conn) {
+            return _conn->gotNonPrxMessageFromUnexpectedRemoteHost(remoteAddr);
+        }
+        else {
+            return false;
+        }
+    }
     // Delegates to EmiLogicalConnection
     bool gotSynRst(EmiTimeInterval now,
                    const sockaddr_storage& inboundAddr,
