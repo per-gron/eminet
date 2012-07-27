@@ -294,18 +294,6 @@ public:
             return;
         }
         
-        sockaddr_storage addrs[2];
-        
-        const uint8_t *dataPtr = data+endpointPairLen;
-        for (int i=0; i<2; i++) {
-            EmiNetUtil::makeAddress(family,
-                                    dataPtr, ipLen,
-                                    *((uint16_t *)(dataPtr+ipLen)),
-                                    &addrs[i]);
-            
-            dataPtr += ipLen+portLen;
-        }
-        
         
         /// Release the reliable PRX-ACK handshake message
         
@@ -315,8 +303,14 @@ public:
         /// Initiate NAT punch through
         
         if (!_natPunchthrough) {
-            _p2pEndpoints = EmiP2PEndpoints(/*myEndpointPair:*/data, endpointPairLen,
+            _p2pEndpoints = EmiP2PEndpoints(family,
+                                            /*myEndpointPair:*/data, endpointPairLen,
                                             /*peerEndpointPair:*/data+endpointPairLen, endpointPairLen);
+            
+            sockaddr_storage peerInnerAddr;
+            sockaddr_storage peerOuterAddr;
+            _p2pEndpoints.extractPeerInnerAddress(&peerInnerAddr);
+            _p2pEndpoints.extractPeerOuterAddress(&peerOuterAddr);
             
             _natPunchthrough = new ENP(_conn->config.connectionTimeout,
                                        *this,
@@ -325,8 +319,8 @@ public:
                                        _conn->getRemoteAddress(),
                                        _conn->getP2PData(),
                                        _p2pEndpoints,
-                                       /*peerInnerAddr:*/addrs[0],
-                                       /*peerOuterAddr:*/addrs[1]);
+                                       peerInnerAddr,
+                                       peerOuterAddr);
         }
     }
     

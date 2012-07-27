@@ -19,13 +19,16 @@
 class EmiP2PEndpoints {
 public:
     EmiP2PEndpoints() :
+    family(0),
     myEndpointPair(NULL),
     myEndpointPairLength(0),
     peerEndpointPair(NULL),
     peerEndpointPairLength(0) {}
     
-    EmiP2PEndpoints(const uint8_t *myEndpointPair_, size_t myEndpointPairLength_,
+    EmiP2PEndpoints(int family,
+                    const uint8_t *myEndpointPair_, size_t myEndpointPairLength_,
                     const uint8_t *peerEndpointPair_, size_t peerEndpointPairLength_) :
+    family(family),
     myEndpointPair(myEndpointPair_ ? (uint8_t *)malloc(myEndpointPairLength_) : NULL),
     myEndpointPairLength(myEndpointPairLength_),
     peerEndpointPair(peerEndpointPair_ ? (uint8_t *)malloc(peerEndpointPairLength_) : NULL),
@@ -48,6 +51,7 @@ public:
     }
     
     EmiP2PEndpoints(const EmiP2PEndpoints& other) :
+    family(other.family),
     myEndpointPair(other.myEndpointPair ? (uint8_t *)malloc(other.myEndpointPairLength) : NULL),
     myEndpointPairLength(other.myEndpointPairLength),
     peerEndpointPair(other.peerEndpointPair ? (uint8_t *)malloc(other.peerEndpointPairLength) : NULL),
@@ -83,10 +87,44 @@ public:
         return *this;
     }
     
+    const int family;
     uint8_t *myEndpointPair;
     size_t myEndpointPairLength;
     uint8_t *peerEndpointPair;
     size_t peerEndpointPairLength;
+    
+    void extractAddress(bool me, bool inner, sockaddr_storage *addr) {
+        
+        const size_t ipLen = EmiNetUtil::familyIpLength(family);
+        static const size_t portLen = sizeof(uint16_t);
+        const size_t endpointPairLen = 2*(ipLen+portLen);
+        
+        ASSERT(endpointPairLen == (me ? myEndpointPairLength : peerEndpointPairLength));
+        
+        const uint8_t *dataPtr = (me ? myEndpointPair : peerEndpointPair)+(inner ? 0 : ipLen+portLen);
+        
+        EmiNetUtil::makeAddress(family,
+                                dataPtr, ipLen,
+                                *((uint16_t *)(dataPtr+ipLen)),
+                                addr);
+        
+    }
+    
+    void extractMyInnerAddress(sockaddr_storage *addr) {
+        extractAddress(/*me:*/true, /*inner:*/true, addr);
+    }
+    
+    void extractMyOuterAddress(sockaddr_storage *addr) {
+        extractAddress(/*me:*/true, /*inner:*/false, addr);
+    }
+    
+    void extractPeerInnerAddress(sockaddr_storage *addr) {
+        extractAddress(/*me:*/false, /*inner:*/true, addr);
+    }
+    
+    void extractPeerOuterAddress(sockaddr_storage *addr) {
+        extractAddress(/*me:*/false, /*inner:*/false, addr);
+    }
 };
 
 #endif
