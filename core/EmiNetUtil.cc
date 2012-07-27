@@ -105,8 +105,7 @@ size_t EmiNetUtil::addrSize(const sockaddr_storage& address) {
     }
 }
 
-size_t EmiNetUtil::ipLength(const sockaddr_storage& address) {
-    int family = address.ss_family;
+size_t EmiNetUtil::familyIpLength(int family) {
     if (AF_INET == family) {
         return sizeof(in_addr);
     }
@@ -117,6 +116,10 @@ size_t EmiNetUtil::ipLength(const sockaddr_storage& address) {
         ASSERT(0 && "unexpected address family");
         abort();
     }
+}
+
+size_t EmiNetUtil::ipLength(const sockaddr_storage& address) {
+    return familyIpLength(address.ss_family);
 }
 
 size_t EmiNetUtil::extractIp(const sockaddr_storage& address, uint8_t *buf, size_t bufSize) {

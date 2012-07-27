@@ -77,6 +77,7 @@ public:
     
     static size_t addrSize(const sockaddr_storage& address);
     
+    static size_t familyIpLength(int family);
     static size_t ipLength(const sockaddr_storage& address);
     
     // Saves the IP address in buf, in network byte order. Returns the length of the IP address.
