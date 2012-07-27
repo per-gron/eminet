@@ -25,10 +25,10 @@ public:
     peerEndpointPair(NULL),
     peerEndpointPairLength(0) {}
     
-    EmiP2PEndpoints(int family,
+    EmiP2PEndpoints(int family_,
                     const uint8_t *myEndpointPair_, size_t myEndpointPairLength_,
                     const uint8_t *peerEndpointPair_, size_t peerEndpointPairLength_) :
-    family(family),
+    family(family_),
     myEndpointPair(myEndpointPair_ ? (uint8_t *)malloc(myEndpointPairLength_) : NULL),
     myEndpointPairLength(myEndpointPairLength_),
     peerEndpointPair(peerEndpointPair_ ? (uint8_t *)malloc(peerEndpointPairLength_) : NULL),
@@ -72,6 +72,8 @@ public:
             free(peerEndpointPair);
         }
         
+        family = other.family;
+        
         myEndpointPairLength = other.myEndpointPairLength;
         myEndpointPair = other.myEndpointPair ? (uint8_t *)malloc(other.myEndpointPairLength) : NULL;
         if (myEndpointPair) {
@@ -87,7 +89,7 @@ public:
         return *this;
     }
     
-    const int family;
+    int family;
     uint8_t *myEndpointPair;
     size_t myEndpointPairLength;
     uint8_t *peerEndpointPair;
