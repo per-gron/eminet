@@ -191,7 +191,7 @@ public:
         sendPrxSynPackets();
     }
     
-    // The enpoints parameter must have non-NULL endpoints in it
+    // The endpoints parameter must have non-NULL endpoints in it
     //
     // This method is static because even in valid circumstances,
     // a P2P connection might receive PRX-SYN messages after the
@@ -225,6 +225,22 @@ public:
                             endpoints, remoteAddr);
     }
     
+    static bool prxSynAckIsValid(const EmiP2PData& p2p,
+                                 const EmiP2PEndpoints& endpoints,
+                                 const uint8_t *data, size_t len) {
+        if (!endpoints.peerEndpointPair || 0 == endpoints.peerEndpointPairLength) {
+            return false;
+        }
+        
+        /// Check that the hash is correct
+        uint8_t hashBuf[Binding::HMAC_HASH_SIZE];
+        hashForPrxSynAck(p2p, hashBuf, sizeof(hashBuf),
+                         endpoints.peerEndpointPair, endpoints.peerEndpointPairLength);
+        
+        return (len == sizeof(hashBuf) &&
+                0 == memcmp(data, hashBuf, len));
+    }
+    
     template<class ConnRtoTimer>
     void gotPrxSynAck(const sockaddr_storage& remoteAddr,
                       const uint8_t *data,
@@ -238,13 +254,7 @@ public:
             return;
         }
         
-        /// Check that the hash is correct
-        uint8_t hashBuf[Binding::HMAC_HASH_SIZE];
-        hashForPrxSynAck(_p2p, hashBuf, sizeof(hashBuf),
-                         _endpoints.peerEndpointPair, _endpoints.peerEndpointPairLength);
-        
-        if (len != sizeof(hashBuf) ||
-            0 != memcmp(data, hashBuf, len)) {
+        if (!prxSynAckIsValid(_p2p, _endpoints, data, len)) {
             // Invalid hash
             return;
         }
@@ -261,7 +271,7 @@ public:
         _rtoTimer.forceResetRtoTimer();
         connRtoTimer.forceResetRtoTimer();
         
-        /// This will make sure we stop re-sending the PRX-RST message,
+        /// This will make sure we stop re-sending the PRX-SYN message,
         /// and instead re-send the PRX-RST message if necessary.
         _isInProxyTeardownPhase = true;
         
