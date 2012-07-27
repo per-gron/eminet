@@ -189,26 +189,24 @@ public:
         /// EmiSock should not be deleted before all open connections are closed,
         /// but just to be sure, we close all remaining connections.
         
-        do {
-            size_t numConns = _serverConns.size();
-            ServerConnectionMapIter iter = _serverConns.begin();
-            ServerConnectionMapIter end  = _serverConns.end();
-            while (iter != end) {
-                // This will remove the connection from _conns
-                (*iter).second->forceClose();
-                
-                // We do this check to make sure we don't enter an infinite loop.
-                // It shouldn't be required.
-                size_t newNumConns = _serverConns.size();
-                ASSERT(newNumConns < numConns);
-                numConns = newNumConns;
-                
-                // We can't increment iter, it has been
-                // invalidated because the connection was
-                // removed from _conns
-                iter = _serverConns.begin();
-            }
-        } while (0);
+        size_t numConns = _serverConns.size();
+        ServerConnectionMapIter iter = _serverConns.begin();
+        ServerConnectionMapIter end  = _serverConns.end();
+        while (iter != end) {
+            // This will remove the connection from _conns
+            (*iter).second->forceClose();
+            
+            // We do this check to make sure we don't enter an infinite loop.
+            // It shouldn't be required.
+            size_t newNumConns = _serverConns.size();
+            ASSERT(newNumConns < numConns);
+            numConns = newNumConns;
+            
+            // We can't increment iter, it has been
+            // invalidated because the connection was
+            // removed from _conns
+            iter = _serverConns.begin();
+        }
         
         /// Close the server socket
         if (_serverSocket) {
