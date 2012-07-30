@@ -101,7 +101,9 @@
         ((S *)_sock)->open(err);
     });
     
-    *errPtr = err;
+    if (errPtr) {
+        *errPtr = err;
+    }
     return !err;
 }
 

@@ -98,7 +98,9 @@
 - (BOOL)closeWithError:(NSError **)errPtr {
     NSError *err;
     BOOL retVal = ((EC *)_ec)->close([self _now], err);
-    *errPtr = err;
+    if (errPtr) {
+        *errPtr = err;
+    }
     
     return retVal;
 }
