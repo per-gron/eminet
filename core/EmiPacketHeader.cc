@@ -277,7 +277,7 @@ void EmiPacketHeader::addFillerBytes(uint8_t *buf, size_t packetSize, uint16_t f
         // Decrement the filler size here because by adding
         // the extra flags byte we have already increased
         // the size of the packet by one.
-        fillerSize -= sizeof(EmiPacketExtraFlags);
+        fillerSize -= 1;
     }
     
     if (0 == fillerSize) {
