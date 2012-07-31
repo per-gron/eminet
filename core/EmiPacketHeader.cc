@@ -39,7 +39,7 @@ inline static void extractFlagsAndSize(EmiPacketFlags flags,
     *expectedSize = sizeof(EmiPacketFlags);
     
     if (hasExtraFlags) {
-        *expectedSize += sizeof(EmiPacketExtraFlags);
+        *expectedSize += 1; // The packet extra flags byte
         
         if (flags & EMI_1_BYTE_FILLER_EXTRA_PACKET_FLAG) {
             fillerSize = 1;
@@ -132,7 +132,7 @@ bool EmiPacketHeader::parse(const uint8_t *buf, size_t bufSize, EmiPacketHeader 
     const uint8_t *bufCur = buf+sizeof(header->flags);
     
     if (flags & EMI_EXTRA_FLAGS_PACKET_FLAG) {
-        bufCur += sizeof(EmiPacketExtraFlags);
+        bufCur += 1; // The packet extra flags byte
         bufCur += fillerSize;
     }
     
