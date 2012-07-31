@@ -34,7 +34,9 @@ void EmiConnTime::gotRttResponse(EmiTimeInterval rtt) {
 
 EmiConnTime::EmiConnTime() :
 _rto(EMI_INIT_RTO), _srtt(-1),
-_rttvar(-1), _expCount(0) {}
+_rttvar(-1), _expCount(0),
+_rttRequestSequenceNumber(-1),
+_rttRequestTime(-1) {}
 
 void EmiConnTime::swap(EmiConnTime& other) {
     EmiConnTime tmp(*this);
