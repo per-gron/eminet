@@ -345,42 +345,96 @@ public:
         }
     }
     
-    // Returns false if the sender buffer didn't have space for the message.
-    // Failing only happens for reliable mesages.
+    // Returns the number of actual messages enqueued (after potentially
+    // splitting it to fit actual network packets), or 0 if the sender
+    // buffer didn't have space for the message.
+    //
+    // A return value of 0 only happens for reliable mesages.
     //
     // enqueueMessage assumes overship of the PersistentData object (unless
     // the pointer is NULL)
-    bool enqueueMessage(EmiTimeInterval now,
-                        EmiPriority priority,
-                        EmiChannelQualifier channelQualifier,
-                        EmiSequenceNumber sequenceNumber,
-                        EmiMessageFlags flags,
-                        const PersistentData *data,
-                        bool reliable,
-                        bool allowSplit,
-                        Error& err) {
-        bool error = false;
+    size_t enqueueMessage(EmiTimeInterval now,
+                          EmiPriority priority,
+                          EmiChannelQualifier channelQualifier,
+                          EmiSequenceNumber sequenceNumber,
+                          EmiMessageFlags flags,
+                          const PersistentData *data,
+                          bool reliable,
+                          bool allowSplit,
+                          Error& err) {
+        static const size_t MAX_MESSAGE_LENGTH = (EMI_MINIMAL_MTU -
+                                                  EMI_UDP_HEADER_SIZE -
+                                                  EMI_PACKET_HEADER_MAX_LENGTH -
+                                                  EmiMessage<Binding>::maximalHeaderSize());
         
-        EmiMessage<Binding> *msg(data ? new EmiMessage<Binding>(*data) : new EmiMessage<Binding>);
-        msg->priority = priority;
-        msg->channelQualifier = channelQualifier;
-        msg->sequenceNumber = sequenceNumber;
-        msg->flags = flags;
+        bool hasOwnershipOfDataObject = true;
         
-        if (reliable) {
-            if (!_senderBuffer.registerReliableMessage(msg, err, now)) {
-                error = true;
-                goto cleanup;
-            }
-            _timers.updateRtoTimeout();
+        const uint8_t *rawData = (data ? Binding::extractData(*data) : NULL);
+        size_t dataLength = (data ? Binding::extractLength(*data) : 0);
+        
+        // Make sure that we won't split a message when instructed not to allow that
+        ASSERT(allowSplit || dataLength <= MAX_MESSAGE_LENGTH);
+        
+        // The -1 and +1 is to ensure we round up.
+        //
+        // The 0 == dataLength test is to avoid messed-up-ness with
+        // unsignedness and also to ensure that numMessages >= 1.
+        size_t numMessages = (0 == dataLength ?
+                              1 :
+                              ((dataLength-1) / MAX_MESSAGE_LENGTH)+1);
+        
+        // Make sure that the message(s) we will send fit into the sender buffer
+        // if applicable.
+        if (reliable && !_senderBuffer.fitsIntoBuffer(dataLength, numMessages)) {
+            err = Binding::makeError("com.emilir.eminet.sendbufferoverflow", 0);
+            return 0;
         }
         
-        enqueueUnreliableMessage(now, msg);
+        for (int i=0; i<numMessages; i++) {
+            EmiMessage<Binding> *msg;
+            
+            if (data && 1 == numMessages) {
+                // Avoid copying data if we're not splitting the message
+                hasOwnershipOfDataObject = false;
+                msg = new EmiMessage<Binding>(*data);
+            }
+            else if (data) {
+                // We're splitting the message
+                size_t offset = i*MAX_MESSAGE_LENGTH;
+                PersistentData dataObj(Binding::makePersistentData(rawData + offset,
+                                                                   (i == numMessages-1 ? dataLength-offset : MAX_MESSAGE_LENGTH)));
+                msg = new EmiMessage<Binding>(dataObj);
+            }
+            else {
+                // There are no message contents to split
+                msg = new EmiMessage<Binding>;
+            }
+            
+            msg->priority = priority;
+            msg->channelQualifier = channelQualifier;
+            msg->sequenceNumber = sequenceNumber;
+            msg->flags = (flags |
+                          (0 == i ? 0 : EMI_SPLIT_NOT_FIRST_FLAG) |
+                          (numMessages-1 == i ? 0 : EMI_SPLIT_NOT_LAST_FLAG));
+            
+            if (reliable) {
+                // registerReliableMessage returns false when the message does not fit
+                // into the buffer. But we have already checked for that, so it should
+                // never happen.
+                ASSERT(_senderBuffer.registerReliableMessage(msg, err, now));
+                _timers.updateRtoTimeout();
+            }
+            
+            enqueueUnreliableMessage(now, msg);
+            
+            msg->release();
+        }
         
-    cleanup:
-        msg->release();
+        if (hasOwnershipOfDataObject && data) {
+            Binding::releasePersistentData(*data);
+        }
         
-        return !error;
+        return numMessages;
     }
     
     // The first time this methods is called, it opens the EmiConnection and returns true.
@@ -617,7 +671,7 @@ public:
     //
     // This method assumes ownership over the data parameter, and will release it
     // with SockDelegate::releaseData when it's done with it. The buffer must not
-    // be modified or released until after SockDelegate::releasePersistentData has
+    // be modified or released until after Binding::releasePersistentData has
     // been called on it.
     bool send(EmiTimeInterval now, const PersistentData& data, EmiChannelQualifier channelQualifier, EmiPriority priority, Error& err) {
         if (!_conn || _conn->isClosing()) {

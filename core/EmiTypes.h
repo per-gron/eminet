@@ -11,7 +11,7 @@
 
 #include <stdint.h>
 
-#define EMI_DEFAULT_MTU                  (576)
+#define EMI_MINIMAL_MTU                  (576)
 #define EMI_DEFAULT_HEARTBEAT_FREQUENCY  (0.3)
 #define EMI_DEFAULT_HEARTBEATS_BEFORE_CONNECTION_WARNING (2.5)
 #define EMI_DEFAULT_CONNECTION_TIMEOUT   (30)
@@ -92,11 +92,13 @@ typedef uint8_t  EmiPacketFlags;
 typedef double   EmiTimeInterval;
 
 typedef enum {
-    EMI_PRX_FLAG  = 0x10,
-    EMI_RST_FLAG  = 0x08,
-    EMI_SYN_FLAG  = 0x04,
-    EMI_ACK_FLAG  = 0x02,
-    EMI_SACK_FLAG = 0x01
+    EMI_SPLIT_NOT_FIRST_FLAG = 0x40, // This flag means that this is a split message, and it's not the first part
+    EMI_SPLIT_NOT_LAST_FLAG  = 0x20, // This flag means that this is a split message, and it's not the last part
+    EMI_PRX_FLAG             = 0x10,
+    EMI_RST_FLAG             = 0x08,
+    EMI_SYN_FLAG             = 0x04,
+    EMI_ACK_FLAG             = 0x02,
+    EMI_SACK_FLAG            = 0x01
 } EmiMessageFlag;
 
 typedef enum {

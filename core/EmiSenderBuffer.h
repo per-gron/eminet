@@ -89,6 +89,10 @@ private:
         return NULL;
     }
     
+    size_t messageSize(size_t dataSize, size_t numMessages = 1) {
+        return dataSize + numMessages*EM::maximalHeaderSize();
+    }
+    
 public:
     
     EmiSenderBuffer(size_t size) : _size(size), _sendBufferSize(0) {}
@@ -101,9 +105,13 @@ public:
         }
     }
     
+    bool fitsIntoBuffer(size_t dataSize, size_t numMessages) {
+        return _size >= _sendBufferSize+messageSize(dataSize, numMessages);
+    }
+    
     // Returns false if the buffer didn't have space for the message
     bool registerReliableMessage(EM *message, Error& err, EmiTimeInterval now) {
-        size_t msgSize = message->approximateSize();
+        size_t msgSize = messageSize(Binding::extractLength(message->data));
         
         if (_sendBufferSize+msgSize > _size) {
             err = Binding::makeError("com.emilir.eminet.sendbufferoverflow", 0);
@@ -174,7 +182,7 @@ public:
             bool wasRemovedFromSendBuffer = (0 != _sendBuffer.erase(msg));
             ASSERT(wasRemovedFromSendBuffer);
             
-            _sendBufferSize -= msg->approximateSize();
+            _sendBufferSize -= messageSize(Binding::extractLength(msg->data));
             
             bool wasRemovedFromNextMsgTree = 0 != _nextMsgTree.erase(msg);
             wasInReliableTree = wasRemovedFromNextMsgTree || wasInReliableTree;

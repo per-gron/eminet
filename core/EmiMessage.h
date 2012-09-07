@@ -80,13 +80,17 @@ public:
         if (0 == _refCount) delete this;
     }
     
+    static inline const size_t maximalHeaderSize() {
+        // + 3 for the sequence number
+        // + 3 for the possibility of adding ACK data to the message
+        return EMI_MESSAGE_HEADER_MIN_LENGTH + 3 + 3;
+    }
+    
     // Returns an upper bound of the size of this message as encoded
     // on the wire. Note that EmiSendQueue relies on this method to
     // always return the same value given the same message.
     size_t approximateSize() const {
-        // + 2 for the possibility of adding ACK data to the message
-        // + 3 for the sequence number and split id
-        return EMI_MESSAGE_HEADER_MIN_LENGTH + Binding::extractLength(data) + 2 + 3;
+        return maximalHeaderSize() + Binding::extractLength(data);
     }
     
     // THIS FIELD IS INTENDED TO BE USED ONLY BY EmiSenderBuffer!

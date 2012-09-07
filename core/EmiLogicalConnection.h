@@ -621,21 +621,23 @@ public:
             return false;
         }
         
-        if (_conn->enqueueMessage(now,
-                                  priority,
-                                  channelQualifier,
-                                  /*sequenceNumber:*/prevSeqMemo,
-                                  /*flags:*/0,
-                                  &data,
-                                  reliable,
-                                  /*allowSplit:*/true,
-                                  err)) {
-            // enqueueMessage succeeded
-            _sequenceMemo[channelQualifier] = (prevSeqMemo+1) & EMI_HEADER_SEQUENCE_NUMBER_MASK;
-        }
-        else {
+        size_t enqueuedMessages = _conn->enqueueMessage(now,
+                                                        priority,
+                                                        channelQualifier,
+                                                        /*sequenceNumber:*/prevSeqMemo,
+                                                        /*flags:*/0,
+                                                        &data,
+                                                        reliable,
+                                                        /*allowSplit:*/true,
+                                                        err);
+        
+        if (0 == enqueuedMessages) {
             // enqueueMessage failed
             return false;
+        }
+        else {
+            // enqueueMessage succeeded
+            _sequenceMemo[channelQualifier] = (prevSeqMemo+enqueuedMessages) & EMI_HEADER_SEQUENCE_NUMBER_MASK;
         }
         
         if (EMI_CHANNEL_TYPE_RELIABLE_SEQUENCED == channelType) {

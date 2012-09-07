@@ -17,7 +17,7 @@
 class EmiSockConfig {
 public:
     EmiSockConfig() :
-    mtu(EMI_DEFAULT_MTU),
+    mtu(EMI_MINIMAL_MTU),
     heartbeatFrequency(EMI_DEFAULT_HEARTBEAT_FREQUENCY),
     connectionTimeout(EMI_DEFAULT_CONNECTION_TIMEOUT),
     initialConnectionTimeout(EMI_DEFAULT_CONNECTION_TIMEOUT),
