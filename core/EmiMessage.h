@@ -48,8 +48,8 @@ private:
         else {
             msg = new EmiMessage;
         }
-        msg->priority = EMI_PRIORITY_HIGH;
-        msg->channelQualifier = -1; // Special SYN/RST message channel. SenderBuffer requires this to be an integer
+        msg->priority = EMI_PRIORITY_CONTROL;
+        msg->channelQualifier = EMI_CONTROL_CHANNEL;
         msg->sequenceNumber = sequenceNumber;
         msg->flags = flags;
         return msg;

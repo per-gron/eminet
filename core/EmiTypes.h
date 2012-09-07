@@ -40,8 +40,10 @@
 
 // To be changed when priorities are actually implemented
 #define EMI_PRIORITY_DEFAULT          (EMI_PRIORITY_MEDIUM)
+#define EMI_PRIORITY_CONTROL          (EMI_PRIORITY_HIGH)
 #define EMI_CHANNEL_TYPE_DEFAULT      (EMI_CHANNEL_TYPE_RELIABLE_ORDERED)
 #define EMI_DEFAULT_CHANNEL           (0)
+#define EMI_CONTROL_CHANNEL           (-1) // Special SYN/RST message channel. SenderBuffer requires this to be an integer
 #define EMI_CHANNEL_QUALIFIER_DEFAULT EMI_CHANNEL_QUALIFIER(EMI_CHANNEL_TYPE_DEFAULT, EMI_DEFAULT_CHANNEL)
 
 typedef enum {

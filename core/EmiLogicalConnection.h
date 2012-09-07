@@ -118,7 +118,7 @@ private:
         return EmiNetUtil::cyclicDifference24Signed(expectedSequenceNumber, header.sequenceNumber);
     }
     
-    EmiSequenceNumber sequenceMemoForChannelQualifier(EmiChannelQualifier cq) {
+    inline EmiSequenceNumber sequenceMemoForChannelQualifier(EmiChannelQualifier cq) {
         EmiLogicalConnectionMemo::iterator cur = _sequenceMemo.find(cq);
         return (_sequenceMemo.end() == cur ? _initialSequenceNumber : (*cur).second);
     }
@@ -589,15 +589,10 @@ public:
     // Returns false if the sender buffer was full and the message couldn't be sent
     bool send(const PersistentData& data, EmiTimeInterval now, EmiChannelQualifier channelQualifier, EmiPriority priority, Error& err) {
         bool error = false;
+        EM *msg = NULL;
         
         // This has to be called before we increment _sequenceMemo[cq]
-        EmiChannelQualifier prevSeqMemo = sequenceMemoForChannelQualifier(channelQualifier);
-        
-        EM *msg = EM::makeDataMessage(channelQualifier,
-                                      sequenceMemoForChannelQualifier(channelQualifier),
-                                      data,
-                                      priority);
-        _sequenceMemo[channelQualifier] = (msg->sequenceNumber+1) & EMI_HEADER_SEQUENCE_NUMBER_MASK;
+        EmiSequenceNumber prevSeqMemo = sequenceMemoForChannelQualifier(channelQualifier);
         
         EmiChannelType channelType = EMI_CHANNEL_QUALIFIER_TYPE(channelQualifier);
         
@@ -616,7 +611,26 @@ public:
             goto cleanup;
         }
         
+        msg = EM::makeDataMessage(channelQualifier,
+                                  /*sequenceNumber:*/prevSeqMemo,
+                                  data,
+                                  priority);
+        
+        if (_conn->enqueueMessage(now, msg, reliable, err)) {
+            // enqueueMessage succeeded
+            _sequenceMemo[channelQualifier] = (msg->sequenceNumber+1) & EMI_HEADER_SEQUENCE_NUMBER_MASK;
+        }
+        else {
+            // enqueueMessage failed
+            error = true;
+            goto cleanup;
+        }
+        
         if (EMI_CHANNEL_TYPE_RELIABLE_SEQUENCED == channelType) {
+            // We have now successfully enqueued a new message on a RELIABLE_SEQUENCED
+            // channel. We can safely deregister previous reliable messages on the
+            // channel.
+            
             EmiLogicalConnectionMemo::iterator cur = _reliableSequencedBuffer.find(channelQualifier);
             if (_reliableSequencedBuffer.end() != cur) {
                 _conn->deregisterReliableMessages(now, channelQualifier, prevSeqMemo);
@@ -624,15 +638,11 @@ public:
             _reliableSequencedBuffer[channelQualifier] = msg->sequenceNumber;
         }
         
-        if (!_conn->enqueueMessage(now, msg, reliable, err)) {
-            // _sequenceMemo[channelQualifier] has been bumped. Since the message wasn't sent: Undo that
-            _sequenceMemo[channelQualifier] = prevSeqMemo;
-            error = true;
-            goto cleanup;
+    cleanup:
+        if (msg) {
+            msg->release();
         }
         
-    cleanup:
-        msg->release();
         return !error;
     }
     
