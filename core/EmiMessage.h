@@ -58,6 +58,7 @@ public:
         return endpointLen;
     }
     
+    // EmiMessage assumes ownership of the PersistentData object
     explicit EmiMessage(PersistentData data_) : data(data_) {
         commonInit();
     }

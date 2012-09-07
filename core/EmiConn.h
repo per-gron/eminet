@@ -311,40 +311,45 @@ public:
     
     // Returns false if the sender buffer didn't have space for the message.
     // Failing only happens for reliable mesages.
-    bool enqueueMessage(EmiTimeInterval now,
-                        EmiPriority priority,
-                        EmiChannelQualifier channelQualifier,
-                        EmiSequenceNumber sequenceNumber,
-                        EmiMessageFlags flags,
-                        const uint8_t *data,
-                        size_t dataLen,
-                        bool reliable,
-                        Error& err) {
+    //
+    // Messages enqueued with this method will not be split.
+    bool enqueueControlMessage(EmiTimeInterval now,
+                               EmiSequenceNumber sequenceNumber,
+                               EmiMessageFlags flags,
+                               const uint8_t *data,
+                               size_t dataLen,
+                               bool reliable,
+                               Error& err) {
         if (0 != dataLen) {
             PersistentData dataObj(Binding::makePersistentData(data, dataLen));
             return enqueueMessage(now,
-                                  priority,
-                                  channelQualifier,
+                                  EMI_PRIORITY_CONTROL,
+                                  EMI_CONTROL_CHANNEL,
                                   sequenceNumber,
                                   flags,
                                   &dataObj,
                                   reliable,
+                                  /*allowSplit:*/false,
                                   err);
         }
         else {
             return enqueueMessage(now,
-                                  priority,
-                                  channelQualifier,
+                                  EMI_PRIORITY_CONTROL,
+                                  EMI_CONTROL_CHANNEL,
                                   sequenceNumber,
                                   flags,
                                   /*data:*/NULL,
                                   reliable,
+                                  /*allowSplit:*/false,
                                   err);
         }
     }
     
     // Returns false if the sender buffer didn't have space for the message.
     // Failing only happens for reliable mesages.
+    //
+    // enqueueMessage assumes overship of the PersistentData object (unless
+    // the pointer is NULL)
     bool enqueueMessage(EmiTimeInterval now,
                         EmiPriority priority,
                         EmiChannelQualifier channelQualifier,
@@ -352,16 +357,11 @@ public:
                         EmiMessageFlags flags,
                         const PersistentData *data,
                         bool reliable,
+                        bool allowSplit,
                         Error& err) {
         bool error = false;
         
-        EmiMessage<Binding> *msg;
-        if (data) {
-            msg = new EmiMessage<Binding>(*data);
-        }
-        else {
-            msg = new EmiMessage<Binding>;
-        }
+        EmiMessage<Binding> *msg(data ? new EmiMessage<Binding>(*data) : new EmiMessage<Binding>);
         msg->priority = priority;
         msg->channelQualifier = channelQualifier;
         msg->sequenceNumber = sequenceNumber;

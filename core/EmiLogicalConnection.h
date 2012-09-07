@@ -226,15 +226,13 @@ public:
             _reliableHandshakeMsgSn = _initialSequenceNumber;
         }
         
-        if (!_conn->enqueueMessage(now,
-                                   EMI_PRIORITY_CONTROL,
-                                   EMI_CONTROL_CHANNEL,
-                                   _initialSequenceNumber,
-                                   (_sendingSyn ? EMI_SYN_FLAG : EMI_SYN_FLAG | EMI_RST_FLAG),
-                                   data,
-                                   dataLen,
-                                   /*reliable:*/_sendingSyn,
-                                   err)) {
+        if (!_conn->enqueueControlMessage(now,
+                                          _initialSequenceNumber,
+                                          (_sendingSyn ? EMI_SYN_FLAG : EMI_SYN_FLAG | EMI_RST_FLAG),
+                                          data,
+                                          dataLen,
+                                          /*reliable:*/_sendingSyn,
+                                          err)) {
             error = true;
         }
         
@@ -440,15 +438,13 @@ public:
             size_t msgSize = EM::fillPrxAckMessage(inboundAddr, buf, sizeof(buf));
             
             Error err;
-            ASSERT(_conn->enqueueMessage(now,
-                                         EMI_PRIORITY_CONTROL,
-                                         EMI_CONTROL_CHANNEL,
-                                         _initialSequenceNumber,
-                                         EMI_PRX_FLAG | EMI_ACK_FLAG,
-                                         buf,
-                                         msgSize,
-                                         /*reliable:*/true,
-                                         err));
+            ASSERT(_conn->enqueueControlMessage(now,
+                                                _initialSequenceNumber,
+                                                EMI_PRX_FLAG | EMI_ACK_FLAG,
+                                                buf,
+                                                msgSize,
+                                                /*reliable:*/true,
+                                                err));
             
             _reliableHandshakeMsgSn = _initialSequenceNumber;
         }
@@ -590,15 +586,13 @@ public:
         bool error(false);
         
         // Send an RST (connection close) message
-        if (!_conn->enqueueMessage(now,
-                                   EMI_PRIORITY_CONTROL,
-                                   EMI_CONTROL_CHANNEL,
-                                   _initialSequenceNumber,
-                                   /*flags:*/EMI_RST_FLAG,
-                                   /*data:*/NULL,
-                                   /*dataLen:*/0,
-                                   /*reliable:*/true,
-                                   err)) {
+        if (!_conn->enqueueControlMessage(now,
+                                          _initialSequenceNumber,
+                                          /*flags:*/EMI_RST_FLAG,
+                                          /*data:*/NULL,
+                                          /*dataLen:*/0,
+                                          /*reliable:*/true,
+                                          err)) {
             error = true;
         }
         
@@ -606,6 +600,8 @@ public:
     }
     
     // Returns false if the sender buffer was full and the message couldn't be sent
+    //
+    // send assumes ownership of the data PersistentData object
     bool send(const PersistentData& data, EmiTimeInterval now, EmiChannelQualifier channelQualifier, EmiPriority priority, Error& err) {
         // This has to be called before we increment _sequenceMemo[cq]
         EmiSequenceNumber prevSeqMemo = sequenceMemoForChannelQualifier(channelQualifier);
@@ -632,6 +628,7 @@ public:
                                   /*flags:*/0,
                                   &data,
                                   reliable,
+                                  /*allowSplit:*/true,
                                   err)) {
             // enqueueMessage succeeded
             _sequenceMemo[channelQualifier] = (prevSeqMemo+1) & EMI_HEADER_SEQUENCE_NUMBER_MASK;
