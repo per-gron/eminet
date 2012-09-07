@@ -38,70 +38,24 @@ private:
         priority = EMI_PRIORITY_DEFAULT;
     }
     
-    // The caller is responsible for releasing the returned object
-    static EmiMessage *makeSynAndOrRstMessage(EmiMessageFlags flags, EmiSequenceNumber sequenceNumber,
-                                              const uint8_t *data, size_t dataLen) {
-        EmiMessage *msg;
-        if (data) {
-            msg = new EmiMessage(Binding::makePersistentData(data, dataLen));
-        }
-        else {
-            msg = new EmiMessage;
-        }
-        msg->priority = EMI_PRIORITY_CONTROL;
-        msg->channelQualifier = EMI_CONTROL_CHANNEL;
-        msg->sequenceNumber = sequenceNumber;
-        msg->flags = flags;
-        return msg;
-    }
-    
 public:
     
     // The caller is responsible for releasing the returned object
-    static EmiMessage *makeSynMessage(EmiSequenceNumber sequenceNumber, const uint8_t *data, size_t dataLen) {
-        return makeSynAndOrRstMessage(EMI_SYN_FLAG, sequenceNumber, data, dataLen);
-    }
-    
-    // The caller is responsible for releasing the returned object
-    static EmiMessage *makeSynRstMessage(EmiSequenceNumber sequenceNumber) {
-        return makeSynAndOrRstMessage(EMI_SYN_FLAG | EMI_RST_FLAG, sequenceNumber, /*data:*/NULL, /*dataLen:*/0);
-    }
-    
-    // The caller is responsible for releasing the returned object
-    static EmiMessage *makeRstMessage(EmiSequenceNumber sequenceNumber) {
-        return makeSynAndOrRstMessage(EMI_RST_FLAG, sequenceNumber, /*data:*/NULL, /*dataLen:*/0);
-    }
-    
-    // The caller is responsible for releasing the returned object
-    static EmiMessage *makePrxAckMessage(EmiSequenceNumber sequenceNumber, const sockaddr_storage& inboundAddr) {
+    static size_t fillPrxAckMessage(const sockaddr_storage& inboundAddr, uint8_t *buf, size_t bufLen) {
         const size_t ipLen = EmiNetUtil::ipLength(inboundAddr);
         static const size_t portLen = sizeof(uint16_t);
         const size_t endpointLen = ipLen+portLen;
         
-        uint8_t buf[96];
-        ASSERT(sizeof(buf) >= endpointLen);
+        ASSERT(bufLen >= endpointLen);
         
         // The IP address and port number are in network byte order
         
         /// Save the endpoint in buf
-        EmiNetUtil::extractIp(inboundAddr, buf, sizeof(buf));
+        EmiNetUtil::extractIp(inboundAddr, buf, bufLen);
         uint16_t port = EmiNetUtil::addrPortN(inboundAddr);
         memcpy(buf+ipLen, &port, portLen);
         
-        return makeSynAndOrRstMessage(EMI_PRX_FLAG | EMI_ACK_FLAG, sequenceNumber, buf, endpointLen);
-    }
-    
-    // The caller is responsible for releasing the returned object
-    static EmiMessage *makeDataMessage(EmiChannelQualifier cq,
-                                       EmiSequenceNumber sequenceNumber,
-                                       const PersistentData& data,
-                                       EmiPriority priority) {
-        EmiMessage *msg = new EmiMessage(data);
-        msg->channelQualifier = cq;
-        msg->sequenceNumber = sequenceNumber;
-        msg->priority = priority;
-        
-        return msg;
+        return endpointLen;
     }
     
     explicit EmiMessage(PersistentData data_) : data(data_) {

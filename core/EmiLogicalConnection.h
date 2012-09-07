@@ -216,21 +216,27 @@ public:
         
         releaseReliableHandshakeMsg(now);
         
-        EM *msg = _sendingSyn ?
-            EM::makeSynMessage(_initialSequenceNumber,
-                               _conn->getP2PData().p2pCookie,
-                               _conn->getP2PData().p2pCookieLength) :
-            EM::makeSynRstMessage(_initialSequenceNumber);
+        uint8_t *data = NULL;
+        size_t dataLen = 0;
         
         if (_sendingSyn) {
-            _reliableHandshakeMsgSn = msg->sequenceNumber;
+            data    = _conn->getP2PData().p2pCookie;
+            dataLen = _conn->getP2PData().p2pCookieLength;
+            
+            _reliableHandshakeMsgSn = _initialSequenceNumber;
         }
         
-        if (!_conn->enqueueMessage(now, msg, /*reliable:*/_sendingSyn, err)) {
+        if (!_conn->enqueueMessage(now,
+                                   EMI_PRIORITY_CONTROL,
+                                   EMI_CONTROL_CHANNEL,
+                                   _initialSequenceNumber,
+                                   (_sendingSyn ? EMI_SYN_FLAG : EMI_SYN_FLAG | EMI_RST_FLAG),
+                                   data,
+                                   dataLen,
+                                   /*reliable:*/_sendingSyn,
+                                   err)) {
             error = true;
         }
-        
-        msg->release();
         
         return !error;
     }
@@ -428,16 +434,23 @@ public:
         invokeSynRstCallback(false, EMI_REASON_NO_ERROR);
         
         if (_conn && EMI_CONNECTION_TYPE_P2P == _conn->getType()) {
-            // Send reliable PRX-SYN message
+            // Send reliable PRX-ACK message
             
-            EM *msg = EM::makePrxAckMessage(_initialSequenceNumber, inboundAddr);
+            uint8_t buf[96];
+            size_t msgSize = EM::fillPrxAckMessage(inboundAddr, buf, sizeof(buf));
             
             Error err;
-            ASSERT(_conn->enqueueMessage(now, msg, /*reliable:*/_sendingSyn, err));
+            ASSERT(_conn->enqueueMessage(now,
+                                         EMI_PRIORITY_CONTROL,
+                                         EMI_CONTROL_CHANNEL,
+                                         _initialSequenceNumber,
+                                         EMI_PRX_FLAG | EMI_ACK_FLAG,
+                                         buf,
+                                         msgSize,
+                                         /*reliable:*/true,
+                                         err));
             
-            _reliableHandshakeMsgSn = msg->sequenceNumber;
-            
-            msg->release();
+            _reliableHandshakeMsgSn = _initialSequenceNumber;
         }
         
         return true;
@@ -577,20 +590,23 @@ public:
         bool error(false);
         
         // Send an RST (connection close) message
-        EM *msg = EM::makeRstMessage(_initialSequenceNumber);
-        if (!_conn->enqueueMessage(now, msg, /*reliable:*/true, err)) {
+        if (!_conn->enqueueMessage(now,
+                                   EMI_PRIORITY_CONTROL,
+                                   EMI_CONTROL_CHANNEL,
+                                   _initialSequenceNumber,
+                                   /*flags:*/EMI_RST_FLAG,
+                                   /*data:*/NULL,
+                                   /*dataLen:*/0,
+                                   /*reliable:*/true,
+                                   err)) {
             error = true;
         }
-        msg->release();
         
         return !error;
     }
     
     // Returns false if the sender buffer was full and the message couldn't be sent
     bool send(const PersistentData& data, EmiTimeInterval now, EmiChannelQualifier channelQualifier, EmiPriority priority, Error& err) {
-        bool error = false;
-        EM *msg = NULL;
-        
         // This has to be called before we increment _sequenceMemo[cq]
         EmiSequenceNumber prevSeqMemo = sequenceMemoForChannelQualifier(channelQualifier);
         
@@ -601,29 +617,28 @@ public:
         
         if (isClosed()) {
             err = Binding::makeError("com.emilir.eminet.closed", 0);
-            error = true;
-            goto cleanup;
+            return false;
         }
         
         if (0 == Binding::extractLength(data)) {
             err = Binding::makeError("com.emilir.eminet.emptymessage", 0);
-            error = true;
-            goto cleanup;
+            return false;
         }
         
-        msg = EM::makeDataMessage(channelQualifier,
+        if (_conn->enqueueMessage(now,
+                                  priority,
+                                  channelQualifier,
                                   /*sequenceNumber:*/prevSeqMemo,
-                                  data,
-                                  priority);
-        
-        if (_conn->enqueueMessage(now, msg, reliable, err)) {
+                                  /*flags:*/0,
+                                  &data,
+                                  reliable,
+                                  err)) {
             // enqueueMessage succeeded
-            _sequenceMemo[channelQualifier] = (msg->sequenceNumber+1) & EMI_HEADER_SEQUENCE_NUMBER_MASK;
+            _sequenceMemo[channelQualifier] = (prevSeqMemo+1) & EMI_HEADER_SEQUENCE_NUMBER_MASK;
         }
         else {
             // enqueueMessage failed
-            error = true;
-            goto cleanup;
+            return false;
         }
         
         if (EMI_CHANNEL_TYPE_RELIABLE_SEQUENCED == channelType) {
@@ -635,15 +650,10 @@ public:
             if (_reliableSequencedBuffer.end() != cur) {
                 _conn->deregisterReliableMessages(now, channelQualifier, prevSeqMemo);
             }
-            _reliableSequencedBuffer[channelQualifier] = msg->sequenceNumber;
+            _reliableSequencedBuffer[channelQualifier] = prevSeqMemo;
         }
         
-    cleanup:
-        if (msg) {
-            msg->release();
-        }
-        
-        return !error;
+        return true;
     }
     
     bool isOpening() const {

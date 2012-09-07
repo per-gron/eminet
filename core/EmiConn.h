@@ -146,6 +146,22 @@ private:
         ASSERT(false && "Internal error");
     }
     
+    void enqueueUnreliableMessage(EmiTimeInterval now,
+                                  EmiMessage<Binding> *msg) {
+        _timers.ensureTickTimeout();
+        
+        Error enqueueError;
+        if (!_sendQueue.enqueueMessage(msg, _congestionControl, _timers.getTime(), now, enqueueError)) {
+            // This failing is not a catastrophic failure; if the message is not reliable
+            // the system should allow for it to be lost anyway, and if the message is
+            // reliable, it will be re-inserted into the send queue on the applicable RTO
+            // timeout.
+            
+            // For now, we'll do nothing here. In the future, it might be a good idea to
+            // improve this by telling the client of EmiNet that this happened.
+        }
+    }
+    
 public:
     const EmiSockConfig config;
     
@@ -295,28 +311,76 @@ public:
     
     // Returns false if the sender buffer didn't have space for the message.
     // Failing only happens for reliable mesages.
-    bool enqueueMessage(EmiTimeInterval now, EmiMessage<Binding> *msg, bool reliable, Error& err) {
+    bool enqueueMessage(EmiTimeInterval now,
+                        EmiPriority priority,
+                        EmiChannelQualifier channelQualifier,
+                        EmiSequenceNumber sequenceNumber,
+                        EmiMessageFlags flags,
+                        const uint8_t *data,
+                        size_t dataLen,
+                        bool reliable,
+                        Error& err) {
+        if (0 != dataLen) {
+            PersistentData dataObj(Binding::makePersistentData(data, dataLen));
+            return enqueueMessage(now,
+                                  priority,
+                                  channelQualifier,
+                                  sequenceNumber,
+                                  flags,
+                                  &dataObj,
+                                  reliable,
+                                  err);
+        }
+        else {
+            return enqueueMessage(now,
+                                  priority,
+                                  channelQualifier,
+                                  sequenceNumber,
+                                  flags,
+                                  /*data:*/NULL,
+                                  reliable,
+                                  err);
+        }
+    }
+    
+    // Returns false if the sender buffer didn't have space for the message.
+    // Failing only happens for reliable mesages.
+    bool enqueueMessage(EmiTimeInterval now,
+                        EmiPriority priority,
+                        EmiChannelQualifier channelQualifier,
+                        EmiSequenceNumber sequenceNumber,
+                        EmiMessageFlags flags,
+                        const PersistentData *data,
+                        bool reliable,
+                        Error& err) {
+        bool error = false;
+        
+        EmiMessage<Binding> *msg;
+        if (data) {
+            msg = new EmiMessage<Binding>(*data);
+        }
+        else {
+            msg = new EmiMessage<Binding>;
+        }
+        msg->priority = priority;
+        msg->channelQualifier = channelQualifier;
+        msg->sequenceNumber = sequenceNumber;
+        msg->flags = flags;
+        
         if (reliable) {
             if (!_senderBuffer.registerReliableMessage(msg, err, now)) {
-                return false;
+                error = true;
+                goto cleanup;
             }
             _timers.updateRtoTimeout();
         }
         
-        _timers.ensureTickTimeout();
+        enqueueUnreliableMessage(now, msg);
         
-        Error enqueueError;
-        if (!_sendQueue.enqueueMessage(msg, _congestionControl, _timers.getTime(), now, enqueueError)) {
-            // This failing is not a catastrophic failure; if the message is not reliable
-            // the system should allow for it to be lost anyway, and if the message is
-            // reliable, it will be re-inserted into the send queue on the applicable RTO
-            // timeout.
-            
-            // For now, we'll do nothing here. In the future, it might be a good idea to
-            // improve this by telling the client of EmiNet that this happened.
-        }
+    cleanup:
+        msg->release();
         
-        return true;
+        return !error;
     }
     
     // The first time this methods is called, it opens the EmiConnection and returns true.
@@ -387,7 +451,7 @@ public:
         _timers.resetHeartbeatTimeout();
     }
     
-    // Methods that EmiConnTimers invoke
+    /// Methods that EmiConnTimers invoke
     
     // Warning: This method might deallocate the object
     inline void connectionTimeout() {
@@ -400,12 +464,9 @@ public:
         _delegate.emiConnLost();
     }
     void eachCurrentMessageIteration(EmiTimeInterval now, EmiMessage<Binding> *msg) {
-        Error err;
-        // Reliable is set to false, because if the message is reliable, it is
-        // already in the sender buffer and shouldn't be reinserted anyway
-        
-        // enqueueMessage can't fail because the reliable parameter is false
-        ASSERT(enqueueMessage(now, msg, /*reliable:*/false, err));
+        // We send this message as unreliable, because if the message is reliable,
+        // it is already in the sender buffer and shouldn't be reinserted anyway
+        enqueueUnreliableMessage(now, msg);
     }
     void rtoTimeout(EmiTimeInterval now, EmiTimeInterval rtoWhenRtoTimerWasScheduled) {
         _congestionControl.onRto();
@@ -422,7 +483,7 @@ public:
         return _senderBuffer.empty();
     }
     
-    // Methods that delegate to EmiLogicalConnetion
+    /// Methods that delegate to EmiLogicalConnetion
 #define X(msg)                  \
     inline void got##msg() {    \
         if (_conn) {            \
@@ -492,7 +553,7 @@ public:
     }
     
     
-    // Invoked by EmiLogicalConnection
+    /// Invoked by EmiLogicalConnection
     void emitDisconnect(EmiDisconnectReason reason) {
         _delegate.emiConnDisconnect(reason);
     }
@@ -618,14 +679,14 @@ public:
         return _conn ? _conn->getOtherHostInitialSequenceNumber() : 0;
     }
     
-    // Invoked by EmiSendQueue
+    /// Invoked by EmiSendQueue
     void sendDatagram(const uint8_t *data, size_t size) {
         sendDatagram(getRemoteAddress(), data, size);
     }
     
-    // Invoked by EmiNatPunchthrough (via EmiLogicalConnection);
-    // EmiNatPunchthrough needs the ability to send packets to
-    // other addresses than the current _remoteAddress
+    /// Invoked by EmiNatPunchthrough (via EmiLogicalConnection);
+    /// EmiNatPunchthrough needs the ability to send packets to
+    /// other addresses than the current _remoteAddress
     void sendDatagram(const sockaddr_storage& address, const uint8_t *data, size_t size) {
         _timers.sentPacket();
         
