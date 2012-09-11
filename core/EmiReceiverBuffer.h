@@ -122,6 +122,7 @@ public:
     void bufferMessage(const EmiMessageHeader& header, const TemporaryData& buf, size_t offset, size_t length) {
         insert(new Entry(header, buf, offset, length));
     }
+    
     void flushBuffer(EmiTimeInterval now, EmiChannelQualifier channelQualifier, EmiSequenceNumber sequenceNumber) {
         if (_tree.empty()) return;
         

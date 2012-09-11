@@ -15,7 +15,10 @@
 #define EMI_DEFAULT_HEARTBEAT_FREQUENCY  (0.3)
 #define EMI_DEFAULT_HEARTBEATS_BEFORE_CONNECTION_WARNING (2.5)
 #define EMI_DEFAULT_CONNECTION_TIMEOUT   (30)
-#define EMI_DEFAULT_RECEIVER_BUFFER_SIZE (2048)
+// The receiver buffer needs to be able contain split messages as
+// they are reconstructed, so this setting essentially sets an
+// upper bound on how large a single message can be.
+#define EMI_DEFAULT_RECEIVER_BUFFER_SIZE (131072)
 #define EMI_DEFAULT_SENDER_BUFFER_SIZE   (8192)
 
 #define EMI_UDP_HEADER_SIZE           (8)

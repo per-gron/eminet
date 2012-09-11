@@ -23,8 +23,6 @@ class EmiMessage;
 template<class SockDelegate, class ConnDelegate>
 class EmiConn;
 
-typedef std::map<EmiChannelQualifier, EmiSequenceNumber> EmiLogicalConnectionMemo;
-
 template<class SockDelegate, class ConnDelegate, class ReceiverBuffer>
 class EmiLogicalConnection {
     typedef typename SockDelegate::Binding   Binding;
@@ -38,6 +36,8 @@ class EmiLogicalConnection {
     typedef EmiNatPunchthrough<Binding, EmiLogicalConnection> ENP;
     
     friend class EmiNatPunchthrough<Binding, EmiLogicalConnection>;
+    
+    typedef std::map<EmiChannelQualifier, EmiSequenceNumber> EmiLogicalConnectionMemo;
     
     ReceiverBuffer &_receiverBuffer;
     
@@ -103,19 +103,11 @@ private:
         return EmiNetRandom<Binding>::random() & EMI_HEADER_SEQUENCE_NUMBER_MASK;
     }
     
-    int32_t sequenceNumberDifference(const EmiMessageHeader& header, bool updateExpectedSequenceNumber) {
+    EmiSequenceNumber expectedSequenceNumber(const EmiMessageHeader& header) {
         EmiLogicalConnectionMemo::iterator cur = _otherHostSequenceMemo.find(header.channelQualifier);
         EmiLogicalConnectionMemo::iterator end = _otherHostSequenceMemo.end();
         
-        EmiSequenceNumber expectedSequenceNumber = (end == cur ? _otherHostInitialSequenceNumber : (*cur).second);
-        
-        if (updateExpectedSequenceNumber) {
-            _otherHostSequenceMemo[header.channelQualifier] =
-                EmiNetUtil::cyclicMax24(expectedSequenceNumber,
-                                        (header.sequenceNumber+1) & EMI_HEADER_SEQUENCE_NUMBER_MASK);
-        }
-        
-        return EmiNetUtil::cyclicDifference24Signed(expectedSequenceNumber, header.sequenceNumber);
+        return (end == cur ? _otherHostInitialSequenceNumber : (*cur).second);
     }
     
     inline EmiSequenceNumber sequenceMemoForChannelQualifier(EmiChannelQualifier cq) {
@@ -464,7 +456,14 @@ public:
         if ((EMI_CHANNEL_TYPE_UNRELIABLE_SEQUENCED == channelType ||
              EMI_CHANNEL_TYPE_RELIABLE_SEQUENCED   == channelType) &&
             -1 != header.sequenceNumber) {
-            int32_t snDiff = sequenceNumberDifference(header, true);
+            
+            EmiSequenceNumber esn = expectedSequenceNumber(header);
+            
+            _otherHostSequenceMemo[header.channelQualifier] =
+                EmiNetUtil::cyclicMax24(esn,
+                                        (header.sequenceNumber+1) & EMI_HEADER_SEQUENCE_NUMBER_MASK);
+            
+            int32_t snDiff = EmiNetUtil::cyclicDifference24Signed(esn, header.sequenceNumber);
             
             if (snDiff > 0) {
                 // The packet arrived out of order; drop it
@@ -513,7 +512,7 @@ public:
             bool hasSequenceNumber = (-1 != header.sequenceNumber);
             int32_t seqDiff = 0;
             if (hasSequenceNumber) {
-                seqDiff = sequenceNumberDifference(header, false);
+                seqDiff = EmiNetUtil::cyclicDifference24Signed(expectedSequenceNumber(header), header.sequenceNumber);
             }
             
             if (hasSequenceNumber && seqDiff >= 0) {
