@@ -130,14 +130,15 @@ class EmiReceiverBuffer {
         }
         
     public:
-        // When a full set of split messages have been received, this method
-        // returns the first message in the set's sequence number. Otherwise,
-        // it returns -1.
-        int32_t gotMessage(EmiChannelQualifier cq, EmiSequenceNumber i,
-                           bool first, bool last) {
+        // This method returns true if a full set of split messages
+        // have been received
+        bool gotMessage(EmiChannelQualifier cq, EmiSequenceNumber i,
+                        bool first, bool last) {
             if (first && last) {
-                // This is a non-split message.
-                return i;
+                // This is a non-split message; there's no need to store
+                // it in the forest since we already know that it is
+                // complete.
+                return true;
             }
             
             // Merge the message with sequence number i with the following
@@ -149,28 +150,31 @@ class EmiReceiverBuffer {
             if (first) root.firstMessage = i;
             if (last)  root.lastMessage = i;
             
-            if (-1 != root.firstMessage && -1 != root.lastMessage) {
-                return root.firstMessage;
-            }
-            else {
-                return -1;
-            }
+            return (-1 != root.firstMessage && -1 != root.lastMessage);
         }
         
         // Removes a message from the disjoint sets data structure.
+        // Also removes all older messages than the specified message.
         // The sequence number parameter can be the sequence number
         // of any message that is in the split group to be removed.
+        //
+        // This method is supposed to be used to implement reliable
+        // channels.
         //
         // Note: This method must only be used for messages that are
         // complete, that is, all parts of the split group have been
         // registered.
-        void removeMessage(EmiChannelQualifier cq, EmiSequenceNumber i) {
+        void removeMessageAndOlderMessages(EmiChannelQualifier cq, EmiSequenceNumber i) {
             DisjointSet& root = find(cq, i);
             ASSERT(-1 != root.firstMessage && -1 != root.lastMessage);
-            _forest.erase(_forest.find(ForestKey(cq, root.firstMessage)),
+            _forest.erase(_forest.find(ForestKey(cq, 0)),
                           _forest.find(ForestKey(cq, root.lastMessage)));
         }
         
+        // Removes all messages stored for a given channel.
+        //
+        // This method is supposed to be used to implement unreliable
+        // channels.
         void clearChannel(EmiChannelQualifier cq) {
             _forest.erase(_forest.lower_bound(ForestKey(cq, 0)),
                           _forest.upper_bound(ForestKey(cq, -1 & EMI_HEADER_SEQUENCE_NUMBER_MASK)));
