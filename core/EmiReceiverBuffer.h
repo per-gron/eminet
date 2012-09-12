@@ -43,19 +43,19 @@ class EmiReceiverBuffer {
     class DisjointMessageSets {
         
         struct DisjointSet {
-            EmiSequenceNumber parent;
+            EmiNonWrappingSequenceNumber parent;
             unsigned rank;
             int32_t firstMessage; // Represents a sequence number. -1 means no value
             int32_t lastMessage;  // Represents a sequence number. -1 means no value
             
-            DisjointSet(EmiSequenceNumber i) :
+            DisjointSet(EmiNonWrappingSequenceNumber i) :
             parent(i),
             rank(0),
             firstMessage(-1),
             lastMessage(-1) { }
         };
         
-        typedef std::pair<EmiChannelQualifier, EmiSequenceNumber> ForestKey;
+        typedef std::pair<EmiChannelQualifier, EmiNonWrappingSequenceNumber> ForestKey;
         
         struct ForestCmp {
             inline bool operator()(const ForestKey& a, const ForestKey& b) const {
@@ -72,7 +72,7 @@ class EmiReceiverBuffer {
         
         typedef std::pair<ForestKey, DisjointSet&> FindResult;
         
-        FindResult find(EmiChannelQualifier cq, EmiSequenceNumber sn) {
+        FindResult find(EmiChannelQualifier cq, EmiNonWrappingSequenceNumber sn) {
             ForestKey key(cq, sn);
             
             // If _forest does not contain the message, this will automatically
@@ -91,12 +91,14 @@ class EmiReceiverBuffer {
         }
         
         // Returns the new root
-        FindResult merge(EmiChannelQualifier cq, EmiSequenceNumber i, EmiSequenceNumber j) {
+        FindResult merge(EmiChannelQualifier cq,
+                         EmiNonWrappingSequenceNumber i,
+                         EmiNonWrappingSequenceNumber j) {
             FindResult findIResult = find(cq, i);
             FindResult findJResult = find(cq, j);
             
-            EmiSequenceNumber rootISn = findIResult.first.second;
-            EmiSequenceNumber rootJSn = findJResult.first.second;
+            EmiNonWrappingSequenceNumber rootISn = findIResult.first.second;
+            EmiNonWrappingSequenceNumber rootJSn = findJResult.first.second;
             
             DisjointSet& rootI = findIResult.last;
             DisjointSet& rootJ = findJResult.last;
@@ -104,7 +106,7 @@ class EmiReceiverBuffer {
             if (rootISn != rootJSn) {
                 bool iIsTheNewRoot = rootI.rank > rootJ.rank;
                 
-                EmiSequenceNumber newRootSn = (iIsTheNewRoot ? rootISn : rootJSn);
+                EmiNonWrappingSequenceNumber newRootSn = (iIsTheNewRoot ? rootISn : rootJSn);
                 
                 DisjointSet& newRoot = (iIsTheNewRoot ? rootI : rootJ);
                 DisjointSet& nonRoot = (iIsTheNewRoot ? rootJ : rootI);
@@ -132,7 +134,8 @@ class EmiReceiverBuffer {
     public:
         // This method returns true if a full set of split messages
         // have been received
-        bool gotMessage(EmiChannelQualifier cq, EmiSequenceNumber i,
+        bool gotMessage(EmiChannelQualifier cq,
+                        EmiNonWrappingSequenceNumber i,
                         bool first, bool last) {
             if (first && last) {
                 // This is a non-split message; there's no need to store
@@ -164,7 +167,7 @@ class EmiReceiverBuffer {
         // Note: This method must only be used for messages that are
         // complete, that is, all parts of the split group have been
         // registered.
-        void removeMessageAndOlderMessages(EmiChannelQualifier cq, EmiSequenceNumber i) {
+        void removeMessageAndOlderMessages(EmiChannelQualifier cq, EmiNonWrappingSequenceNumber i) {
             DisjointSet& root = find(cq, i);
             ASSERT(-1 != root.firstMessage && -1 != root.lastMessage);
             _forest.erase(_forest.find(ForestKey(cq, 0)),
