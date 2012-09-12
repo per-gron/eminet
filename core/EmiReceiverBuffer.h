@@ -23,6 +23,126 @@ class EmiReceiverBuffer {
     typedef typename Binding::TemporaryData  TemporaryData;
     
     typedef std::map<EmiChannelQualifier, EmiSequenceNumber> EmiSequenceNumberMemo;
+    
+    // The purpose of this class is to encapsulate an efficient
+    // algorithm for handling split messages.
+    //
+    // The class provides a fast way to know whether a split message
+    // that arrives is the last one in the split, so we can reconstruct
+    // the message and emit it.
+    //
+    // See http://avdongre.wordpress.com/2011/12/06/disjoint-set-data-structure-c/
+    // and http://en.wikipedia.org/wiki/Disjoint-set_data_structure
+    //
+    // In addition to the conventional disjoint set data structure,
+    // this class keeps track of whether the first and last messages
+    // are present in the set.
+    //
+    // This extra data is required to quickly be able to determine
+    // whether a disjoint set contains all messages in a split.
+    class DisjointMessageSets {
+        
+        struct DisjointSet {
+            EmiSequenceNumber parent;
+            unsigned rank;
+            int32_t firstMessage; // Represents a sequence number. -1 means no value
+            int32_t lastMessage;  // Represents a sequence number. -1 means no value
+            
+            DisjointSet(EmiSequenceNumber i) :
+            parent(i),
+            rank(0),
+            firstMessage(-1),
+            lastMessage(-1) { }
+        };
+        
+        std::vector<DisjointSet> _forest;
+        
+        EmiSequenceNumber find(EmiSequenceNumber i) {
+            DisjointSet& ds = _forest[i];
+            
+            if (ds.parent == i) {
+                return i;
+            }
+            else {
+                ds.parent = find(ds.parent);
+                return ds.parent;
+            }
+        }
+        
+        // Returns the new root
+        EmiSequenceNumber merge(EmiSequenceNumber i, EmiSequenceNumber j) {
+            EmiSequenceNumber rootISn = find(i);
+            EmiSequenceNumber rootJSn = find(j);
+            
+            DisjointSet& rootI = _forest[rootISn];
+            DisjointSet& rootJ = _forest[rootJSn];
+            
+            if (rootISn != rootJSn) {
+                bool iIsTheNewRoot = rootI.rank > rootJ.rank;
+                
+                EmiSequenceNumber newRootSn = (iIsTheNewRoot ? rootISn : rootJSn);
+                
+                DisjointSet& newRoot = (iIsTheNewRoot ? rootI : rootJ);
+                DisjointSet& nonRoot = (iIsTheNewRoot ? rootJ : rootI);
+                
+                if (rootI.rank == rootJ.rank) {
+                    newRoot.rank += 1;
+                }
+                
+                nonRoot.parent = newRootSn;
+                
+                if (-1 == newRoot.firstMessage) {
+                    newRoot.firstMessage = nonRoot.firstMessage;
+                }
+                if (-1 == newRoot.lastMessage) {
+                    newRoot.lastMessage = nonRoot.lastMessage;
+                }
+                
+                return newRootSn;
+            }
+            else {
+                return rootISn;
+            }
+        }
+        
+    public:
+        DisjointMessageSets(size_t n) {
+            _forest.reserve(n);
+            for (size_t i=0; i<n; i++) {
+                _forest.push_back(DisjointSet(i));
+            }
+        }
+        
+        // When a full set of split messages have been received, this method
+        // returns the first message in the set's sequence number. Otherwise,
+        // it returns -1.
+        int32_t gotMessage(EmiSequenceNumber i, bool first, bool last) {
+            if (first && last) {
+                // This is a non-split message.
+                return i;
+            }
+            
+            EmiSequenceNumber rootSn;
+            if (!last) {
+                rootSn = merge(i, (i+1) & EMI_HEADER_SEQUENCE_NUMBER_MASK);
+            }
+            else {
+                rootSn = find(i);
+            }
+            
+            DisjointSet& root = _forest[rootSn];
+            
+            if (first) root.firstMessage = i;
+            if (last)  root.lastMessage = i;
+            
+            if (-1 != root.firstMessage && -1 != root.lastMessage) {
+                return root.firstMessage;
+            }
+            else {
+                return -1;
+            }
+        }
+    };
 
     
 public:
