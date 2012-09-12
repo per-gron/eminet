@@ -55,11 +55,14 @@ class EmiReceiverBuffer {
             lastMessage(-1) { }
         };
         
-        std::vector<DisjointSet> _forest;
+        std::map<EmiSequenceNumber, DisjointSet> _forest;
         
         typedef std::pair<EmiSequenceNumber, DisjointSet&> FindResult;
         
         FindResult find(EmiSequenceNumber i) {
+            // If _forest does not contain i, this will automatically
+            // create insert a default-constructed DisjointSet object,
+            // which is exactly what we want.
             DisjointSet& ds = _forest[i];
             
             if (ds.parent == i) {
@@ -112,13 +115,6 @@ class EmiReceiverBuffer {
         }
         
     public:
-        DisjointMessageSets(size_t n) {
-            _forest.reserve(n);
-            for (size_t i=0; i<n; i++) {
-                _forest.push_back(DisjointSet(i));
-            }
-        }
-        
         // When a full set of split messages have been received, this method
         // returns the first message in the set's sequence number. Otherwise,
         // it returns -1.
