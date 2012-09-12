@@ -148,7 +148,7 @@ class EmiReceiverBuffer {
             // message, but only for messages that are not last in a split.
             DisjointSet& root = (last ?
                                  find(cq, i).last :
-                                 merge(cq, i, (i+1) & EMI_HEADER_SEQUENCE_NUMBER_MASK).last);
+                                 merge(cq, i, i+1).last);
             
             if (first) root.firstMessage = i;
             if (last)  root.lastMessage = i;
@@ -180,7 +180,7 @@ class EmiReceiverBuffer {
         // channels.
         void clearChannel(EmiChannelQualifier cq) {
             _forest.erase(_forest.lower_bound(ForestKey(cq, 0)),
-                          _forest.upper_bound(ForestKey(cq, -1 & EMI_HEADER_SEQUENCE_NUMBER_MASK)));
+                          _forest.upper_bound(ForestKey(cq, EMI_NON_WRAPPING_SEQUENCE_NUMBER_MAX)));
         }
     };
 

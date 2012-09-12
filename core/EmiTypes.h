@@ -92,6 +92,7 @@ typedef uint32_t EmiSequenceNumber;
 // be able to implement correct less-than predicates for sequence numbers
 // for use with binary trees.
 typedef uint64_t EmiNonWrappingSequenceNumber;
+#define EMI_NON_WRAPPING_SEQUENCE_NUMBER_MAX UINT64_MAX
 // Represents a 24 bit number. -1 means no value
 typedef int32_t  EmiPacketSequenceNumber;
 typedef uint8_t  EmiChannelQualifier;
