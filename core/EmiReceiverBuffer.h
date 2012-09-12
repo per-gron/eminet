@@ -57,25 +57,31 @@ class EmiReceiverBuffer {
         
         std::vector<DisjointSet> _forest;
         
-        EmiSequenceNumber find(EmiSequenceNumber i) {
+        typedef std::pair<EmiSequenceNumber, DisjointSet&> FindResult;
+        
+        FindResult find(EmiSequenceNumber i) {
             DisjointSet& ds = _forest[i];
             
             if (ds.parent == i) {
-                return i;
+                return std::make_pair(i, ds);
             }
             else {
-                ds.parent = find(ds.parent);
-                return ds.parent;
+                FindResult result = find(ds.parent);
+                ds.parent = result.first;
+                return result;
             }
         }
         
         // Returns the new root
-        EmiSequenceNumber merge(EmiSequenceNumber i, EmiSequenceNumber j) {
-            EmiSequenceNumber rootISn = find(i);
-            EmiSequenceNumber rootJSn = find(j);
+        FindResult merge(EmiSequenceNumber i, EmiSequenceNumber j) {
+            FindResult findIResult = find(i);
+            FindResult findJResult = find(j);
             
-            DisjointSet& rootI = _forest[rootISn];
-            DisjointSet& rootJ = _forest[rootJSn];
+            EmiSequenceNumber rootISn = findIResult.first;
+            EmiSequenceNumber rootJSn = findJResult.first;
+            
+            DisjointSet& rootI = findIResult.last;
+            DisjointSet& rootJ = findJResult.last;
             
             if (rootISn != rootJSn) {
                 bool iIsTheNewRoot = rootI.rank > rootJ.rank;
@@ -98,10 +104,10 @@ class EmiReceiverBuffer {
                     newRoot.lastMessage = nonRoot.lastMessage;
                 }
                 
-                return newRootSn;
+                return (iIsTheNewRoot ? findIResult : findJResult);
             }
             else {
-                return rootISn;
+                return findIResult;
             }
         }
         
@@ -122,15 +128,11 @@ class EmiReceiverBuffer {
                 return i;
             }
             
-            EmiSequenceNumber rootSn;
-            if (!last) {
-                rootSn = merge(i, (i+1) & EMI_HEADER_SEQUENCE_NUMBER_MASK);
-            }
-            else {
-                rootSn = find(i);
-            }
-            
-            DisjointSet& root = _forest[rootSn];
+            // Merge the message with sequence number i with the following
+            // message, but only for messages that are not last in a split.
+            DisjointSet& root = (last ?
+                                 find(i).last :
+                                 merge(i, (i+1) & EMI_HEADER_SEQUENCE_NUMBER_MASK).last);
             
             if (first) root.firstMessage = i;
             if (last)  root.lastMessage = i;
