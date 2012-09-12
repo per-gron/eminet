@@ -157,6 +157,20 @@ class EmiReceiverBuffer {
             }
         }
         
+        // Removes a message from the disjoint sets data structure.
+        // The sequence number parameter can be the sequence number
+        // of any message that is in the split group to be removed.
+        //
+        // Note: This method must only be used for messages that are
+        // complete, that is, all parts of the split group have been
+        // registered.
+        void removeMessage(EmiChannelQualifier cq, EmiSequenceNumber i) {
+            DisjointSet& root = find(cq, i);
+            ASSERT(-1 != root.firstMessage && -1 != root.lastMessage);
+            _forest.erase(_forest.find(ForestKey(cq, root.firstMessage)),
+                          _forest.find(ForestKey(cq, root.lastMessage)));
+        }
+        
         void clearChannel(EmiChannelQualifier cq) {
             _forest.erase(_forest.lower_bound(ForestKey(cq, 0)),
                           _forest.upper_bound(ForestKey(cq, -1 & EMI_HEADER_SEQUENCE_NUMBER_MASK)));
