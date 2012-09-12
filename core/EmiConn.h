@@ -363,10 +363,14 @@ public:
                           bool reliable,
                           bool allowSplit,
                           Error& err) {
+#if 0 // Set to 1 to stress test message split code
+        static const size_t MAX_MESSAGE_LENGTH = 1;
+#else
         static const size_t MAX_MESSAGE_LENGTH = (EMI_MINIMAL_MTU -
                                                   EMI_UDP_HEADER_SIZE -
                                                   EMI_PACKET_HEADER_MAX_LENGTH -
                                                   EmiMessage<Binding>::maximalHeaderSize());
+#endif
         
         bool hasOwnershipOfDataObject = true;
         
@@ -413,7 +417,7 @@ public:
             
             msg->priority = priority;
             msg->channelQualifier = channelQualifier;
-            msg->nonWrappingSequenceNumber = nonWrappingSequenceNumber;
+            msg->nonWrappingSequenceNumber = nonWrappingSequenceNumber+i;
             msg->flags = (flags |
                           (0 == i ? 0 : EMI_SPLIT_NOT_FIRST_FLAG) |
                           (numMessages-1 == i ? 0 : EMI_SPLIT_NOT_LAST_FLAG));

@@ -42,17 +42,22 @@ class EmiReceiverBuffer {
     // whether a disjoint set contains all messages in a split.
     class DisjointMessageSets {
         
+        enum {
+            DISJOINT_SET_HAS_FIRST_MESSAGE = 0x1,
+            DISJOINT_SET_HAS_LAST_MESSAGE  = 0x2
+        } DisjointSetFlags;
+        
         struct DisjointSet {
             EmiNonWrappingSequenceNumber parent;
             unsigned rank;
-            int32_t firstMessage; // Represents a sequence number. -1 means no value
-            int32_t lastMessage;  // Represents a sequence number. -1 means no value
+            int flags;
+            EmiNonWrappingSequenceNumber lastMessage; // The largest sequence number in this set
             
             DisjointSet(EmiNonWrappingSequenceNumber i) :
             parent(i),
             rank(0),
-            firstMessage(-1),
-            lastMessage(-1) { }
+            flags(0),
+            lastMessage(0) { }
         };
         
         typedef std::pair<EmiChannelQualifier, EmiNonWrappingSequenceNumber> ForestKey;
@@ -66,26 +71,31 @@ class EmiReceiverBuffer {
         };
         
         typedef std::map<ForestKey, DisjointSet, ForestCmp> ForestMap;
-        typedef typename ForestMap::iterator ForestIterator;
+        typedef typename ForestMap::iterator ForestIter;
         
         ForestMap _forest;
         
-        typedef std::pair<ForestKey, DisjointSet&> FindResult;
+        typedef std::pair<ForestKey, DisjointSet*> FindResult;
         
         FindResult find(EmiChannelQualifier cq, EmiNonWrappingSequenceNumber sn) {
             ForestKey key(cq, sn);
             
-            // If _forest does not contain the message, this will automatically
-            // create insert a default-constructed DisjointSet object, which is
-            // exactly what we want.
-            DisjointSet& ds = _forest[key];
+            ForestIter iter = _forest.find(key);
+            ForestIter end  = _forest.end();
+            if (iter == end) {
+                // If there is no entry for this sequence number and
+                // channel qualifier, create one.
+                iter = _forest.insert(make_pair(key, DisjointSet(sn))).first;
+            }
+            
+            DisjointSet& ds = (*iter).second;
             
             if (ds.parent == sn) {
-                return std::make_pair(key, ds);
+                return std::make_pair(key, &ds);
             }
             else {
-                FindResult result = find(ds.parent);
-                ds.parent = result.first;
+                FindResult result = find(cq, ds.parent);
+                ds.parent = result.first.second;
                 return result;
             }
         }
@@ -100,8 +110,8 @@ class EmiReceiverBuffer {
             EmiNonWrappingSequenceNumber rootISn = findIResult.first.second;
             EmiNonWrappingSequenceNumber rootJSn = findJResult.first.second;
             
-            DisjointSet& rootI = findIResult.last;
-            DisjointSet& rootJ = findJResult.last;
+            DisjointSet& rootI = *(findIResult.second);
+            DisjointSet& rootJ = *(findJResult.second);
             
             if (rootISn != rootJSn) {
                 bool iIsTheNewRoot = rootI.rank > rootJ.rank;
@@ -116,13 +126,9 @@ class EmiReceiverBuffer {
                 }
                 
                 nonRoot.parent = newRootSn;
-                
-                if (-1 == newRoot.firstMessage) {
-                    newRoot.firstMessage = nonRoot.firstMessage;
-                }
-                if (-1 == newRoot.lastMessage) {
-                    newRoot.lastMessage = nonRoot.lastMessage;
-                }
+                newRoot.flags |= nonRoot.flags;
+                newRoot.lastMessage = std::max(newRoot.lastMessage,
+                                               nonRoot.lastMessage);
                 
                 return (iIsTheNewRoot ? findIResult : findJResult);
             }
@@ -132,28 +138,36 @@ class EmiReceiverBuffer {
         }
         
     public:
-        // This method returns true if a full set of split messages
-        // have been received
-        bool gotMessage(EmiChannelQualifier cq,
-                        EmiNonWrappingSequenceNumber i,
-                        bool first, bool last) {
+        // This method returns a pair of (whether a full set of split messages
+        // have been received, the largest sequence number in this set)
+        std::pair<bool, EmiNonWrappingSequenceNumber> gotMessage(EmiChannelQualifier cq,
+                                                                 EmiNonWrappingSequenceNumber i,
+                                                                 EmiMessageFlags messageFlags) {
+            
+            bool first = !(messageFlags & EMI_SPLIT_NOT_FIRST_FLAG);
+            bool last  = !(messageFlags & EMI_SPLIT_NOT_LAST_FLAG);
+            
             if (first && last) {
                 // This is a non-split message; there's no need to store
                 // it in the forest since we already know that it is
                 // complete.
-                return true;
+                return std::make_pair(true, i);
             }
             
             // Merge the message with sequence number i with the following
             // message, but only for messages that are not last in a split.
-            DisjointSet& root = (last ?
-                                 find(cq, i).last :
-                                 merge(cq, i, i+1).last);
+            DisjointSet& root = *(last ?
+                                  find(cq, i).second :
+                                  merge(cq, i, i+1).second);
             
-            if (first) root.firstMessage = i;
-            if (last)  root.lastMessage = i;
+            if (first) root.flags |= DISJOINT_SET_HAS_FIRST_MESSAGE;
+            if (last)  root.flags |= DISJOINT_SET_HAS_LAST_MESSAGE;
             
-            return (-1 != root.firstMessage && -1 != root.lastMessage);
+            root.lastMessage = std::max(root.lastMessage, i);
+            
+            return std::make_pair(((root.flags & DISJOINT_SET_HAS_FIRST_MESSAGE) &&
+                                   (root.flags & DISJOINT_SET_HAS_LAST_MESSAGE)),
+                                  root.lastMessage);
         }
         
         // Removes a message from the disjoint sets data structure.
@@ -166,12 +180,13 @@ class EmiReceiverBuffer {
         //
         // Note: This method must only be used for messages that are
         // complete, that is, all parts of the split group have been
-        // registered.
+        // registered. Failing to observe this will wreak havoc with
+        // the data structure!
         void removeMessageAndOlderMessages(EmiChannelQualifier cq, EmiNonWrappingSequenceNumber i) {
-            DisjointSet& root = find(cq, i);
-            ASSERT(-1 != root.firstMessage && -1 != root.lastMessage);
-            _forest.erase(_forest.find(ForestKey(cq, 0)),
-                          _forest.find(ForestKey(cq, root.lastMessage)));
+            DisjointSet& root = *(find(cq, i).second);
+            
+            _forest.erase(_forest.lower_bound(ForestKey(cq, 0)),
+                          _forest.upper_bound(ForestKey(cq, root.lastMessage)));
         }
         
         // Removes all messages stored for a given channel.
@@ -183,9 +198,7 @@ class EmiReceiverBuffer {
                           _forest.upper_bound(ForestKey(cq, EMI_NON_WRAPPING_SEQUENCE_NUMBER_MAX)));
         }
     };
-
     
-public:
     class Entry {
     private:
         // Private copy constructor and assignment operator
@@ -214,8 +227,6 @@ public:
         PersistentData data;
     };
     
-protected:
-    
     struct BufferTreeCmp {
         inline bool operator()(Entry *a, Entry *b) const {
             EmiChannelQualifier acq = a->header.channelQualifier;
@@ -229,10 +240,11 @@ protected:
     };
     
     typedef std::set<Entry *, BufferTreeCmp> BufferTree;
-    typedef typename std::set<Entry *, BufferTreeCmp>::iterator BufferTreeIter;
+    typedef typename BufferTree::iterator    BufferTreeIter;
     // Buffer max size
     size_t _size;
     
+    DisjointMessageSets _messageSets;
     BufferTree _tree;
     size_t _bufferSize;
     
@@ -245,8 +257,8 @@ private:
     inline EmiReceiverBuffer(const EmiReceiverBuffer& other);
     inline EmiReceiverBuffer& operator=(const EmiReceiverBuffer& other);
     
-    static size_t bufferEntrySize(Entry *entry) {
-        return entry->header.headerLength + entry->header.length;
+    static size_t bufferEntrySize(size_t headerLength, size_t length) {
+        return headerLength + length;
     }
     
     EmiNonWrappingSequenceNumber expectedSequenceNumber(const EmiMessageHeader& header) {
@@ -256,21 +268,36 @@ private:
         return (end == cur ? _receiver.getOtherHostInitialSequenceNumber() : (*cur).second);
     }
     
-    void insert(Entry *entry) {
-        size_t msgSize = EmiReceiverBuffer::bufferEntrySize(entry);
+    void bufferMessage(EmiNonWrappingSequenceNumber guessedNonWrappedSequenceNumber,
+                       const EmiMessageHeader& header,
+                       const TemporaryData& buf,
+                       size_t offset,
+                       size_t length) {
+        size_t msgSize = EmiReceiverBuffer::bufferEntrySize(header.headerLength, header.length);
         
         // Discard the message if it doesn't fit in the buffer
         if (_bufferSize + msgSize <= _size) {
+            Entry *entry = new Entry(guessedNonWrappedSequenceNumber, header, buf, offset, length);
+            
             bool wasInserted = _tree.insert(entry).second;
             
             // Only increment this._bufferSize if the message wasn't already in the buffer
             if (wasInserted) {
                 _bufferSize += msgSize;
+                
+                _messageSets.gotMessage(entry->header.channelQualifier,
+                                        entry->guessedNonWrappedSequenceNumber,
+                                        entry->header.flags);
+            }
+            else {
+                delete entry;
             }
         }
     }
+                
     void remove(Entry *entry) {
-        size_t msgSize = EmiReceiverBuffer::bufferEntrySize(entry);
+        size_t msgSize = EmiReceiverBuffer::bufferEntrySize(entry->header.headerLength,
+                                                            entry->header.length);
         
         size_t numErasedElements = _tree.erase(entry);
         if (0 != numErasedElements) {
@@ -281,27 +308,21 @@ private:
         delete entry;
     }
     
-    void bufferMessage(EmiNonWrappingSequenceNumber guessedNonWrappedSequenceNumber,
-                       const EmiMessageHeader& header,
-                       const TemporaryData& buf,
-                       size_t offset,
-                       size_t length) {
-        insert(new Entry(guessedNonWrappedSequenceNumber, header, buf, offset, length));
-    }
-    
     void flushBuffer(EmiTimeInterval now,
                      EmiChannelQualifier channelQualifier,
                      EmiNonWrappingSequenceNumber expectedSequenceNumber) {
         if (_tree.empty()) return;
         
         Entry mockEntry;
-        mockEntry.guessedNonWrappedSequenceNumber = expectedSequenceNumber-1;
+        mockEntry.guessedNonWrappedSequenceNumber = 0;
         mockEntry.header.channelQualifier = channelQualifier;
         
         BufferTreeIter iter = _tree.lower_bound(&mockEntry);
         BufferTreeIter end = _tree.end();
         
-        std::vector<Entry *> toBeRemoved;
+        typedef std::vector<Entry *>           EntryVector;
+        typedef typename EntryVector::iterator EntryVectorIter;
+        EntryVector toBeRemoved;
         
         Entry *entry;
         while (iter != end &&
@@ -309,24 +330,50 @@ private:
                entry->header.channelQualifier == channelQualifier &&
                entry->guessedNonWrappedSequenceNumber <= expectedSequenceNumber) {
             
-            // The iterator gets messed up if we modify _tree from
-            // within the loop, so do it after the loop has finished.
-            toBeRemoved.push_back(entry);
+            // Search for a message set that contains entry->guessedNonWrappedSequenceNumber
+            std::pair<bool, EmiNonWrappingSequenceNumber> gotMessageResult;
+            gotMessageResult = _messageSets.gotMessage(channelQualifier,
+                                                       entry->guessedNonWrappedSequenceNumber,
+                                                       entry->header.flags);
+            bool setIsComplete = gotMessageResult.first;
+            EmiNonWrappingSequenceNumber largestSequenceNumberInSet = gotMessageResult.second;
             
-            if (entry->guessedNonWrappedSequenceNumber == expectedSequenceNumber) {
-                expectedSequenceNumber = entry->guessedNonWrappedSequenceNumber+1;
-                
-                _otherHostSequenceMemo[channelQualifier] = entry->guessedNonWrappedSequenceNumber+1;
-                
-                _receiver.enqueueAck(channelQualifier, entry->header.sequenceNumber);
-                _receiver.emitMessage(channelQualifier, Binding::castToTemporary(entry->data), /*offset:*/0, entry->header.length);
+            // Update the expected sequence number to the largest sequence
+            // number in the set, and enqueue an acknowledgment to the other
+            // host that we have received all data up to that point.
+            expectedSequenceNumber = largestSequenceNumberInSet+1;
+            _otherHostSequenceMemo[channelQualifier] = largestSequenceNumberInSet+1;
+            _receiver.enqueueAck(channelQualifier, largestSequenceNumberInSet & EMI_HEADER_SEQUENCE_NUMBER_MASK);
+            
+            // If the set is not complete, we can not continue from here;
+            // we need to wait for it to be completed.
+            if (!setIsComplete) {
+                break;
             }
             
-            ++iter;
+            // TODO Actually reconstruct split messages
+            _receiver.emitMessage(channelQualifier, Binding::castToTemporary(entry->data), /*offset:*/0, entry->header.length);
+            
+            // This message set has now been processed and can be safely
+            // removed from _messageSets
+            _messageSets.removeMessageAndOlderMessages(channelQualifier,
+                                                       entry->guessedNonWrappedSequenceNumber);
+            
+            // This loop increments iter until we are past the message set
+            // we just processed, and marks all messages we pass for removal.
+            do {
+                // The iterator gets messed up if we modify _tree from
+                // within the loop, so do it after the loop has finished.
+                toBeRemoved.push_back(entry);
+            
+                ++iter;
+            } while (iter != end &&
+                     (entry = *iter) &&
+                     entry->guessedNonWrappedSequenceNumber <= largestSequenceNumberInSet);
         }
         
-        typename std::vector<Entry *>::iterator viter = toBeRemoved.begin();
-        typename std::vector<Entry *>::iterator vend  = toBeRemoved.end();
+        EntryVectorIter viter = toBeRemoved.begin();
+        EntryVectorIter vend  = toBeRemoved.end();
         while (viter != vend) {
             remove(*viter);
             ++viter;
@@ -445,7 +492,8 @@ public:
                     //
                     // When we receive a message that is not split, and that has
                     // the expected sequence number, we can bypass the buffering
-                    // mechanism and emit it immediately.
+                    // mechanism and emit it immediately, without touching the
+                    // message split mechanism.
                     
                     EmiSequenceNumber newExpectedSn = expectedSn+1;
                     _otherHostSequenceMemo[channelQualifier] = newExpectedSn;
