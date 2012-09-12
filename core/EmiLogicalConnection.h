@@ -37,7 +37,7 @@ class EmiLogicalConnection {
     
     friend class EmiNatPunchthrough<Binding, EmiLogicalConnection>;
     
-    typedef std::map<EmiChannelQualifier, EmiSequenceNumber> EmiLogicalConnectionMemo;
+    typedef std::map<EmiChannelQualifier, EmiSequenceNumber> EmiSequenceNumberMemo;
     
     ReceiverBuffer &_receiverBuffer;
     
@@ -50,9 +50,8 @@ class EmiLogicalConnection {
     ConnectionOpenedCallbackCookie _connectionOpenedCallbackCookie;
     bool _sendingSyn;
     
-    EmiLogicalConnectionMemo _sequenceMemo;
-    EmiLogicalConnectionMemo _otherHostSequenceMemo;
-    EmiLogicalConnectionMemo _reliableSequencedBuffer;
+    EmiSequenceNumberMemo _sequenceMemo;
+    EmiSequenceNumberMemo _reliableSequencedBuffer;
     
     // This contains the sequence number of these messages before
     // they have been acknowledged (then this var is set back to
@@ -103,15 +102,8 @@ private:
         return EmiNetRandom<Binding>::random() & EMI_HEADER_SEQUENCE_NUMBER_MASK;
     }
     
-    EmiSequenceNumber expectedSequenceNumber(const EmiMessageHeader& header) {
-        EmiLogicalConnectionMemo::iterator cur = _otherHostSequenceMemo.find(header.channelQualifier);
-        EmiLogicalConnectionMemo::iterator end = _otherHostSequenceMemo.end();
-        
-        return (end == cur ? _otherHostInitialSequenceNumber : (*cur).second);
-    }
-    
     inline EmiSequenceNumber sequenceMemoForChannelQualifier(EmiChannelQualifier cq) {
-        EmiLogicalConnectionMemo::iterator cur = _sequenceMemo.find(cq);
+        EmiSequenceNumberMemo::iterator cur = _sequenceMemo.find(cq);
         return (_sequenceMemo.end() == cur ? _initialSequenceNumber : (*cur).second);
     }
     
@@ -444,121 +436,6 @@ public:
         return true;
     }
     
-    // Returns true if the packet was processed successfully, false otherwise.
-#define EMI_GOT_INVALID_PACKET(err) do { /* NSLog(err); */ return false; } while (1)
-    bool gotMessage(EmiTimeInterval now,
-                    const EmiMessageHeader& header,
-                    const TemporaryData &data, size_t offset,
-                    bool dontFlush) {
-        EmiChannelQualifier channelQualifier = header.channelQualifier;
-        EmiChannelType channelType = EMI_CHANNEL_QUALIFIER_TYPE(channelQualifier);
-        
-        if ((EMI_CHANNEL_TYPE_UNRELIABLE_SEQUENCED == channelType ||
-             EMI_CHANNEL_TYPE_RELIABLE_SEQUENCED   == channelType) &&
-            -1 != header.sequenceNumber) {
-            
-            EmiSequenceNumber esn = expectedSequenceNumber(header);
-            
-            _otherHostSequenceMemo[header.channelQualifier] =
-                EmiNetUtil::cyclicMax24(esn,
-                                        (header.sequenceNumber+1) & EMI_HEADER_SEQUENCE_NUMBER_MASK);
-            
-            int32_t snDiff = EmiNetUtil::cyclicDifference24Signed(esn, header.sequenceNumber);
-            
-            if (snDiff > 0) {
-                // The packet arrived out of order; drop it
-                return false;
-            }
-            else if (snDiff < 0) {
-                // We have lost one or more packets.
-                _conn->emitPacketLoss(channelQualifier, -snDiff);
-            }
-        }
-        
-        if (EMI_CHANNEL_TYPE_UNRELIABLE == channelType || EMI_CHANNEL_TYPE_UNRELIABLE_SEQUENCED == channelType) {
-            if (header.flags & EMI_ACK_FLAG) EMI_GOT_INVALID_PACKET("Got unreliable message with ACK flag");
-            if (header.flags & EMI_SACK_FLAG) EMI_GOT_INVALID_PACKET("Got unreliable message with SACK flag");
-            
-            if (0 == header.length) {
-                // Unreliable packets with zero header length are nonsensical
-                return false;
-            }
-            
-            _conn->emitMessage(channelQualifier, data, offset, header.length);
-        }
-        else if (EMI_CHANNEL_TYPE_RELIABLE_SEQUENCED == channelType) {
-            if (header.flags & EMI_SACK_FLAG) EMI_GOT_INVALID_PACKET("SACK does not make sense on RELIABLE_SEQUENCED channels");
-            
-            _conn->enqueueAck(channelQualifier, header.sequenceNumber);
-            
-            if (header.flags & EMI_ACK_FLAG) {
-                EmiLogicalConnectionMemo::iterator cur = _reliableSequencedBuffer.find(channelQualifier);
-                if (_reliableSequencedBuffer.end() != cur &&
-                    (*cur).second == header.ack) {
-                    _conn->deregisterReliableMessages(now, channelQualifier, header.ack);
-                    _reliableSequencedBuffer.erase(channelQualifier);
-                }
-            }
-            
-            // A packet with zero length indicates that it is just an ACK packet
-            if (0 != header.length) {
-                size_t realOffset = offset + (header.flags & EMI_ACK_FLAG ? 2 : 0);
-                _conn->emitMessage(channelQualifier, data, realOffset, header.length);
-            }
-        }
-        else if (EMI_CHANNEL_TYPE_RELIABLE_ORDERED == channelType) {
-            if (header.flags & EMI_SACK_FLAG) EMI_GOT_INVALID_PACKET("SACK is not implemented");
-            
-            bool hasSequenceNumber = (-1 != header.sequenceNumber);
-            int32_t seqDiff = 0;
-            if (hasSequenceNumber) {
-                seqDiff = EmiNetUtil::cyclicDifference24Signed(expectedSequenceNumber(header), header.sequenceNumber);
-            }
-            
-            if (hasSequenceNumber && seqDiff >= 0) {
-                // Send an ACK only if this message has a sequence number
-                //
-                // Also, send an ACK only if the received message's sequence number
-                // is what we were expecting or if if it was older than we expected.
-                _conn->enqueueAck(channelQualifier, header.sequenceNumber);
-            }
-            
-            if (header.flags & EMI_ACK_FLAG) {
-                _conn->deregisterReliableMessages(now, channelQualifier, header.ack);
-            }
-            
-            if (hasSequenceNumber && 0 != seqDiff) {
-                if (seqDiff < 0) {
-                    // This message is newer than what we were expecting; save it in the input buffer
-                    _receiverBuffer.bufferMessage(header, data, offset, header.length);
-                }
-                
-                return false;
-            }
-            
-            if (hasSequenceNumber) {
-                _otherHostSequenceMemo[channelQualifier] = (header.sequenceNumber+1) & EMI_HEADER_SEQUENCE_NUMBER_MASK;
-            }
-            
-            // A packet with zero length indicates that it is just an ACK packet
-            if (0 != header.length) {
-                _conn->emitMessage(channelQualifier, data, offset, header.length);
-                
-                // The connection might have been closed in the message event handler,
-                // that's why we check that _conn is non-NULL.
-                if (_conn && !dontFlush && hasSequenceNumber) {
-                    _receiverBuffer.flushBuffer(now, channelQualifier, header.sequenceNumber);
-                }
-            }
-        }
-        else {
-            EMI_GOT_INVALID_PACKET("Unknown channel type");
-        }
-        
-        return true;
-    }
-#undef EMI_GOT_INVALID_PACKET
-    
     bool initiateCloseProcess(EmiTimeInterval now, Error& err) {
         if (_closing || !_conn) {
             // We're already closing or closed; no need to initiate a new close process
@@ -596,6 +473,15 @@ public:
         }
         
         return !error;
+    }
+    
+    void gotReliableSequencedAck(EmiTimeInterval now, EmiChannelQualifier channelQualifier, EmiSequenceNumber ack) {
+        EmiSequenceNumberMemo::iterator cur = _reliableSequencedBuffer.find(channelQualifier);
+        if (_reliableSequencedBuffer.end() != cur &&
+            (*cur).second == ack) {
+            _conn->deregisterReliableMessages(now, channelQualifier, ack);
+            _reliableSequencedBuffer.erase(channelQualifier);
+        }
     }
     
     // Returns false if the sender buffer was full and the message couldn't be sent
@@ -644,7 +530,7 @@ public:
             // channel. We can safely deregister previous reliable messages on the
             // channel.
             
-            EmiLogicalConnectionMemo::iterator cur = _reliableSequencedBuffer.find(channelQualifier);
+            EmiSequenceNumberMemo::iterator cur = _reliableSequencedBuffer.find(channelQualifier);
             if (_reliableSequencedBuffer.end() != cur) {
                 _conn->deregisterReliableMessages(now, channelQualifier, prevSeqMemo);
             }

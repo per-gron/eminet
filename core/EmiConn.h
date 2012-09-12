@@ -165,19 +165,6 @@ private:
 public:
     const EmiSockConfig config;
     
-    // Invoked by EmiReceiverBuffer
-    inline void gotReceiverBufferMessage(EmiTimeInterval now, typename ERB::Entry *entry) {
-        if (!_conn) return;
-        
-        // gotMessage should only return false if the message arrived out of order or
-        // some other similar error occured, but that should not happen because this
-        // callback should only be called by the receiver buffer for messages that are
-        // exactly in order.
-        ASSERT(_conn->gotMessage(now, entry->header,
-                                 Binding::castToTemporary(entry->data), /*offset:*/0,
-                                 /*dontFlush:*/true));
-    }
-    
     EmiConn(const ConnDelegate& delegate,
             const EmiSockConfig& config_,
             const EmiConnParams<Binding>& params) :
@@ -206,6 +193,15 @@ public:
         }
         
         deleteELC(_conn);
+    }
+    
+    // Invoked by EmiReceiverBuffer
+    inline void gotReliableSequencedAck(EmiTimeInterval now,
+                                        EmiChannelQualifier channelQualifier,
+                                        EmiSequenceNumber ack) {
+        if (_conn) {
+            _conn->gotReliableSequencedAck(now, channelQualifier, ack);
+        }
     }
     
     // Invoked by SockDelegate for server connections
@@ -596,13 +592,12 @@ public:
     // Delegates to EmiLogicalConnection
     bool gotMessage(EmiTimeInterval now,
                     const EmiMessageHeader& header,
-                    const TemporaryData& data, size_t offset,
-                    bool dontFlush) {
+                    const TemporaryData& data, size_t offset) {
         if (!_conn) {
             return false;
         }
         else {
-            return _conn->gotMessage(now, header, data, offset, dontFlush);
+            return _receiverBuffer.gotMessage(now, header, data, offset);
         }
     }
     
@@ -728,6 +723,9 @@ public:
     }
     bool isOpening() const {
         return _conn && _conn->isOpening();
+    }
+    bool isClosed() const {
+        return !_conn;
     }
     EmiSequenceNumber getOtherHostInitialSequenceNumber() const {
         return _conn ? _conn->getOtherHostInitialSequenceNumber() : 0;

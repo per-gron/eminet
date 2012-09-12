@@ -13,6 +13,7 @@
 #include "EmiMessageHeader.h"
 
 #include <set>
+#include <map>
 #include <vector>
 
 template<class SockDelegate, class Receiver>
@@ -20,6 +21,9 @@ class EmiReceiverBuffer {
     typedef typename SockDelegate::Binding   Binding;
     typedef typename Binding::PersistentData PersistentData;
     typedef typename Binding::TemporaryData  TemporaryData;
+    
+    typedef std::map<EmiChannelQualifier, EmiSequenceNumber> EmiSequenceNumberMemo;
+
     
 public:
     class Entry {
@@ -64,6 +68,8 @@ protected:
     EmiReceiverBufferTree _tree;
     size_t _bufferSize;
     
+    EmiSequenceNumberMemo _otherHostSequenceMemo;
+    
     Receiver &_receiver;
     
 private:
@@ -73,6 +79,13 @@ private:
     
     static size_t bufferEntrySize(Entry *entry) {
         return entry->header.headerLength + entry->header.length;
+    }
+    
+    EmiSequenceNumber expectedSequenceNumber(const EmiMessageHeader& header) {
+        EmiSequenceNumberMemo::iterator cur = _otherHostSequenceMemo.find(header.channelQualifier);
+        EmiSequenceNumberMemo::iterator end = _otherHostSequenceMemo.end();
+        
+        return (end == cur ? _receiver.getOtherHostInitialSequenceNumber() : (*cur).second);
     }
     
     void insert(Entry *entry) {
@@ -100,6 +113,52 @@ private:
         delete entry;
     }
     
+    void bufferMessage(const EmiMessageHeader& header, const TemporaryData& buf, size_t offset, size_t length) {
+        insert(new Entry(header, buf, offset, length));
+    }
+    
+    void flushBuffer(EmiTimeInterval now, EmiChannelQualifier channelQualifier, EmiSequenceNumber expectedSequenceNumber) {
+        if (_tree.empty()) return;
+        
+        Entry mockEntry;
+        mockEntry.header.channelQualifier = channelQualifier;
+        mockEntry.header.sequenceNumber = (expectedSequenceNumber-1) & EMI_HEADER_SEQUENCE_NUMBER_LENGTH;
+        
+        EmiReceiverBufferTreeIter iter = _tree.lower_bound(&mockEntry);
+        EmiReceiverBufferTreeIter end = _tree.end();
+        
+        std::vector<Entry *> toBeRemoved;
+        
+        Entry *entry;
+        while (iter != end &&
+               (entry = *iter) &&
+               entry->header.channelQualifier == channelQualifier &&
+               entry->header.sequenceNumber <= expectedSequenceNumber) {
+            
+            // The iterator gets messed up if we modify _tree from
+            // within the loop, so do it after the loop has finished.
+            toBeRemoved.push_back(entry);
+            
+            if (entry->header.sequenceNumber == expectedSequenceNumber) {
+                expectedSequenceNumber = (entry->header.sequenceNumber+1) & EMI_HEADER_SEQUENCE_NUMBER_MASK;
+                
+                _otherHostSequenceMemo[channelQualifier] = expectedSequenceNumber;
+                
+                _receiver.enqueueAck(channelQualifier, entry->header.sequenceNumber);
+                _receiver.emitMessage(channelQualifier, Binding::castToTemporary(entry->data), /*offset:*/0, entry->header.length);
+            }
+            
+            ++iter;
+        }
+        
+        typename std::vector<Entry *>::iterator viter = toBeRemoved.begin();
+        typename std::vector<Entry *>::iterator vend  = toBeRemoved.end();
+        while (viter != vend) {
+            remove(*viter);
+            ++viter;
+        }
+    }
+    
 public:
     
     EmiReceiverBuffer(size_t size, Receiver &receiver) :
@@ -119,48 +178,111 @@ public:
         _bufferSize = 0;
     }
     
-    void bufferMessage(const EmiMessageHeader& header, const TemporaryData& buf, size_t offset, size_t length) {
-        insert(new Entry(header, buf, offset, length));
-    }
-    
-    void flushBuffer(EmiTimeInterval now, EmiChannelQualifier channelQualifier, EmiSequenceNumber sequenceNumber) {
-        if (_tree.empty()) return;
+#define EMI_GOT_INVALID_PACKET(err) do { /* NSLog(err); */ return false; } while (1)
+    bool gotMessage(EmiTimeInterval now,
+                    const EmiMessageHeader& header,
+                    const TemporaryData &data, size_t offset) {
+        EmiChannelQualifier channelQualifier = header.channelQualifier;
+        EmiChannelType channelType = EMI_CHANNEL_QUALIFIER_TYPE(channelQualifier);
         
-        Entry mockEntry;
-        mockEntry.header.channelQualifier = channelQualifier;
-        mockEntry.header.sequenceNumber = sequenceNumber;
-        
-        EmiReceiverBufferTreeIter iter = _tree.lower_bound(&mockEntry);
-        EmiReceiverBufferTreeIter end = _tree.end();
-        
-        std::vector<Entry *> toBeRemoved;
-        EmiSequenceNumber expectedSequenceNumber = (sequenceNumber+1) & EMI_HEADER_SEQUENCE_NUMBER_MASK;
-        
-        Entry *entry;
-        while (iter != end &&
-               (entry = *iter) &&
-               entry->header.channelQualifier == channelQualifier &&
-               entry->header.sequenceNumber <= expectedSequenceNumber) {
+        if ((EMI_CHANNEL_TYPE_UNRELIABLE_SEQUENCED == channelType ||
+             EMI_CHANNEL_TYPE_RELIABLE_SEQUENCED   == channelType) &&
+            -1 != header.sequenceNumber) {
             
-            // The iterator gets messed up if we modify _tree from
-            // within the loop, so do it after the loop has finished.
-            toBeRemoved.push_back(entry);
+            EmiSequenceNumber esn = expectedSequenceNumber(header);
             
-            if (entry->header.sequenceNumber == expectedSequenceNumber) {
-                _receiver.gotReceiverBufferMessage(now, entry);
-                expectedSequenceNumber = (expectedSequenceNumber+1) & EMI_HEADER_SEQUENCE_NUMBER_MASK;
+            _otherHostSequenceMemo[header.channelQualifier] =
+            EmiNetUtil::cyclicMax24(esn,
+                                    (header.sequenceNumber+1) & EMI_HEADER_SEQUENCE_NUMBER_MASK);
+            
+            int32_t snDiff = EmiNetUtil::cyclicDifference24Signed(esn, header.sequenceNumber);
+            
+            if (snDiff > 0) {
+                // The packet arrived out of order; drop it
+                return false;
+            }
+            else if (snDiff < 0) {
+                // We have lost one or more packets.
+                _receiver.emitPacketLoss(channelQualifier, -snDiff);
+            }
+        }
+        
+        if (EMI_CHANNEL_TYPE_UNRELIABLE == channelType || EMI_CHANNEL_TYPE_UNRELIABLE_SEQUENCED == channelType) {
+            if (header.flags & EMI_ACK_FLAG) EMI_GOT_INVALID_PACKET("Got unreliable message with ACK flag");
+            if (header.flags & EMI_SACK_FLAG) EMI_GOT_INVALID_PACKET("Got unreliable message with SACK flag");
+            
+            if (0 == header.length) {
+                // Unreliable packets with zero header length are nonsensical
+                return false;
             }
             
-            ++iter;
+            _receiver.emitMessage(channelQualifier, data, offset, header.length);
+        }
+        else if (EMI_CHANNEL_TYPE_RELIABLE_SEQUENCED == channelType) {
+            if (header.flags & EMI_SACK_FLAG) EMI_GOT_INVALID_PACKET("SACK does not make sense on RELIABLE_SEQUENCED channels");
+            
+            _receiver.enqueueAck(channelQualifier, header.sequenceNumber);
+            
+            if (header.flags & EMI_ACK_FLAG) {
+                _receiver.gotReliableSequencedAck(now, channelQualifier, header.ack);
+            }
+            
+            // A packet with zero length indicates that it is just an ACK packet
+            if (0 != header.length) {
+                size_t realOffset = offset + (header.flags & EMI_ACK_FLAG ? 2 : 0);
+                _receiver.emitMessage(channelQualifier, data, realOffset, header.length);
+            }
+        }
+        else if (EMI_CHANNEL_TYPE_RELIABLE_ORDERED == channelType) {
+            if (header.flags & EMI_SACK_FLAG) EMI_GOT_INVALID_PACKET("SACK is not implemented");
+            
+            if (header.flags & EMI_ACK_FLAG) {
+                _receiver.deregisterReliableMessages(now, channelQualifier, header.ack);
+            }
+            
+            if (-1 != header.sequenceNumber) {
+                ASSERT(0 != header.length);
+                
+                EmiSequenceNumber expectedSn = expectedSequenceNumber(header);
+                int32_t seqDiff = EmiNetUtil::cyclicDifference24Signed(expectedSn,
+                                                                       header.sequenceNumber);
+                
+                if (seqDiff >= 0) {
+                    // Send an ACK only if the received message's sequence number is
+                    // what we were expecting or if if it was older than we expected.
+                    _receiver.enqueueAck(channelQualifier, header.sequenceNumber);
+                }
+                
+                if (0 == seqDiff && 0 == (header.flags & (EMI_SPLIT_NOT_FIRST_FLAG | EMI_SPLIT_NOT_LAST_FLAG))) {
+                    // This is purely an optimization.
+                    //
+                    // When we receive a message that is not split, and that has
+                    // the expected sequence number, we can bypass the buffering
+                    // mechanism and emit it immediately.
+                    
+                    EmiSequenceNumber newExpectedSn = (header.sequenceNumber+1) & EMI_HEADER_SEQUENCE_NUMBER_MASK;
+                    _otherHostSequenceMemo[channelQualifier] = newExpectedSn;
+                    
+                    _receiver.emitMessage(channelQualifier, data, offset, header.length);
+                    
+                    // The connection might have been closed when invoking emitMessage
+                    if (!_receiver.isClosed()) {
+                        flushBuffer(now, channelQualifier, newExpectedSn);
+                    }
+                }
+                else if (seqDiff <= 0) {
+                    bufferMessage(header, data, offset, header.length);
+                    flushBuffer(now, channelQualifier, expectedSn);
+                }
+            }
+        }
+        else {
+            EMI_GOT_INVALID_PACKET("Unknown channel type");
         }
         
-        typename std::vector<Entry *>::iterator viter = toBeRemoved.begin();
-        typename std::vector<Entry *>::iterator vend = toBeRemoved.end();
-        while (viter != vend) {
-            remove(*viter);
-            ++viter;
-        }
+        return true;
     }
+#undef EMI_GOT_INVALID_PACKET
 };
 
 #endif

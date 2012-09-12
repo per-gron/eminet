@@ -220,7 +220,7 @@ private:
             ASSERT(!unexpectedRemoteHost);
             ENSURE_CONN("data");
             
-            conn->gotMessage(now, header, data, offset+actualRawDataOffset, /*dontFlush:*/false);
+            conn->gotMessage(now, header, data, offset+actualRawDataOffset);
         }
         else {
             err = "Invalid message flags";
