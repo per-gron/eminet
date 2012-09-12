@@ -204,7 +204,7 @@ public:
     
 protected:
     
-    struct EmiReceiverBufferTreeCmp {
+    struct BufferTreeCmp {
         inline bool operator()(Entry *a, Entry *b) const {
             EmiChannelQualifier acq = a->header.channelQualifier;
             EmiChannelQualifier bcq = b->header.channelQualifier;
@@ -217,12 +217,12 @@ protected:
         }
     };
     
-    typedef std::set<Entry *, EmiReceiverBufferTreeCmp> EmiReceiverBufferTree;
-    typedef typename std::set<Entry *, EmiReceiverBufferTreeCmp>::iterator EmiReceiverBufferTreeIter;
+    typedef std::set<Entry *, BufferTreeCmp> BufferTree;
+    typedef typename std::set<Entry *, BufferTreeCmp>::iterator BufferTreeIter;
     // Buffer max size
     size_t _size;
     
-    EmiReceiverBufferTree _tree;
+    BufferTree _tree;
     size_t _bufferSize;
     
     EmiSequenceNumberMemo _otherHostSequenceMemo;
@@ -281,8 +281,8 @@ private:
         mockEntry.header.channelQualifier = channelQualifier;
         mockEntry.header.sequenceNumber = (expectedSequenceNumber-1) & EMI_HEADER_SEQUENCE_NUMBER_LENGTH;
         
-        EmiReceiverBufferTreeIter iter = _tree.lower_bound(&mockEntry);
-        EmiReceiverBufferTreeIter end = _tree.end();
+        BufferTreeIter iter = _tree.lower_bound(&mockEntry);
+        BufferTreeIter end = _tree.end();
         
         std::vector<Entry *> toBeRemoved;
         
@@ -322,7 +322,7 @@ public:
     _size(size), _bufferSize(0), _receiver(receiver) {}
     
     virtual ~EmiReceiverBuffer() {
-        EmiReceiverBufferTreeIter iter = _tree.begin();
+        BufferTreeIter iter = _tree.begin();
         while (iter != _tree.end()) {
             remove(*iter);
             
