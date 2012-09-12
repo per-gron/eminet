@@ -59,17 +59,14 @@ class EmiReceiverBuffer {
         
         struct ForestCmp {
             inline bool operator()(const ForestKey& a, const ForestKey& b) const {
-                int diff = (int)a.first - (int)b.first;
-                if (0 != diff) {
-                    return diff < 0;
-                }
-                else {
-                    return ((int)a.second - (int)b.second) < 0;
-                }
+                return (a.first  != b.first ?
+                        a.first  <  b.first :
+                        a.second <  b.second);
             }
         };
         
         typedef std::map<ForestKey, DisjointSet, ForestCmp> ForestMap;
+        typedef typename ForestMap::iterator ForestIterator;
         
         ForestMap _forest;
         
@@ -158,6 +155,11 @@ class EmiReceiverBuffer {
             else {
                 return -1;
             }
+        }
+        
+        void clearChannel(EmiChannelQualifier cq) {
+            _forest.erase(_forest.lower_bound(ForestKey(cq, 0)),
+                          _forest.upper_bound(ForestKey(cq, -1 & EMI_HEADER_SEQUENCE_NUMBER_MASK)));
         }
     };
 
