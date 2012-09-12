@@ -22,7 +22,7 @@ class EmiReceiverBuffer {
     typedef typename Binding::PersistentData PersistentData;
     typedef typename Binding::TemporaryData  TemporaryData;
     
-    typedef std::map<EmiChannelQualifier, EmiSequenceNumber> EmiSequenceNumberMemo;
+    typedef std::map<EmiChannelQualifier, EmiNonWrappingSequenceNumber> EmiNonWrappingSequenceNumberMemo;
     
     // The purpose of this class is to encapsulate an efficient
     // algorithm for handling split messages.
@@ -193,14 +193,23 @@ public:
         inline Entry& operator=(const Entry& other);
         
     public:
-        Entry(const EmiMessageHeader& header_, const TemporaryData &data_, size_t offset, size_t length) :
+        Entry(EmiNonWrappingSequenceNumber guessedNonWrappedSequenceNumber_,
+              const EmiMessageHeader& header_,
+              const TemporaryData &data_,
+              size_t offset,
+              size_t length) :
+        guessedNonWrappedSequenceNumber(guessedNonWrappedSequenceNumber_),
         header(header_),
         data(Binding::makePersistentData(Binding::extractData(data_)+offset, length)) {}
-        Entry() {}
+        
+        Entry() :
+        guessedNonWrappedSequenceNumber(0) {}
+        
         ~Entry() {
             Binding::releasePersistentData(data);
         }
         
+        EmiNonWrappingSequenceNumber guessedNonWrappedSequenceNumber;
         EmiMessageHeader header;
         PersistentData data;
     };
@@ -212,10 +221,9 @@ protected:
             EmiChannelQualifier acq = a->header.channelQualifier;
             EmiChannelQualifier bcq = b->header.channelQualifier;
             
-            if (acq < bcq) return true;
-            else if (acq > bcq) return false;
+            if (acq != bcq) return acq < bcq;
             else {
-                return EmiNetUtil::cyclicDifference24Signed(a->header.sequenceNumber, b->header.sequenceNumber) < 0;
+                return a->guessedNonWrappedSequenceNumber < b->guessedNonWrappedSequenceNumber;
             }
         }
     };
@@ -228,7 +236,7 @@ protected:
     BufferTree _tree;
     size_t _bufferSize;
     
-    EmiSequenceNumberMemo _otherHostSequenceMemo;
+    EmiNonWrappingSequenceNumberMemo _otherHostSequenceMemo;
     
     Receiver &_receiver;
     
@@ -241,9 +249,9 @@ private:
         return entry->header.headerLength + entry->header.length;
     }
     
-    EmiSequenceNumber expectedSequenceNumber(const EmiMessageHeader& header) {
-        EmiSequenceNumberMemo::iterator cur = _otherHostSequenceMemo.find(header.channelQualifier);
-        EmiSequenceNumberMemo::iterator end = _otherHostSequenceMemo.end();
+    EmiNonWrappingSequenceNumber expectedSequenceNumber(const EmiMessageHeader& header) {
+        EmiNonWrappingSequenceNumberMemo::iterator cur = _otherHostSequenceMemo.find(header.channelQualifier);
+        EmiNonWrappingSequenceNumberMemo::iterator end = _otherHostSequenceMemo.end();
         
         return (end == cur ? _receiver.getOtherHostInitialSequenceNumber() : (*cur).second);
     }
@@ -273,16 +281,22 @@ private:
         delete entry;
     }
     
-    void bufferMessage(const EmiMessageHeader& header, const TemporaryData& buf, size_t offset, size_t length) {
-        insert(new Entry(header, buf, offset, length));
+    void bufferMessage(EmiNonWrappingSequenceNumber guessedNonWrappedSequenceNumber,
+                       const EmiMessageHeader& header,
+                       const TemporaryData& buf,
+                       size_t offset,
+                       size_t length) {
+        insert(new Entry(guessedNonWrappedSequenceNumber, header, buf, offset, length));
     }
     
-    void flushBuffer(EmiTimeInterval now, EmiChannelQualifier channelQualifier, EmiSequenceNumber expectedSequenceNumber) {
+    void flushBuffer(EmiTimeInterval now,
+                     EmiChannelQualifier channelQualifier,
+                     EmiNonWrappingSequenceNumber expectedSequenceNumber) {
         if (_tree.empty()) return;
         
         Entry mockEntry;
+        mockEntry.guessedNonWrappedSequenceNumber = expectedSequenceNumber-1;
         mockEntry.header.channelQualifier = channelQualifier;
-        mockEntry.header.sequenceNumber = (expectedSequenceNumber-1) & EMI_HEADER_SEQUENCE_NUMBER_LENGTH;
         
         BufferTreeIter iter = _tree.lower_bound(&mockEntry);
         BufferTreeIter end = _tree.end();
@@ -293,16 +307,16 @@ private:
         while (iter != end &&
                (entry = *iter) &&
                entry->header.channelQualifier == channelQualifier &&
-               entry->header.sequenceNumber <= expectedSequenceNumber) {
+               entry->guessedNonWrappedSequenceNumber <= expectedSequenceNumber) {
             
             // The iterator gets messed up if we modify _tree from
             // within the loop, so do it after the loop has finished.
             toBeRemoved.push_back(entry);
             
-            if (entry->header.sequenceNumber == expectedSequenceNumber) {
-                expectedSequenceNumber = (entry->header.sequenceNumber+1) & EMI_HEADER_SEQUENCE_NUMBER_MASK;
+            if (entry->guessedNonWrappedSequenceNumber == expectedSequenceNumber) {
+                expectedSequenceNumber = entry->guessedNonWrappedSequenceNumber+1;
                 
-                _otherHostSequenceMemo[channelQualifier] = expectedSequenceNumber;
+                _otherHostSequenceMemo[channelQualifier] = entry->guessedNonWrappedSequenceNumber+1;
                 
                 _receiver.enqueueAck(channelQualifier, entry->header.sequenceNumber);
                 _receiver.emitMessage(channelQualifier, Binding::castToTemporary(entry->data), /*offset:*/0, entry->header.length);
@@ -345,17 +359,31 @@ public:
         EmiChannelQualifier channelQualifier = header.channelQualifier;
         EmiChannelType channelType = EMI_CHANNEL_QUALIFIER_TYPE(channelQualifier);
         
+        EmiNonWrappingSequenceNumber expectedSn = expectedSequenceNumber(header);
+        
+        // Based on the sequence number that we expect, try to guess the
+        // non-wrapped sequence number.
+        EmiNonWrappingSequenceNumber guessedNonWrappedSequenceNumber;
+        {
+            // positive diff means older than expected
+            int32_t diff = EmiNetUtil::cyclicDifference24Signed(expectedSn & EMI_HEADER_SEQUENCE_NUMBER_MASK,
+                                                                header.sequenceNumber);
+            if (diff > 0 && diff > expectedSn) {
+                // Don't allow a negative guessedNonWrappedSequenceNumber
+                guessedNonWrappedSequenceNumber = header.sequenceNumber;
+            }
+            else {
+                guessedNonWrappedSequenceNumber = expectedSn - diff;
+            }
+        }
+        
         if ((EMI_CHANNEL_TYPE_UNRELIABLE_SEQUENCED == channelType ||
              EMI_CHANNEL_TYPE_RELIABLE_SEQUENCED   == channelType) &&
             -1 != header.sequenceNumber) {
             
-            EmiSequenceNumber esn = expectedSequenceNumber(header);
+            _otherHostSequenceMemo[header.channelQualifier] = std::max(expectedSn, guessedNonWrappedSequenceNumber+1);
             
-            _otherHostSequenceMemo[header.channelQualifier] =
-            EmiNetUtil::cyclicMax24(esn,
-                                    (header.sequenceNumber+1) & EMI_HEADER_SEQUENCE_NUMBER_MASK);
-            
-            int32_t snDiff = EmiNetUtil::cyclicDifference24Signed(esn, header.sequenceNumber);
+            int64_t snDiff = (int64_t)expectedSn - (int64_t)guessedNonWrappedSequenceNumber;
             
             if (snDiff > 0) {
                 // The packet arrived out of order; drop it
@@ -404,9 +432,7 @@ public:
             if (-1 != header.sequenceNumber) {
                 ASSERT(0 != header.length);
                 
-                EmiSequenceNumber expectedSn = expectedSequenceNumber(header);
-                int32_t seqDiff = EmiNetUtil::cyclicDifference24Signed(expectedSn,
-                                                                       header.sequenceNumber);
+                int64_t seqDiff = (int64_t)expectedSn - (int64_t)guessedNonWrappedSequenceNumber;
                 
                 if (seqDiff >= 0) {
                     // Send an ACK only if the received message's sequence number is
@@ -421,7 +447,7 @@ public:
                     // the expected sequence number, we can bypass the buffering
                     // mechanism and emit it immediately.
                     
-                    EmiSequenceNumber newExpectedSn = (header.sequenceNumber+1) & EMI_HEADER_SEQUENCE_NUMBER_MASK;
+                    EmiSequenceNumber newExpectedSn = expectedSn+1;
                     _otherHostSequenceMemo[channelQualifier] = newExpectedSn;
                     
                     _receiver.emitMessage(channelQualifier, data, offset, header.length);
@@ -432,7 +458,8 @@ public:
                     }
                 }
                 else if (seqDiff <= 0) {
-                    bufferMessage(header, data, offset, header.length);
+                    bufferMessage(guessedNonWrappedSequenceNumber,
+                                  header, data, offset, header.length);
                     flushBuffer(now, channelQualifier, expectedSn);
                 }
             }
