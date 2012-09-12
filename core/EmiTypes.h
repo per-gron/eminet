@@ -95,6 +95,10 @@ typedef uint64_t EmiNonWrappingSequenceNumber;
 #define EMI_NON_WRAPPING_SEQUENCE_NUMBER_MAX UINT64_MAX
 // Represents a 24 bit number. -1 means no value
 typedef int32_t  EmiPacketSequenceNumber;
+// Like EmiPacketSequenceNumber, but does not wrap at 24 bits. Its purpose
+// is to be able to implement correct less-than predicates for sequence
+// numbers for use with binary trees.
+typedef int64_t  EmiNonWrappingPacketSequenceNumber;
 typedef uint8_t  EmiChannelQualifier;
 typedef uint16_t EmiTimestamp;
 typedef uint8_t  EmiMessageFlags;

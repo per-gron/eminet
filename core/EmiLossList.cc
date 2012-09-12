@@ -17,19 +17,38 @@ _lossSet() {}
 
 EmiLossList::~EmiLossList() {}
 
-void EmiLossList::gotPacket(EmiTimeInterval now, EmiPacketSequenceNumber sequenceNumber) {
+void EmiLossList::gotPacket(EmiTimeInterval now, EmiPacketSequenceNumber wrappedSequenceNumber) {
+    
+    EmiNonWrappingPacketSequenceNumber expectedSn = _newestSequenceNumber+1;
+    
+    // Based on the last sequence number that we got, try to
+    // guess the non-wrapped sequence number.
+    EmiNonWrappingPacketSequenceNumber guessedNonWrappedSequenceNumber;
+    {
+        
+        // positive diff means older than expected
+        int32_t diff = EmiNetUtil::cyclicDifferenceSigned<EMI_PACKET_SEQUENCE_NUMBER_LENGTH>(expectedSn & EMI_PACKET_SEQUENCE_NUMBER_MASK,
+                                                                                             wrappedSequenceNumber);
+        if (diff > 0 && diff > expectedSn) {
+            // Don't allow a negative guessedNonWrappedSequenceNumber
+            guessedNonWrappedSequenceNumber = wrappedSequenceNumber;
+        }
+        else {
+            guessedNonWrappedSequenceNumber = expectedSn - diff;
+        }
+    }
+    
     if (-1 == _newestSequenceNumber ||
-        ((_newestSequenceNumber+1) & EMI_PACKET_SEQUENCE_NUMBER_MASK) == sequenceNumber) {
+        expectedSn == guessedNonWrappedSequenceNumber) {
         // We received the expected sequence number.
         // No need to do anything with the loss set.
     }
-    else if (/* Like _newestSequenceNumber > sequenceNumber, but supports sequence number cycling */
-             EmiNetUtil::cyclicDifferenceSigned<EMI_PACKET_SEQUENCE_NUMBER_LENGTH>(_newestSequenceNumber, sequenceNumber) > 0) {
+    else if (_newestSequenceNumber > guessedNonWrappedSequenceNumber) {
         // We received an old sequence number, which presumably
         // arrived out of order. Remove it from the loss set if
         // it's present.
         
-        LossSetIter iter = _lossSet.lower_bound(LostPacketRange(0, 0, sequenceNumber));
+        LossSetIter iter = _lossSet.lower_bound(LostPacketRange(0, 0, guessedNonWrappedSequenceNumber));
         
         if (_lossSet.end() == iter) {
             // We did not find any matching LostPacketRange
@@ -38,8 +57,7 @@ void EmiLossList::gotPacket(EmiTimeInterval now, EmiPacketSequenceNumber sequenc
         
         const LostPacketRange& lpr(*iter);
         
-        if (/* Like lpr.oldestSequenceNumber > sequenceNumber, but supports sequence number cycling */
-            EmiNetUtil::cyclicDifferenceSigned<EMI_PACKET_SEQUENCE_NUMBER_LENGTH>(lpr.oldestSequenceNumber, sequenceNumber) > 0) {
+        if (lpr.oldestSequenceNumber > guessedNonWrappedSequenceNumber) {
             // The LostPacketRange we found doesn't contain this sequence number
             return;
         }
@@ -47,39 +65,33 @@ void EmiLossList::gotPacket(EmiTimeInterval now, EmiPacketSequenceNumber sequenc
         // We only have a reference to lp, so we must use it before
         // we erase it from _lossSet.
         LostPacketRange lowerBound(lpr);
-        lowerBound.newestSequenceNumber = (sequenceNumber-1) & EMI_PACKET_SEQUENCE_NUMBER_MASK;
+        lowerBound.newestSequenceNumber = guessedNonWrappedSequenceNumber-1;
         LostPacketRange upperBound(lpr);
-        upperBound.oldestSequenceNumber = (sequenceNumber+1) & EMI_PACKET_SEQUENCE_NUMBER_MASK;
+        upperBound.oldestSequenceNumber = guessedNonWrappedSequenceNumber+1;
         upperBound.numFeedbacks = 0;
         
         // To make sure that we don't get problems with duplicates in the set,
         // we must erase lp before we insert the split versions of it.
         _lossSet.erase(iter);
         
-        if (/* Like lowerBound.oldestSequenceNumber <= lowerBound.newestSequenceNumber,
-               but supports sequence number cycling */
-            EmiNetUtil::cyclicDifferenceSigned<EMI_PACKET_SEQUENCE_NUMBER_LENGTH>(lowerBound.oldestSequenceNumber,
-                                                                                  lowerBound.newestSequenceNumber) <= 0) {
+        if (lowerBound.oldestSequenceNumber <= lowerBound.newestSequenceNumber) {
             _lossSet.insert(lowerBound);
         }
-        if (/* Like upperBound.oldestSequenceNumber <= upperBound.newestSequenceNumber,
-               but supports sequence number cycling */
-            EmiNetUtil::cyclicDifferenceSigned<EMI_PACKET_SEQUENCE_NUMBER_LENGTH>(upperBound.oldestSequenceNumber,
-                                                                                  upperBound.newestSequenceNumber) <= 0) {
+        if (upperBound.oldestSequenceNumber <= upperBound.newestSequenceNumber) {
             _lossSet.insert(upperBound);
         }
     }
-    else if (EmiNetUtil::cyclicDifferenceSigned<EMI_PACKET_SEQUENCE_NUMBER_LENGTH>(sequenceNumber, _newestSequenceNumber) > 1) {
+    else if (guessedNonWrappedSequenceNumber - _newestSequenceNumber > 1) {
         // We received a newer sequence number than what we
         // expected. Add the lost range to the loss set.
         
         LostPacketRange lpr(now, 
-                            (_newestSequenceNumber+1) & EMI_PACKET_SEQUENCE_NUMBER_MASK,
-                            (sequenceNumber-1) & EMI_PACKET_SEQUENCE_NUMBER_MASK);
+                            _newestSequenceNumber+1,
+                            guessedNonWrappedSequenceNumber-1);
         _lossSet.insert(lpr);
     }
     
-    _newestSequenceNumber = sequenceNumber;
+    _newestSequenceNumber = guessedNonWrappedSequenceNumber;
     _newestSequenceNumberTime = now;
 }
 
@@ -94,9 +106,9 @@ EmiPacketSequenceNumber EmiLossList::calculateNak(EmiTimeInterval now, EmiTimeIn
             // Bingo! We found the LostPacket we wanted.
             LostPacketRange newLpr(lpr);
             newLpr.numFeedbacks++;
-            newLpr.oldestSequenceNumber = (newLpr.oldestSequenceNumber+1) & EMI_PACKET_SEQUENCE_NUMBER_MASK;
+            newLpr.oldestSequenceNumber = newLpr.oldestSequenceNumber+1;
             newLpr.lastFeedbackTime = now;
-            EmiPacketSequenceNumber nak = lpr.oldestSequenceNumber;
+            EmiNonWrappingPacketSequenceNumber nak = lpr.oldestSequenceNumber;
             
             // Remove all LostPackets that are older or as old as lpr in _lossSet
             _lossSet.erase(_lossSet.begin(), ++_lossSet.find(*iter));
@@ -104,15 +116,12 @@ EmiPacketSequenceNumber EmiLossList::calculateNak(EmiTimeInterval now, EmiTimeIn
             // Replace lp with a new object with incremented
             // numFeedbacks and oldestSequenceNumber, and updated
             // lastFeedbackTime
-            if (/* Like newLpr.oldestSequenceNumber <= newLpr.newestSequenceNumber,
-                   but supports sequence number cycling */
-                EmiNetUtil::cyclicDifferenceSigned<EMI_PACKET_SEQUENCE_NUMBER_LENGTH>(newLpr.oldestSequenceNumber,
-                                                                                      newLpr.newestSequenceNumber) <= 0) {
+            if (newLpr.oldestSequenceNumber <= newLpr.newestSequenceNumber) {
                 _lossSet.insert(newLpr);
             }
             
             // Exit the loop early and return the sequence number we found
-            return nak;
+            return nak & EMI_PACKET_SEQUENCE_NUMBER_MASK;
         }
         
         ++iter;

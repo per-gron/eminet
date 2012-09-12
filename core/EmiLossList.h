@@ -30,19 +30,20 @@ class EmiLossList {
     
     struct LostPacketRange {
         LostPacketRange(EmiTimeInterval lastFeedbackTime_,
-                        EmiPacketSequenceNumber oldestSequenceNumber_,
-                        EmiPacketSequenceNumber newestSequenceNumber_) :
+                        EmiNonWrappingPacketSequenceNumber oldestSequenceNumber_,
+                        EmiNonWrappingPacketSequenceNumber newestSequenceNumber_) :
         oldestSequenceNumber(oldestSequenceNumber_),
         newestSequenceNumber(newestSequenceNumber_),
         lastFeedbackTime(lastFeedbackTime_),
         numFeedbacks(0) {}
         
-        EmiPacketSequenceNumber oldestSequenceNumber;
-        EmiPacketSequenceNumber newestSequenceNumber;
-        EmiTimeInterval         lastFeedbackTime;
-        uint32_t                numFeedbacks;
+        EmiNonWrappingPacketSequenceNumber oldestSequenceNumber;
+        EmiNonWrappingPacketSequenceNumber newestSequenceNumber;
+        EmiTimeInterval                    lastFeedbackTime;
+        uint32_t                           numFeedbacks;
         
         inline bool operator<(const LostPacketRange& other) const {
+            // TODO What happens here when the sequence number has wrapped?
             return newestSequenceNumber < other.newestSequenceNumber;
         }
     };
@@ -51,12 +52,12 @@ class EmiLossList {
     typedef LossSet::iterator         LossSetIter;
     typedef LossSet::reverse_iterator LossSetRIter;
     
-    EmiPacketSequenceNumber _newestSequenceNumber;
-    EmiTimeInterval         _newestSequenceNumberTime;
+    EmiNonWrappingPacketSequenceNumber _newestSequenceNumber;
+    EmiTimeInterval _newestSequenceNumberTime;
     // EmiLossList maintains the invariant that any oldestSequenceNumber
     // of a LostPacketRange in the set is greater than the previous
     // LostPacketRange's newestSequenceNumber.
-    LossSet                 _lossSet;
+    LossSet _lossSet;
     
 public:
     EmiLossList();
