@@ -33,7 +33,7 @@ private:
         _refCount = 1;
         registrationTime = 0;
         channelQualifier = EMI_CHANNEL_QUALIFIER_DEFAULT;
-        sequenceNumber = 0;
+        nonWrappingSequenceNumber = 0;
         flags = 0;
         priority = EMI_PRIORITY_DEFAULT;
     }
@@ -101,7 +101,7 @@ public:
     // This is int32_t and not EmiChannelQualifier because it has to be capable of
     // holding -1, the special SYN/RST message channel as used by EmiSenderBuffer
     int32_t channelQualifier;
-    EmiSequenceNumber sequenceNumber;
+    EmiNonWrappingSequenceNumber nonWrappingSequenceNumber;
     EmiMessageFlags flags;
     EmiPriority priority;
     const PersistentData data;

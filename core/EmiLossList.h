@@ -75,7 +75,7 @@ public:
     //
     // Note that this method is not free of side effects; it increases
     // the numFeedbacks field of the LostPacketRange object in question.
-    // It also prunes LostPacktRanges that are older than the one
+    // It also prunes LostPacketRanges that are older than the one
     // returned.
     EmiPacketSequenceNumber calculateNak(EmiTimeInterval now, EmiTimeInterval rtt);
 };

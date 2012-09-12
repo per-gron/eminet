@@ -288,8 +288,13 @@ public:
     }
     
     // Delegates to EmiSenderBuffer
-    void deregisterReliableMessages(EmiTimeInterval now, int32_t channelQualifier, EmiSequenceNumber sequenceNumber) {
-        _senderBuffer.deregisterReliableMessages(channelQualifier, sequenceNumber);
+    //
+    // channelQualifier is int32_t to be able to contain -1, which
+    // is a special control message channel.
+    void deregisterReliableMessages(EmiTimeInterval now,
+                                    int32_t channelQualifier,
+                                    EmiNonWrappingSequenceNumber nonWrappingSequenceNumber) {
+        _senderBuffer.deregisterReliableMessages(channelQualifier, nonWrappingSequenceNumber);
         
         // This will clear the rto timeout if the sender buffer is empty
         _timers.updateRtoTimeout();
@@ -310,7 +315,7 @@ public:
     //
     // Messages enqueued with this method will not be split.
     bool enqueueControlMessage(EmiTimeInterval now,
-                               EmiSequenceNumber sequenceNumber,
+                               EmiNonWrappingSequenceNumber nonWrappingSequenceNumber,
                                EmiMessageFlags flags,
                                const uint8_t *data,
                                size_t dataLen,
@@ -321,7 +326,7 @@ public:
             return enqueueMessage(now,
                                   EMI_PRIORITY_CONTROL,
                                   EMI_CONTROL_CHANNEL,
-                                  sequenceNumber,
+                                  nonWrappingSequenceNumber,
                                   flags,
                                   &dataObj,
                                   reliable,
@@ -332,7 +337,7 @@ public:
             return enqueueMessage(now,
                                   EMI_PRIORITY_CONTROL,
                                   EMI_CONTROL_CHANNEL,
-                                  sequenceNumber,
+                                  nonWrappingSequenceNumber,
                                   flags,
                                   /*data:*/NULL,
                                   reliable,
@@ -352,7 +357,7 @@ public:
     size_t enqueueMessage(EmiTimeInterval now,
                           EmiPriority priority,
                           EmiChannelQualifier channelQualifier,
-                          EmiSequenceNumber sequenceNumber,
+                          EmiNonWrappingSequenceNumber nonWrappingSequenceNumber,
                           EmiMessageFlags flags,
                           const PersistentData *data,
                           bool reliable,
@@ -408,7 +413,7 @@ public:
             
             msg->priority = priority;
             msg->channelQualifier = channelQualifier;
-            msg->sequenceNumber = sequenceNumber;
+            msg->nonWrappingSequenceNumber = nonWrappingSequenceNumber;
             msg->flags = (flags |
                           (0 == i ? 0 : EMI_SPLIT_NOT_FIRST_FLAG) |
                           (numMessages-1 == i ? 0 : EMI_SPLIT_NOT_LAST_FLAG));
@@ -598,6 +603,15 @@ public:
         }
         else {
             return _receiverBuffer.gotMessage(now, header, data, offset);
+        }
+    }
+    // Delegates to EmiLogicalConnection
+    inline EmiNonWrappingSequenceNumber guessSequenceNumberWrapping(EmiChannelQualifier cq, EmiSequenceNumber sn) {
+        if (_conn) {
+            return _conn->guessSequenceNumberWrapping(cq, sn);
+        }
+        else {
+            return sn;
         }
     }
     

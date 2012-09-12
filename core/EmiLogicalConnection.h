@@ -37,7 +37,7 @@ class EmiLogicalConnection {
     
     friend class EmiNatPunchthrough<Binding, EmiLogicalConnection>;
     
-    typedef std::map<EmiChannelQualifier, EmiSequenceNumber> EmiSequenceNumberMemo;
+    typedef std::map<EmiChannelQualifier, EmiNonWrappingSequenceNumber> EmiNonWrappingSequenceNumberMemo;
     
     ReceiverBuffer &_receiverBuffer;
     
@@ -50,8 +50,8 @@ class EmiLogicalConnection {
     ConnectionOpenedCallbackCookie _connectionOpenedCallbackCookie;
     bool _sendingSyn;
     
-    EmiSequenceNumberMemo _sequenceMemo;
-    EmiSequenceNumberMemo _reliableSequencedBuffer;
+    EmiNonWrappingSequenceNumberMemo _sequenceMemo;
+    EmiNonWrappingSequenceNumberMemo _reliableSequencedBuffer;
     
     // This contains the sequence number of these messages before
     // they have been acknowledged (then this var is set back to
@@ -102,8 +102,8 @@ private:
         return EmiNetRandom<Binding>::random() & EMI_HEADER_SEQUENCE_NUMBER_MASK;
     }
     
-    inline EmiSequenceNumber sequenceMemoForChannelQualifier(EmiChannelQualifier cq) {
-        EmiSequenceNumberMemo::iterator cur = _sequenceMemo.find(cq);
+    inline EmiNonWrappingSequenceNumber sequenceMemoForChannelQualifier(EmiChannelQualifier cq) {
+        EmiNonWrappingSequenceNumberMemo::iterator cur = _sequenceMemo.find(cq);
         return (_sequenceMemo.end() == cur ? _initialSequenceNumber : (*cur).second);
     }
     
@@ -475,11 +475,27 @@ public:
         return !error;
     }
     
+    // This method tries to reconstruct the amount of wrapping that has been
+    // stripped away from an EmiSequenceNumber by looking at the most recent
+    // sent EmiNonWrappedSequenceNumber for a given channel
+    EmiNonWrappingSequenceNumber guessSequenceNumberWrapping(EmiChannelQualifier cq, EmiSequenceNumber sn) {
+        EmiNonWrappingSequenceNumber lastSentSequenceNumber = sequenceMemoForChannelQualifier(cq)-1;
+        EmiSequenceNumber wrappedLastSentSequenceNumber = (lastSentSequenceNumber & EMI_HEADER_SEQUENCE_NUMBER_MASK);
+        
+        return ((lastSentSequenceNumber & ~EMI_HEADER_SEQUENCE_NUMBER_MASK) +
+                sn -
+                (sn > wrappedLastSentSequenceNumber ? EMI_HEADER_SEQUENCE_NUMBER_MASK : 0));
+    }
+    
     void gotReliableSequencedAck(EmiTimeInterval now, EmiChannelQualifier channelQualifier, EmiSequenceNumber ack) {
-        EmiSequenceNumberMemo::iterator cur = _reliableSequencedBuffer.find(channelQualifier);
+        EmiNonWrappingSequenceNumberMemo::iterator cur = _reliableSequencedBuffer.find(channelQualifier);
         if (_reliableSequencedBuffer.end() != cur &&
-            (*cur).second == ack) {
-            _conn->deregisterReliableMessages(now, channelQualifier, ack);
+            ((*cur).second & EMI_HEADER_SEQUENCE_NUMBER_MASK) == ack) {
+            
+            // Note that we use (*cur).second, and NOT ack here, because
+            // ack is a wrapping sequence number and thus does not contain
+            // all information that we need.
+            _conn->deregisterReliableMessages(now, channelQualifier, (*cur).second);
             _reliableSequencedBuffer.erase(channelQualifier);
         }
     }
@@ -489,7 +505,7 @@ public:
     // send assumes ownership of the data PersistentData object
     bool send(const PersistentData& data, EmiTimeInterval now, EmiChannelQualifier channelQualifier, EmiPriority priority, Error& err) {
         // This has to be called before we increment _sequenceMemo[cq]
-        EmiSequenceNumber prevSeqMemo = sequenceMemoForChannelQualifier(channelQualifier);
+        EmiNonWrappingSequenceNumber prevSeqMemo = sequenceMemoForChannelQualifier(channelQualifier);
         
         EmiChannelType channelType = EMI_CHANNEL_QUALIFIER_TYPE(channelQualifier);
         
@@ -509,7 +525,7 @@ public:
         size_t enqueuedMessages = _conn->enqueueMessage(now,
                                                         priority,
                                                         channelQualifier,
-                                                        /*sequenceNumber:*/prevSeqMemo,
+                                                        /*nonWrappingSequenceNumber:*/prevSeqMemo,
                                                         /*flags:*/0,
                                                         &data,
                                                         reliable,
@@ -522,7 +538,7 @@ public:
         }
         else {
             // enqueueMessage succeeded
-            _sequenceMemo[channelQualifier] = (prevSeqMemo+enqueuedMessages) & EMI_HEADER_SEQUENCE_NUMBER_MASK;
+            _sequenceMemo[channelQualifier] = prevSeqMemo+enqueuedMessages;
         }
         
         if (EMI_CHANNEL_TYPE_RELIABLE_SEQUENCED == channelType) {
@@ -530,7 +546,7 @@ public:
             // channel. We can safely deregister previous reliable messages on the
             // channel.
             
-            EmiSequenceNumberMemo::iterator cur = _reliableSequencedBuffer.find(channelQualifier);
+            EmiNonWrappingSequenceNumberMemo::iterator cur = _reliableSequencedBuffer.find(channelQualifier);
             if (_reliableSequencedBuffer.end() != cur) {
                 _conn->deregisterReliableMessages(now, channelQualifier, prevSeqMemo);
             }

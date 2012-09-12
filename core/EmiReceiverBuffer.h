@@ -394,7 +394,8 @@ public:
             if (header.flags & EMI_SACK_FLAG) EMI_GOT_INVALID_PACKET("SACK is not implemented");
             
             if (header.flags & EMI_ACK_FLAG) {
-                _receiver.deregisterReliableMessages(now, channelQualifier, header.ack);
+                EmiNonWrappingSequenceNumber nonWrappedAck = _receiver.guessSequenceNumberWrapping(channelQualifier, header.ack);
+                _receiver.deregisterReliableMessages(now, channelQualifier, nonWrappedAck);
             }
             
             if (-1 != header.sequenceNumber) {

@@ -311,7 +311,12 @@ private:
         size_t dataLen = Binding::extractLength(msg->data);
         
         uint8_t packetBuf[128];
-        size_t size = EM::writeControlPacketWithData(msg->flags, packetBuf, sizeof(packetBuf), data, dataLen, msg->sequenceNumber);
+        size_t size = EM::writeControlPacketWithData(msg->flags,
+                                                     packetBuf,
+                                                     sizeof(packetBuf),
+                                                     data,
+                                                     dataLen,
+                                                     msg->nonWrappingSequenceNumber & EMI_HEADER_SEQUENCE_NUMBER_MASK);
         ASSERT(0 != size); // size == 0 when the buffer was too small
         
         // Actually send the packet
@@ -446,7 +451,7 @@ private:
                                           hasAck, /* hasAck */
                                           hasAck && (*curAck).second, /* ack */
                                           msg->channelQualifier,
-                                          msg->sequenceNumber,
+                                          msg->nonWrappingSequenceNumber & EMI_HEADER_SEQUENCE_NUMBER_MASK,
                                           Binding::extractData(msg->data),
                                           Binding::extractLength(msg->data),
                                           msg->flags);

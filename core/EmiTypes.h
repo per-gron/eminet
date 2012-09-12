@@ -86,8 +86,14 @@ typedef enum {
     EMI_P2P_STATE_FAILED           = 3
 } EmiP2PState;
 
-typedef uint32_t EmiSequenceNumber; // Represents a 24 bit number
-typedef int32_t  EmiPacketSequenceNumber; // Represents a 24 bit number. -1 means no value
+// Represents a 24 bit number
+typedef uint32_t EmiSequenceNumber;
+// Like EmiSequenceNumber, but does not wrap at 24 bits. Its purpose is to
+// be able to implement correct less-than predicates for sequence numbers
+// for use with binary trees.
+typedef uint64_t EmiNonWrappingSequenceNumber;
+// Represents a 24 bit number. -1 means no value
+typedef int32_t  EmiPacketSequenceNumber;
 typedef uint8_t  EmiChannelQualifier;
 typedef uint16_t EmiTimestamp;
 typedef uint8_t  EmiMessageFlags;

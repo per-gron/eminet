@@ -21,34 +21,31 @@ class EmiSenderBuffer {
     typedef EmiMessage<Binding>     EM;
     
     struct NextMsgTreeCmp {
-        bool operator()(EM *a, EM *b) const {
+        inline bool operator()(const EM *a, const EM *b) const {
             EmiTimeInterval art = a->registrationTime;
             EmiTimeInterval brt = b->registrationTime;
             
-            if (art < brt) return true;
-            else if (art > brt) return false;
+            if (art != brt) return art < brt;
             else {
                 int32_t acq = a->channelQualifier;
                 int32_t bcq = b->channelQualifier;
                 
-                if (acq < bcq) return true;
-                else if (acq > bcq) return false;
+                if (acq != bcq) return acq < bcq;
                 else {
-                    return EmiNetUtil::cyclicDifference24Signed(a->sequenceNumber, b->sequenceNumber) < 0;
+                    return a->nonWrappingSequenceNumber < b->nonWrappingSequenceNumber;
                 }
             }
         }
     };
     
     struct SendBufferCmp {
-        bool operator()(EM *a, EM *b) const {
+        inline bool operator()(const EM *a, const EM *b) const {
             int32_t acq = a->channelQualifier;
             int32_t bcq = b->channelQualifier;
             
-            if (acq < bcq) return true;
-            else if (acq > bcq) return false;
+            if (acq != bcq) return acq < bcq;
             else {
-                return EmiNetUtil::cyclicDifference24Signed(a->sequenceNumber, b->sequenceNumber) < 0;
+                return a->nonWrappingSequenceNumber < b->nonWrappingSequenceNumber;
             }
         }
     };
@@ -138,10 +135,14 @@ public:
     
     // Deregisters all messages on the particular channelQualifier
     // whose sequenceNumber <= sequenceNumber
-    void deregisterReliableMessages(int32_t channelQualifier, EmiSequenceNumber sequenceNumber) {
+    //
+    // channelQualifier is int32_t to be able to contain -1, which
+    // is a special control message channel.
+    void deregisterReliableMessages(int32_t channelQualifier,
+                                    EmiNonWrappingSequenceNumber nonWrappingSequenceNumber) {
         EM msgStub;
-        msgStub.channelQualifier = channelQualifier;
-        msgStub.sequenceNumber = sequenceNumber;
+        msgStub.channelQualifier          = channelQualifier;
+        msgStub.nonWrappingSequenceNumber = nonWrappingSequenceNumber;
         
         SendBufferIter begin = _sendBuffer.begin();
         SendBufferIter iter  = _sendBuffer.lower_bound(&msgStub);
@@ -155,7 +156,7 @@ public:
             if (channelQualifier != msg->channelQualifier) {
                 break;
             }
-            if (EmiNetUtil::cyclicDifference24Signed(msg->sequenceNumber, sequenceNumber) > 0) {
+            if (msg->nonWrappingSequenceNumber > nonWrappingSequenceNumber) {
                 // This can happen because we used lower_bound.
                 // It should not happen more than once, though.
                 //
@@ -201,6 +202,7 @@ public:
     bool empty() const {
         return _nextMsgTree.empty();
     }
+    
     template<class Delegate>
     void eachCurrentMessage(EmiTimeInterval now, EmiTimeInterval rto,
                             Delegate& delegate) {
