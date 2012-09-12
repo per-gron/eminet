@@ -55,18 +55,36 @@ class EmiReceiverBuffer {
             lastMessage(-1) { }
         };
         
-        std::map<EmiSequenceNumber, DisjointSet> _forest;
+        typedef std::pair<EmiChannelQualifier, EmiSequenceNumber> ForestKey;
         
-        typedef std::pair<EmiSequenceNumber, DisjointSet&> FindResult;
+        struct ForestCmp {
+            inline bool operator()(const ForestKey& a, const ForestKey& b) const {
+                int diff = (int)a.first - (int)b.first;
+                if (0 != diff) {
+                    return diff < 0;
+                }
+                else {
+                    return ((int)a.second - (int)b.second) < 0;
+                }
+            }
+        };
         
-        FindResult find(EmiSequenceNumber i) {
-            // If _forest does not contain i, this will automatically
-            // create insert a default-constructed DisjointSet object,
-            // which is exactly what we want.
-            DisjointSet& ds = _forest[i];
+        typedef std::map<ForestKey, DisjointSet, ForestCmp> ForestMap;
+        
+        ForestMap _forest;
+        
+        typedef std::pair<ForestKey, DisjointSet&> FindResult;
+        
+        FindResult find(EmiChannelQualifier cq, EmiSequenceNumber sn) {
+            ForestKey key(cq, sn);
             
-            if (ds.parent == i) {
-                return std::make_pair(i, ds);
+            // If _forest does not contain the message, this will automatically
+            // create insert a default-constructed DisjointSet object, which is
+            // exactly what we want.
+            DisjointSet& ds = _forest[key];
+            
+            if (ds.parent == sn) {
+                return std::make_pair(key, ds);
             }
             else {
                 FindResult result = find(ds.parent);
@@ -76,12 +94,12 @@ class EmiReceiverBuffer {
         }
         
         // Returns the new root
-        FindResult merge(EmiSequenceNumber i, EmiSequenceNumber j) {
-            FindResult findIResult = find(i);
-            FindResult findJResult = find(j);
+        FindResult merge(EmiChannelQualifier cq, EmiSequenceNumber i, EmiSequenceNumber j) {
+            FindResult findIResult = find(cq, i);
+            FindResult findJResult = find(cq, j);
             
-            EmiSequenceNumber rootISn = findIResult.first;
-            EmiSequenceNumber rootJSn = findJResult.first;
+            EmiSequenceNumber rootISn = findIResult.first.second;
+            EmiSequenceNumber rootJSn = findJResult.first.second;
             
             DisjointSet& rootI = findIResult.last;
             DisjointSet& rootJ = findJResult.last;
@@ -118,7 +136,8 @@ class EmiReceiverBuffer {
         // When a full set of split messages have been received, this method
         // returns the first message in the set's sequence number. Otherwise,
         // it returns -1.
-        int32_t gotMessage(EmiSequenceNumber i, bool first, bool last) {
+        int32_t gotMessage(EmiChannelQualifier cq, EmiSequenceNumber i,
+                           bool first, bool last) {
             if (first && last) {
                 // This is a non-split message.
                 return i;
@@ -127,8 +146,8 @@ class EmiReceiverBuffer {
             // Merge the message with sequence number i with the following
             // message, but only for messages that are not last in a split.
             DisjointSet& root = (last ?
-                                 find(i).last :
-                                 merge(i, (i+1) & EMI_HEADER_SEQUENCE_NUMBER_MASK).last);
+                                 find(cq, i).last :
+                                 merge(cq, i, (i+1) & EMI_HEADER_SEQUENCE_NUMBER_MASK).last);
             
             if (first) root.firstMessage = i;
             if (last)  root.lastMessage = i;
