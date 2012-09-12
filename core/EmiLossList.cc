@@ -24,7 +24,7 @@ void EmiLossList::gotPacket(EmiTimeInterval now, EmiPacketSequenceNumber sequenc
         // No need to do anything with the loss set.
     }
     else if (/* Like _newestSequenceNumber > sequenceNumber, but supports sequence number cycling */
-             EmiNetUtil::cyclicDifference24Signed(_newestSequenceNumber, sequenceNumber) > 0) {
+             EmiNetUtil::cyclicDifferenceSigned<EMI_PACKET_SEQUENCE_NUMBER_LENGTH>(_newestSequenceNumber, sequenceNumber) > 0) {
         // We received an old sequence number, which presumably
         // arrived out of order. Remove it from the loss set if
         // it's present.
@@ -39,7 +39,7 @@ void EmiLossList::gotPacket(EmiTimeInterval now, EmiPacketSequenceNumber sequenc
         const LostPacketRange& lpr(*iter);
         
         if (/* Like lpr.oldestSequenceNumber > sequenceNumber, but supports sequence number cycling */
-            EmiNetUtil::cyclicDifference24Signed(lpr.oldestSequenceNumber, sequenceNumber) > 0) {
+            EmiNetUtil::cyclicDifferenceSigned<EMI_PACKET_SEQUENCE_NUMBER_LENGTH>(lpr.oldestSequenceNumber, sequenceNumber) > 0) {
             // The LostPacketRange we found doesn't contain this sequence number
             return;
         }
@@ -58,18 +58,18 @@ void EmiLossList::gotPacket(EmiTimeInterval now, EmiPacketSequenceNumber sequenc
         
         if (/* Like lowerBound.oldestSequenceNumber <= lowerBound.newestSequenceNumber,
                but supports sequence number cycling */
-            EmiNetUtil::cyclicDifference24Signed(lowerBound.oldestSequenceNumber,
-                                                 lowerBound.newestSequenceNumber) <= 0) {
+            EmiNetUtil::cyclicDifferenceSigned<EMI_PACKET_SEQUENCE_NUMBER_LENGTH>(lowerBound.oldestSequenceNumber,
+                                                                                  lowerBound.newestSequenceNumber) <= 0) {
             _lossSet.insert(lowerBound);
         }
         if (/* Like upperBound.oldestSequenceNumber <= upperBound.newestSequenceNumber,
                but supports sequence number cycling */
-            EmiNetUtil::cyclicDifference24Signed(upperBound.oldestSequenceNumber,
-                                                 upperBound.newestSequenceNumber) <= 0) {
+            EmiNetUtil::cyclicDifferenceSigned<EMI_PACKET_SEQUENCE_NUMBER_LENGTH>(upperBound.oldestSequenceNumber,
+                                                                                  upperBound.newestSequenceNumber) <= 0) {
             _lossSet.insert(upperBound);
         }
     }
-    else if (EmiNetUtil::cyclicDifference24Signed(sequenceNumber, _newestSequenceNumber) > 1) {
+    else if (EmiNetUtil::cyclicDifferenceSigned<EMI_PACKET_SEQUENCE_NUMBER_LENGTH>(sequenceNumber, _newestSequenceNumber) > 1) {
         // We received a newer sequence number than what we
         // expected. Add the lost range to the loss set.
         
@@ -106,8 +106,8 @@ EmiPacketSequenceNumber EmiLossList::calculateNak(EmiTimeInterval now, EmiTimeIn
             // lastFeedbackTime
             if (/* Like newLpr.oldestSequenceNumber <= newLpr.newestSequenceNumber,
                    but supports sequence number cycling */
-                EmiNetUtil::cyclicDifference24Signed(newLpr.oldestSequenceNumber,
-                                                     newLpr.newestSequenceNumber) <= 0) {
+                EmiNetUtil::cyclicDifferenceSigned<EMI_PACKET_SEQUENCE_NUMBER_LENGTH>(newLpr.oldestSequenceNumber,
+                                                                                      newLpr.newestSequenceNumber) <= 0) {
                 _lossSet.insert(newLpr);
             }
             

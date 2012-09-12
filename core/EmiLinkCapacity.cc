@@ -32,7 +32,7 @@ void EmiLinkCapacity::gotPacket(EmiTimeInterval now, EmiPacketSequenceNumber seq
     }
     else if (1 == snMod16 &&
              _lastPacketSize == packetLength &&
-             1 == EmiNetUtil::cyclicDifference24Signed(sequenceNumber, _lastPacket)) {
+             1 == EmiNetUtil::cyclicDifferenceSigned<EMI_PACKET_SEQUENCE_NUMBER_LENGTH>(sequenceNumber, _lastPacket)) {
         
         EmiTimeInterval timeDifference = now-_lastPacketTime;
         if (0 != timeDifference) {

@@ -704,7 +704,7 @@ public:
             _acks[channelQualifier] = sequenceNumber;
         }
         else {
-            _acks[channelQualifier] = EmiNetUtil::cyclicMax24((*ackCur).second, sequenceNumber);
+            _acks[channelQualifier] = EmiNetUtil::cyclicMax<EMI_HEADER_SEQUENCE_NUMBER_LENGTH>((*ackCur).second, sequenceNumber);
         }
         
         return !_acks.empty();

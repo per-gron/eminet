@@ -366,8 +366,8 @@ public:
         EmiNonWrappingSequenceNumber guessedNonWrappedSequenceNumber;
         {
             // positive diff means older than expected
-            int32_t diff = EmiNetUtil::cyclicDifference24Signed(expectedSn & EMI_HEADER_SEQUENCE_NUMBER_MASK,
-                                                                header.sequenceNumber);
+            int32_t diff = EmiNetUtil::cyclicDifferenceSigned<EMI_HEADER_SEQUENCE_NUMBER_LENGTH>(expectedSn & EMI_HEADER_SEQUENCE_NUMBER_MASK,
+                                                                                                 header.sequenceNumber);
             if (diff > 0 && diff > expectedSn) {
                 // Don't allow a negative guessedNonWrappedSequenceNumber
                 guessedNonWrappedSequenceNumber = header.sequenceNumber;

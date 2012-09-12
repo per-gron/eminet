@@ -206,8 +206,8 @@ public:
         
         if (packetHeader.flags & EMI_ACK_PACKET_FLAG) {
             if (-1 == _newestSeenAckSN ||
-                EmiNetUtil::cyclicDifference24Signed(packetHeader.ack,
-                                                     _newestSeenAckSN) > 0) {
+                EmiNetUtil::cyclicDifferenceSigned<EMI_PACKET_SEQUENCE_NUMBER_LENGTH>(packetHeader.ack,
+                                                                                      _newestSeenAckSN) > 0) {
 #if EMI_DEBUG_SEQUENCE_NUMBERS
                     ASSERT(-1 == _newestSeenAckSN ||
                            EmiNetUtil::cyclicDifference24Signed(packetHeader.ack,
@@ -225,7 +225,7 @@ public:
         
         if (packetHeader.flags & EMI_SEQUENCE_NUMBER_PACKET_FLAG) {
             if (-1 == _newestSeenSN ||
-                EmiNetUtil::cyclicDifference24Signed(packetHeader.sequenceNumber, _newestSeenSN) > 0) {
+                EmiNetUtil::cyclicDifferenceSigned<EMI_PACKET_SEQUENCE_NUMBER_LENGTH>(packetHeader.sequenceNumber, _newestSeenSN) > 0) {
 #if EMI_DEBUG_SEQUENCE_NUMBERS
                 ASSERT(-1 == _newestSeenSN ||
                        EmiNetUtil::cyclicDifference24Signed(packetHeader.sequenceNumber,
@@ -291,8 +291,8 @@ public:
         else {
             // /2 because presumably half of the packets are
             // in transit, the other half's ACKs are in transit
-            packetsInTransit = EmiNetUtil::cyclicDifference24(_newestSentSN,
-                                                              _newestSeenAckSN)/2;
+            packetsInTransit = EmiNetUtil::cyclicDifference<EMI_PACKET_SEQUENCE_NUMBER_LENGTH>(_newestSentSN,
+                                                                                               _newestSeenAckSN)/2;
         }
         
         size_t cwndAllowance = _congestionWindow - packetsInTransit*_avgPacketSize;

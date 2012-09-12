@@ -33,17 +33,20 @@ private:
     
 public:
     
-    inline static int32_t cyclicDifference24(int32_t a, int32_t b) {
-        return (a>=b ? a-b : 0xffffff-b+a) & 0xffffff;
+    template<int NUM_BYTES>
+    inline static int32_t cyclicDifference(int32_t a, int32_t b) {
+        return (a>=b ? a-b : ((1 << (8*NUM_BYTES))-1)-b+a) & ((1 << (8*NUM_BYTES))-1);
     }
     
-    inline static int32_t cyclicDifference24Signed(int32_t a, int32_t b) {
-        int32_t res = cyclicDifference24(a, b);
-        return res > 0x7fffff ? res-0xffffff : res;
+    template<int NUM_BYTES>
+    inline static int32_t cyclicDifferenceSigned(int32_t a, int32_t b) {
+        int32_t res = cyclicDifference<NUM_BYTES>(a, b);
+        return res > ((1 << (8*NUM_BYTES))-1)/2 ? res-((1 << (8*NUM_BYTES))-1) : res;
     }
     
-    inline static int32_t cyclicMax24(int32_t a, int32_t b) {
-        int32_t res = cyclicDifference24Signed(a, b);
+    template<int NUM_BYTES>
+    inline static int32_t cyclicMax(int32_t a, int32_t b) {
+        int32_t res = cyclicDifferenceSigned<NUM_BYTES>(a, b);
         return res > 0 ? a : b;
     }
     
