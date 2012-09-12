@@ -20,7 +20,7 @@ class EmiSenderBuffer {
     typedef typename Binding::Error Error;
     typedef EmiMessage<Binding>     EM;
     
-    struct EmiSenderBufferNextMsgTreeCmp {
+    struct NextMsgTreeCmp {
         bool operator()(EM *a, EM *b) const {
             EmiTimeInterval art = a->registrationTime;
             EmiTimeInterval brt = b->registrationTime;
@@ -40,7 +40,7 @@ class EmiSenderBuffer {
         }
     };
     
-    struct EmiSenderBufferSendBufferCmp {
+    struct SendBufferCmp {
         bool operator()(EM *a, EM *b) const {
             int32_t acq = a->channelQualifier;
             int32_t bcq = b->channelQualifier;
@@ -54,20 +54,20 @@ class EmiSenderBuffer {
     };
     
     typedef std::vector<EM *> EmiMessageVector;
-    typedef std::set<EM *, EmiSenderBufferNextMsgTreeCmp> EmiSenderBufferNextMsgTree;
-    typedef std::set<EM *, EmiSenderBufferSendBufferCmp>  EmiSenderBufferSendBuffer;
-    typedef typename EmiMessageVector::iterator           EmiMessageVectorIter;
-    typedef typename EmiSenderBufferNextMsgTree::iterator EmiSenderBufferNextMsgTreeIter;
-    typedef typename EmiSenderBufferSendBuffer::iterator  EmiSenderBufferSendBufferIter;
+    typedef std::set<EM *, NextMsgTreeCmp>      NextMsgTree;
+    typedef std::set<EM *, SendBufferCmp>       SendBuffer;
+    typedef typename EmiMessageVector::iterator EmiMessageVectorIter;
+    typedef typename NextMsgTree::iterator      NextMsgTreeIter;
+    typedef typename SendBuffer::iterator       SendBufferIter;
     
     // Buffer max size
     size_t _size;
     
     // Contains at most one message per channel. It is sorted by regTime
-    EmiSenderBufferNextMsgTree _nextMsgTree;
+    NextMsgTree _nextMsgTree;
     // contains all messages in the reliable buffer. It is sorted by
     // channelQualifier and sequenceNumber
-    EmiSenderBufferSendBuffer _sendBuffer;
+    SendBuffer _sendBuffer;
     size_t _sendBufferSize;
     
 private:
@@ -76,8 +76,8 @@ private:
     inline EmiSenderBuffer& operator=(const EmiSenderBuffer& other);
     
     EM *messageSearch(EM *messageStub) {
-        EmiSenderBufferSendBufferIter iter = _sendBuffer.lower_bound(messageStub);
-        EmiSenderBufferSendBufferIter end = _sendBuffer.end();
+        SendBufferIter iter = _sendBuffer.lower_bound(messageStub);
+        SendBufferIter end  = _sendBuffer.end();
         
         // We need to look at both *iter and *(++iter), and of course
         // also guard for if we reach end. That's what this loop does.
@@ -97,8 +97,8 @@ public:
     
     EmiSenderBuffer(size_t size) : _size(size), _sendBufferSize(0) {}
     virtual ~EmiSenderBuffer() {
-        EmiSenderBufferSendBufferIter iter = _sendBuffer.begin();
-        EmiSenderBufferSendBufferIter end = _sendBuffer.end();
+        SendBufferIter iter = _sendBuffer.begin();
+        SendBufferIter end  = _sendBuffer.end();
         while (iter != end) {
             (*iter)->release();
             ++iter;
@@ -143,8 +143,8 @@ public:
         msgStub.channelQualifier = channelQualifier;
         msgStub.sequenceNumber = sequenceNumber;
         
-        EmiSenderBufferSendBufferIter begin = _sendBuffer.begin();
-        EmiSenderBufferSendBufferIter iter  = _sendBuffer.lower_bound(&msgStub);
+        SendBufferIter begin = _sendBuffer.begin();
+        SendBufferIter iter  = _sendBuffer.lower_bound(&msgStub);
         
         if (iter == _sendBuffer.end()) return;
         
@@ -204,8 +204,8 @@ public:
     template<class Delegate>
     void eachCurrentMessage(EmiTimeInterval now, EmiTimeInterval rto,
                             Delegate& delegate) {
-        EmiSenderBufferNextMsgTreeIter iter = _nextMsgTree.begin();
-        EmiSenderBufferNextMsgTreeIter end = _nextMsgTree.end();
+        NextMsgTreeIter iter = _nextMsgTree.begin();
+        NextMsgTreeIter end = _nextMsgTree.end();
         
         EmiMessageVector toBePushedToTheEnd;
         

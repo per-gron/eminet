@@ -205,7 +205,7 @@ public:
 protected:
     
     struct EmiReceiverBufferTreeCmp {
-        bool operator()(Entry *a, Entry *b) const {
+        inline bool operator()(Entry *a, Entry *b) const {
             EmiChannelQualifier acq = a->header.channelQualifier;
             EmiChannelQualifier bcq = b->header.channelQualifier;
             
