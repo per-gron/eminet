@@ -81,12 +81,18 @@ class EmiReceiverBuffer {
         
         typedef std::pair<ForestKey, DisjointSet*> FindResult;
         
-        FindResult find(EmiChannelQualifier cq, EmiNonWrappingSequenceNumber sn) {
+        FindResult find(EmiChannelQualifier cq,
+                        EmiNonWrappingSequenceNumber sn,
+                        bool createIfMissing = true) {
             ForestKey key(cq, sn);
             
             ForestIter iter = _forest.find(key);
             ForestIter end  = _forest.end();
             if (iter == end) {
+                if (!createIfMissing) {
+                    return std::make_pair(key, (DisjointSet *)NULL);
+                }
+                
                 // If there is no entry for this sequence number and
                 // channel qualifier, create one.
                 iter = _forest.insert(make_pair(key, DisjointSet(sn))).first;
@@ -208,24 +214,26 @@ class EmiReceiverBuffer {
         // The sequence number parameter can be the sequence number
         // of any message that is in the split group to be removed.
         //
-        // This method is supposed to be used to implement reliable
-        // channels.
-        //
         // Note: This method must only be used for messages that are
         // complete, that is, all parts of the split group have been
-        // registered. Failing to observe this will wreak havoc with
-        // the data structure!
-        //
-        // Furthermore, this method must not be used for message sets
-        // that contain only one message.
+        // registered.
         void removeMessageAndOlderMessages(EmiChannelQualifier cq, EmiNonWrappingSequenceNumber i) {
-            DisjointSet& root = *(find(cq, i).second);
+            DisjointSet *root = find(cq, i, /*createIfMissing:*/false).second;
             
-            ASSERT((root.flags & DISJOINT_SET_HAS_FIRST_MESSAGE) &&
-                   (root.flags & DISJOINT_SET_HAS_LAST_MESSAGE));
+            ASSERT(!root ||
+                   ((root->flags & DISJOINT_SET_HAS_FIRST_MESSAGE) &&
+                    (root->flags & DISJOINT_SET_HAS_LAST_MESSAGE)));
             
             _forest.erase(_forest.lower_bound(ForestKey(cq, 0)),
-                          _forest.upper_bound(ForestKey(cq, root.lastMessage)));
+                          _forest.upper_bound(ForestKey(cq, root ? root->lastMessage : i)));
+        }
+        
+        EmiNonWrappingSequenceNumber getFirstSequenceNumberInSet(EmiChannelQualifier cq,
+                                                                 EmiNonWrappingSequenceNumber i) {
+            FindResult findResult(find(cq, i, /*createIfMissing:*/false));
+            return (findResult.second ?
+                    findResult.second->firstMessage :
+                    i);
         }
     };
     
@@ -389,7 +397,6 @@ private:
     // message with a different channelQualifier.
     BufferTreeIter processBuffer(EmiChannelQualifier channelQualifier,
                                  BufferTreeIter iter,
-                                 EmiNonWrappingSequenceNumber expectedSequenceNumber,
                                  int64_t *largestProcessedMessageSet) {
         
         if (largestProcessedMessageSet) {
@@ -397,6 +404,10 @@ private:
         }
         
         BufferTreeIter end = _tree.end();
+        
+        if (iter == end) {
+            return iter;
+        }
         
         Entry *entry = *iter;
         
@@ -410,6 +421,8 @@ private:
             // incomplete message set.
             return iter;
         }
+        
+        EmiNonWrappingSequenceNumber expectedSequenceNumber = entry->guessedNonWrappedSequenceNumber;
         
         while (iter != end &&
                (entry = *iter) &&
@@ -493,11 +506,22 @@ private:
         
         BufferTreeIter iter = _tree.lower_bound(&mockEntry);
         
-        int64_t largestProcessedMessageSet;
+        if (_tree.end() == iter) {
+            // We found nothing.
+            return;
+        }
         
+        Entry *foundEntry = *iter;
+        if (foundEntry->header.channelQualifier != channelQualifier ||
+            foundEntry->guessedNonWrappedSequenceNumber > expectedSequenceNumber) {
+            // The entry we found was either not in the expected channel qualifier,
+            // or it was newer than the newest permissible message to process.
+            return;
+        }
+        
+        int64_t largestProcessedMessageSet;
         BufferTreeIter end = processBuffer(channelQualifier,
                                            iter,
-                                           expectedSequenceNumber,
                                            &largestProcessedMessageSet);
         
         // We have now processed and emitted messages. The next
@@ -516,22 +540,62 @@ private:
     void processUnorderedMessage(EmiNonWrappingSequenceNumber guessedNonWrappedSequenceNumber,
                                  const EmiMessageHeader& header,
                                  const TemporaryData& data, size_t offset) {
-        /*if (0 == (header.flags & (EMI_SPLIT_NOT_FIRST_FLAG | EMI_SPLIT_NOT_LAST_FLAG))) {
+        if (0 == (header.flags & (EMI_SPLIT_NOT_FIRST_FLAG | EMI_SPLIT_NOT_LAST_FLAG))) {
             // This is a non-split message, so we don't need to worry
             // about reconstructing the split etc.
-            */
+            
             _receiver.emitMessage(header.channelQualifier, data, offset, header.length);
-            /*
-            // TODO Remove older messages from _tree and _messageSets
+            
+            // Remove older messages from _tree and _messageSets
+            _messageSets.removeMessageAndOlderMessages(header.channelQualifier,
+                                                       guessedNonWrappedSequenceNumber);
+            
+            Entry mockEntry1;
+            mockEntry1.guessedNonWrappedSequenceNumber = 0;
+            mockEntry1.header.channelQualifier = header.channelQualifier;
+            
+            Entry mockEntry2;
+            mockEntry2.guessedNonWrappedSequenceNumber = guessedNonWrappedSequenceNumber;
+            mockEntry2.header.channelQualifier = header.channelQualifier;
+            
+            remove(_tree.lower_bound(&mockEntry1),
+                   _tree.upper_bound(&mockEntry2));
         }
         else {
             bufferMessage(guessedNonWrappedSequenceNumber,
                           header, data, offset, header.length);
-            flushBuffer(header.channelQualifier,
-                        EMI_NON_WRAPPING_SEQUENCE_NUMBER_MAX);
             
-            // TODO Remove older messages form _tree and _messageSets
-        }*/
+            EmiNonWrappingSequenceNumber firstSequenceNumberInSet = _messageSets.getFirstSequenceNumberInSet(header.channelQualifier,
+                                                                                                             guessedNonWrappedSequenceNumber);
+            
+            Entry mockEntry1;
+            mockEntry1.guessedNonWrappedSequenceNumber = firstSequenceNumberInSet;
+            mockEntry1.header.channelQualifier = header.channelQualifier;
+            BufferTreeIter iter = _tree.find(&mockEntry1);
+            
+            if (_tree.end() == iter) {
+                // This happens when the receiver buffer is full. Fail.
+                return;
+            }
+            
+            int64_t largestProcessedMessageSet;
+            
+            BufferTreeIter end = processBuffer(header.channelQualifier,
+                                               iter,
+                                               &largestProcessedMessageSet);
+            
+            // Remove processed and older messages from _tree and _messageSets
+            if (-1 != largestProcessedMessageSet) {
+                _messageSets.removeMessageAndOlderMessages(header.channelQualifier,
+                                                           largestProcessedMessageSet);
+            }
+            
+            Entry mockEntry2;
+            mockEntry2.guessedNonWrappedSequenceNumber = 0;
+            mockEntry2.header.channelQualifier = header.channelQualifier;
+            remove(_tree.lower_bound(&mockEntry2),
+                   end);
+        }
     }
     
 public:
