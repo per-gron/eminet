@@ -407,9 +407,9 @@ private:
             // Search for a message set that contains entry->guessedNonWrappedSequenceNumber
             typename DisjointMessageSets::MessageData messageData;
             messageData = _messageSets.getMessageData(channelQualifier,
-                                                     entry->guessedNonWrappedSequenceNumber,
-                                                     entry->header.flags,
-                                                     /*messageSize:*/entry->header.length);
+                                                      entry->guessedNonWrappedSequenceNumber,
+                                                      entry->header.flags,
+                                                      /*messageSize:*/entry->header.length);
             bool setIsComplete = messageData.first;
             EmiNonWrappingSequenceNumber largestSequenceNumberInSet = messageData.second.first;
             size_t totalSizeOfSet = messageData.second.second;
@@ -536,7 +536,8 @@ public:
             if (header.flags & EMI_ACK_FLAG) EMI_GOT_INVALID_PACKET("Got unreliable message with ACK flag");
             if (header.flags & EMI_SACK_FLAG) EMI_GOT_INVALID_PACKET("Got unreliable message with SACK flag");
             
-            if (0 == header.length) {
+            if (0 == header.length ||
+                -1 == header.sequenceNumber) {
                 // Unreliable packets with zero header length are nonsensical
                 return false;
             }
@@ -553,9 +554,10 @@ public:
             }
             
             // A packet with zero length indicates that it is just an ACK packet
-            if (0 != header.length) {
-                size_t realOffset = offset + (header.flags & EMI_ACK_FLAG ? 2 : 0);
-                _receiver.emitMessage(channelQualifier, data, realOffset, header.length);
+            if (-1 != header.sequenceNumber) {
+                ASSERT(0 != header.length);
+                
+                _receiver.emitMessage(channelQualifier, data, offset, header.length);
             }
         }
         else if (EMI_CHANNEL_TYPE_RELIABLE_ORDERED == channelType) {
