@@ -476,28 +476,30 @@ public:
     }
     
     // This method tries to reconstruct the amount of wrapping that has been
+    // stripped away from an EmiSequenceNumber by looking at a reference
+    // EmiNonWrappedSequenceNumber
+    EmiNonWrappingSequenceNumber guessSequenceNumberWrappingFromReference(EmiNonWrappingSequenceNumber reference,
+                                                                          EmiSequenceNumber sn) {
+        EmiSequenceNumber wrappedReference = (reference & EMI_HEADER_SEQUENCE_NUMBER_MASK);
+        
+        return ((reference & ~EMI_HEADER_SEQUENCE_NUMBER_MASK) +
+                sn -
+                (sn > wrappedReference ? EMI_HEADER_SEQUENCE_NUMBER_MASK : 0));
+    }
+    
+    // This method tries to reconstruct the amount of wrapping that has been
     // stripped away from an EmiSequenceNumber by looking at the most recent
     // sent EmiNonWrappedSequenceNumber for a given channel
     EmiNonWrappingSequenceNumber guessSequenceNumberWrapping(EmiChannelQualifier cq, EmiSequenceNumber sn) {
-        EmiNonWrappingSequenceNumber lastSentSequenceNumber = sequenceMemoForChannelQualifier(cq)-1;
-        EmiSequenceNumber wrappedLastSentSequenceNumber = (lastSentSequenceNumber & EMI_HEADER_SEQUENCE_NUMBER_MASK);
-        
-        return ((lastSentSequenceNumber & ~EMI_HEADER_SEQUENCE_NUMBER_MASK) +
-                sn -
-                (sn > wrappedLastSentSequenceNumber ? EMI_HEADER_SEQUENCE_NUMBER_MASK : 0));
+        return guessSequenceNumberWrappingFromReference(sequenceMemoForChannelQualifier(cq)-1,
+                                                        sn);
     }
     
     void gotReliableSequencedAck(EmiTimeInterval now, EmiChannelQualifier channelQualifier, EmiSequenceNumber ack) {
-        EmiNonWrappingSequenceNumberMemo::iterator cur = _reliableSequencedBuffer.find(channelQualifier);
-        if (_reliableSequencedBuffer.end() != cur &&
-            ((*cur).second & EMI_HEADER_SEQUENCE_NUMBER_MASK) == ack) {
-            
-            // Note that we use (*cur).second, and NOT ack here, because
-            // ack is a wrapping sequence number and thus does not contain
-            // all information that we need.
-            _conn->deregisterReliableMessages(now, channelQualifier, (*cur).second);
-            _reliableSequencedBuffer.erase(channelQualifier);
-        }
+        _conn->deregisterReliableMessages(now,
+                                          channelQualifier,
+                                          guessSequenceNumberWrappingFromReference(_reliableSequencedBuffer[channelQualifier],
+                                                                                   ack));
     }
     
     // Returns false if the sender buffer was full and the message couldn't be sent
@@ -546,11 +548,8 @@ public:
             // channel. We can safely deregister previous reliable messages on the
             // channel.
             
-            EmiNonWrappingSequenceNumberMemo::iterator cur = _reliableSequencedBuffer.find(channelQualifier);
-            if (_reliableSequencedBuffer.end() != cur) {
-                _conn->deregisterReliableMessages(now, channelQualifier, prevSeqMemo);
-            }
-            _reliableSequencedBuffer[channelQualifier] = prevSeqMemo;
+            _conn->deregisterReliableMessages(now, channelQualifier, prevSeqMemo-1);
+            _reliableSequencedBuffer[channelQualifier] = prevSeqMemo+enqueuedMessages;
         }
         
         return true;

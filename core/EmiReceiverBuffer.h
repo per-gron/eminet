@@ -228,6 +228,14 @@ class EmiReceiverBuffer {
                           _forest.upper_bound(ForestKey(cq, root ? root->lastMessage : i)));
         }
         
+        EmiNonWrappingSequenceNumber getLastSequenceNumberInSet(EmiChannelQualifier cq,
+                                                                EmiNonWrappingSequenceNumber i) {
+            FindResult findResult(find(cq, i, /*createIfMissing:*/false));
+            return (findResult.second ?
+                    findResult.second->lastMessage :
+                    i);
+        }
+        
         EmiNonWrappingSequenceNumber getFirstSequenceNumberInSet(EmiChannelQualifier cq,
                                                                  EmiNonWrappingSequenceNumber i) {
             FindResult findResult(find(cq, i, /*createIfMissing:*/false));
@@ -289,9 +297,9 @@ class EmiReceiverBuffer {
     // sequence number.
     //
     // For RELIABLE_SEQUENCED channels, this map contains not the
-    // next message's expected sequence number, but the sequence
-    // number *after* the first message in the split group of the
-    // next expected message.
+    // next message's expected sequence number, but a sequence
+    // number in the split group (the disjoint set that contains the
+    // first message of the group) of the next expected message.
     //
     // The reason for this seemingly odd thing for those channels
     // is to be able to know which ACK to send when receiving split
@@ -302,14 +310,12 @@ class EmiReceiverBuffer {
     // contains the most recently received message that is the first
     // part of a split.
     //
-    // Note that because _expectedSnMemo is also used when guessing
-    // sequence number wrapping, this implicitly sets a limit on
-    // how large messages can be for reliable sequenced channels.
-    // With a message MSS of 500 bytes, this is slightly below 4GB.
-    // I don't see how this will ever be a problem, but if it is,
-    // the obvious fix is to use two sequence number memo maps, one
-    // for guessing sequence number wrapping and another one to
-    // figure out which ack to send on reliable sequenced channels.
+    // To ensure that no ack is ever sent that is smaller than a
+    // previously sent ack, _expectedSnMemo is updated to be the
+    // value of a sent ack whenever an ack is sent. (This applies
+    // only for RELIABLE_SEQUENCED channels) This also minimizes
+    // the negative impact on the sequence number wrapping guessing
+    // algorithm, which also uses _expectedSnMemo.
     EmiNonWrappingSequenceNumberMemo _expectedSnMemo;
     
     Receiver &_receiver;
@@ -506,14 +512,14 @@ private:
                                              /*buf:*/Binding::extractData(mergedData),
                                              /*bufSize:*/Binding::extractLength(mergedData));
                 
-                if (largestProcessedMessageSet) {
-                    *largestProcessedMessageSet = largestSequenceNumberInSet;
-                }
-                
                 _receiver.emitMessage(channelQualifier,
                                       mergedData,
                                       /*offset:*/0,
                                       Binding::extractLength(mergedData));
+            }
+            
+            if (largestProcessedMessageSet) {
+                *largestProcessedMessageSet = largestSequenceNumberInSet;
             }
         }
         
@@ -575,6 +581,8 @@ private:
     void processUnorderedMessage(EmiNonWrappingSequenceNumber guessedNonWrappedSequenceNumber,
                                  const EmiMessageHeader& header,
                                  const TemporaryData& data, size_t offset) {
+        EmiChannelType channelType = EMI_CHANNEL_QUALIFIER_TYPE(header.channelQualifier);
+        
         if (0 == (header.flags & (EMI_SPLIT_NOT_FIRST_FLAG | EMI_SPLIT_NOT_LAST_FLAG))) {
             // This is a non-split message, so we don't need to worry
             // about reconstructing the split etc.
@@ -595,6 +603,12 @@ private:
             
             remove(_tree.lower_bound(&mockEntry1),
                    _tree.upper_bound(&mockEntry2));
+            
+            // Enqueue ack if this is a reliable sequenced channel
+            if (EMI_CHANNEL_TYPE_RELIABLE_SEQUENCED == channelType) {
+                _expectedSnMemo[header.channelQualifier] = guessedNonWrappedSequenceNumber;
+                _receiver.enqueueAck(header.channelQualifier, header.sequenceNumber);
+            }
         }
         else {
             bufferMessage(guessedNonWrappedSequenceNumber,
@@ -608,17 +622,42 @@ private:
             mockEntry1.header.channelQualifier = header.channelQualifier;
             BufferTreeIter iter = _tree.find(&mockEntry1);
             
+            // Enqueue ack if this is a reliable sequenced channel.
+            // Note that this needs to be done before we flush _messageSets.
+            //
+            // Also, we want to enqueue the ack before we do the sanity
+            // checks that might return from the function, because the other
+            // host is entitled to get an ack even if our receiver buffer is
+            // full or if this happens to be a message that doesn't complete
+            // a message group.
+            if (EMI_CHANNEL_TYPE_RELIABLE_SEQUENCED == channelType) {
+                EmiNonWrappingSequenceNumber sn = _messageSets.getLastSequenceNumberInSet(header.channelQualifier,
+                                                                                          _expectedSnMemo[header.channelQualifier]);
+                _expectedSnMemo[header.channelQualifier] = sn;
+                _receiver.enqueueAck(header.channelQualifier, sn);
+            }
+            
             if (_tree.end() == iter) {
                 // This happens when the receiver buffer is full. Fail.
                 return;
             }
             
+            if ((*iter)->header.flags & EMI_SPLIT_NOT_FIRST_FLAG) {
+                // The message we found is not the first in the set.
+                // This means that the set is not complete. Fail.
+                //
+                // In fact, it is really important to not continue
+                // here, because otherwise we would be removing
+                // parts of still-in-use message groups later on.
+                return;
+            }
+            
             int64_t largestProcessedMessageSet;
             
-            BufferTreeIter end = processBuffer(header.channelQualifier,
-                                               iter,
-                                               &largestProcessedMessageSet,
-                                               /*outExpectedSn:*/NULL);
+            BufferTreeIter processEnd = processBuffer(header.channelQualifier,
+                                                      iter,
+                                                      &largestProcessedMessageSet,
+                                                      /*outExpectedSn:*/NULL);
             
             // Remove processed and older messages from _tree and _messageSets
             if (-1 != largestProcessedMessageSet) {
@@ -629,8 +668,9 @@ private:
             Entry mockEntry2;
             mockEntry2.guessedNonWrappedSequenceNumber = 0;
             mockEntry2.header.channelQualifier = header.channelQualifier;
-            remove(_tree.lower_bound(&mockEntry2),
-                   end);
+            BufferTreeIter removeFrom = _tree.lower_bound(&mockEntry2);
+            
+            remove(removeFrom, processEnd);
         }
     }
     
@@ -684,8 +724,8 @@ public:
                 // For why we're doing this, refer to the comment
                 // above the declaration of _expectedSnMemo
                 
-                _expectedSnMemo[header.channelQualifier] = std::max(expectedSn,
-                                                                    guessedNonWrappedSequenceNumber+1);
+                _expectedSnMemo[channelQualifier] = std::max(expectedSn,
+                                                             guessedNonWrappedSequenceNumber+1);
             }
             
             int64_t snDiff = (int64_t)expectedSn - (int64_t)guessedNonWrappedSequenceNumber;
@@ -723,8 +763,6 @@ public:
         else if (EMI_CHANNEL_TYPE_RELIABLE_SEQUENCED == channelType) {
             if (header.flags & EMI_SACK_FLAG) EMI_GOT_INVALID_MESSAGE("SACK does not make sense on RELIABLE_SEQUENCED channels");
             
-            _receiver.enqueueAck(channelQualifier, header.sequenceNumber);
-            
             if (header.flags & EMI_ACK_FLAG) {
                 _receiver.gotReliableSequencedAck(now, channelQualifier, header.ack);
             }
@@ -733,7 +771,9 @@ public:
             if (-1 != header.sequenceNumber) {
                 ASSERT(0 != header.length);
                 
-                _receiver.emitMessage(channelQualifier, data, offset, header.length);
+                processUnorderedMessage(guessedNonWrappedSequenceNumber,
+                                        header,
+                                        data, offset);
             }
         }
         else if (EMI_CHANNEL_TYPE_RELIABLE_ORDERED == channelType) {
