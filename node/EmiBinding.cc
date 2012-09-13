@@ -26,6 +26,14 @@ Persistent<Object> EmiBinding::makePersistentData(const uint8_t *data, size_t le
     return Persistent<Object>::New(buf->handle_);
 }
 
+Local<Object> EmiBinding::makeTemporaryData(size_t size) {
+    HandleScope scope;
+    
+    node::Buffer *buf(node::Buffer::New(size));
+    
+    return scope.Close(buf->handle_);
+}
+
 void EmiBinding::hmacHash(const uint8_t *key, size_t keyLength,
                           const uint8_t *data, size_t dataLength,
                           uint8_t *buf, size_t bufLen) {

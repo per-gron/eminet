@@ -40,7 +40,7 @@ public:
     // PersistentData objects must be copyable and
     // assignable, and these operations must not interfere
     // with the lifetime of the buffer.
-    typedef NSData* PersistentData;
+    typedef NSMutableData* PersistentData;
     // TemporaryData is data that is assumed to be
     // released after the duration of the call; it can
     // be stored on the stack, for instance. EmiNet core
@@ -49,31 +49,35 @@ public:
     // TemporaryData objects must be copyable and
     // assignable, and these operations must not interfere
     // with the lifetime of the buffer.
-    typedef NSData* TemporaryData;
+    typedef NSMutableData* TemporaryData;
     
     inline static NSError *makeError(const char *domain, int32_t code) {
-        return [NSError errorWithDomain:[NSString stringWithCString:domain encoding:NSUTF8StringEncoding]
+        return [NSError errorWithDomain:[NSString stringWithCString:domain
+                                                           encoding:NSUTF8StringEncoding]
                                    code:code
                                userInfo:nil];
     }
     
-    inline static NSData *makePersistentData(const uint8_t *data, size_t length) {
+    inline static NSMutableData *makePersistentData(const uint8_t *data, size_t length) {
         // The Objective-C EmiNet bindings don't make any distinction
         // between temporary and persistent buffers, because all buffers
         // are persistent.
-        return [NSData dataWithBytes:data length:length];
+        return [NSMutableData dataWithBytes:data length:length];
     }
-    inline static void releasePersistentData(NSData *data) {
+    inline static NSMutableData *makeTemporaryData(size_t size) {
+        return [NSMutableData dataWithCapacity:size];
+    }
+    inline static void releasePersistentData(NSMutableData *data) {
         // Because of ARC, we can leave this as a no-op
     }
-    inline static NSData *castToTemporary(NSData *data) {
+    inline static NSMutableData *castToTemporary(NSMutableData *data) {
         return data;
     }
     
-    inline static const uint8_t *extractData(NSData *data) {
-        return (const uint8_t *)[data bytes];
+    inline static uint8_t *extractData(NSMutableData *data) {
+        return (uint8_t *)[data bytes];
     }
-    inline static size_t extractLength(NSData *data) {
+    inline static size_t extractLength(NSMutableData *data) {
         return [data length];
     }
     
