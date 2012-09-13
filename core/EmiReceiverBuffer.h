@@ -141,16 +141,14 @@ class EmiReceiverBuffer {
         }
         
     public:
-        typedef std::pair<bool, std::pair<EmiNonWrappingSequenceNumber, size_t> > GotMessageData;
+        typedef std::pair<bool, std::pair<EmiNonWrappingSequenceNumber, size_t> > MessageData;
         
-        // This method returns a pair of (whether a full set of split messages
-        // have been received, [a pair of (the largest sequence number in this
-        // set, the total size of the messages in this set in bytes)])
-        GotMessageData gotMessage(EmiChannelQualifier cq,
-                                  EmiNonWrappingSequenceNumber i,
-                                  EmiMessageFlags messageFlags,
-                                  size_t messageSize,
-                                  bool firstInsert = false) {
+        // This method must be called exactly once per message,
+        // otherwise the message size data will get messed up.
+        void gotMessage(EmiChannelQualifier cq,
+                        EmiNonWrappingSequenceNumber i,
+                        EmiMessageFlags messageFlags,
+                        size_t messageSize) {
             
             bool first = !(messageFlags & EMI_SPLIT_NOT_FIRST_FLAG);
             bool last  = !(messageFlags & EMI_SPLIT_NOT_LAST_FLAG);
@@ -159,7 +157,7 @@ class EmiReceiverBuffer {
                 // This is a non-split message; there's no need to store
                 // it in the forest since we already know that it is
                 // complete.
-                return std::make_pair(true, std::make_pair(i, messageSize));
+                return;
             }
             
             // Merge the message with sequence number i with the following
@@ -172,14 +170,32 @@ class EmiReceiverBuffer {
             if (last)  root.flags |= DISJOINT_SET_HAS_LAST_MESSAGE;
             
             root.lastMessage = std::max(root.lastMessage, i);
-            if (firstInsert) {
-                root.size += messageSize;
-            }
+            root.size += messageSize;
+        }
+        
+        // This method returns a pair of (whether a full set of split messages
+        // have been received, [a pair of (the largest sequence number in this
+        // set, the total size of the messages in this set in bytes)])
+        MessageData getMessageData(EmiChannelQualifier cq,
+                                   EmiNonWrappingSequenceNumber i,
+                                   EmiMessageFlags messageFlags,
+                                   size_t messageSize) {
             
-            return std::make_pair(((root.flags & DISJOINT_SET_HAS_FIRST_MESSAGE) &&
-                                   (root.flags & DISJOINT_SET_HAS_LAST_MESSAGE)),
-                                  std::make_pair(root.lastMessage,
-                                                 root.size));
+            if (!(messageFlags & EMI_SPLIT_NOT_FIRST_FLAG) &&
+                !(messageFlags & EMI_SPLIT_NOT_LAST_FLAG)) {
+                // This is a non-split message; there's no need to store
+                // it in the forest since we already know that it is
+                // complete.
+                return std::make_pair(true, std::make_pair(i, messageSize));
+            }
+            else {
+                DisjointSet& root = *(find(cq, i).second);
+                
+                return std::make_pair(((root.flags & DISJOINT_SET_HAS_FIRST_MESSAGE) &&
+                                       (root.flags & DISJOINT_SET_HAS_LAST_MESSAGE)),
+                                      std::make_pair(root.lastMessage,
+                                                     root.size));
+            }
         }
         
         // Removes a message from the disjoint sets data structure.
@@ -306,8 +322,7 @@ private:
                 _messageSets.gotMessage(entry->header.channelQualifier,
                                         entry->guessedNonWrappedSequenceNumber,
                                         entry->header.flags,
-                                        /*messageSize:*/entry->header.length,
-                                        /*firstInsert:*/true);
+                                        /*messageSize:*/entry->header.length);
             }
             else {
                 delete entry;
@@ -352,6 +367,8 @@ private:
                  (entry = *iter) &&
                  entry->guessedNonWrappedSequenceNumber <= largestSequenceNumberInSet);
         
+        ASSERT(bufPos == bufSize);
+        
         // This message set has now been processed and can be safely
         // removed from _messageSets (not doing this is effectively
         // a memory leak)
@@ -388,15 +405,14 @@ private:
                entry->guessedNonWrappedSequenceNumber <= expectedSequenceNumber) {
             
             // Search for a message set that contains entry->guessedNonWrappedSequenceNumber
-            typename DisjointMessageSets::GotMessageData gotMessageData;
-            gotMessageData = _messageSets.gotMessage(channelQualifier,
+            typename DisjointMessageSets::MessageData messageData;
+            messageData = _messageSets.getMessageData(channelQualifier,
                                                      entry->guessedNonWrappedSequenceNumber,
                                                      entry->header.flags,
-                                                     /*messageSize:*/entry->header.length,
-                                                     /*firstInsert:*/false);
-            bool setIsComplete = gotMessageData.first;
-            EmiNonWrappingSequenceNumber largestSequenceNumberInSet = gotMessageData.second.first;
-            size_t totalSizeOfSet = gotMessageData.second.second;
+                                                     /*messageSize:*/entry->header.length);
+            bool setIsComplete = messageData.first;
+            EmiNonWrappingSequenceNumber largestSequenceNumberInSet = messageData.second.first;
+            size_t totalSizeOfSet = messageData.second.second;
             
             // Update the expected sequence number to the largest sequence
             // number in the set, and enqueue an acknowledgment to the other
