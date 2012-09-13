@@ -158,17 +158,17 @@ Handle<Value> EmiConnection::Send(const Arguments& args) {
         Local<Value>   cqv(opts->Get(channelQualifierSymbol));
         Local<Value>    pv(opts->Get(prioritySymbol));
         
-        if (!cqv.IsEmpty()) {
+        if (!cqv.IsEmpty() && !cqv->IsUndefined()) {
             if (!cqv->IsNumber()) {
-                THROW_TYPE_ERROR("Wrong arguments");
+                THROW_TYPE_ERROR("Wrong channel quality argument");
             }
             
             channelQualifier = (EmiChannelQualifier) cqv->Uint32Value();
         }
         
-        if (!pv.IsEmpty()) {
+        if (!pv.IsEmpty() && !pv->IsUndefined()) {
             if (!pv->IsNumber()) {
-                THROW_TYPE_ERROR("Wrong arguments");
+                THROW_TYPE_ERROR("Wrong priority argument");
             }
             
             priority = (EmiPriority) pv->Uint32Value();

@@ -78,7 +78,7 @@ var open = function(msg) {
     var counter = 0;
     setInterval(function() {
       var m = msg+' '+(counter += 1);
-      socket.send(new Buffer(m));
+      socket.send(new Buffer(m), { channelQualifier: EmiNet.channelQualifier(EmiNet.RELIABLE_ORDERED) });
     }, 300);
     
     //setTimeout(function() {

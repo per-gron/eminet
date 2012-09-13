@@ -219,12 +219,14 @@ exports.openMediator = function(args) {
 
 exports.channelQualifier = function(type, number) {
   number = number || 0;
+
+  var typeIsNumber = (Object.prototype.toString.call(type) == '[object Number]');
   
-  if (!_.isNumber(type) || type < 0 || type > 3) {
-    throw new Error("Invalid channel type");
+  if (!typeIsNumber || type < 0 || type > 3) {
+    throw new Error("Invalid channel type "+type);
   }
-  if (!_.isNumber(number) || number < 0 || number > 31) {
-    throw new Error("Invalid channel number");
+  if (!typeIsNumber || number < 0 || number > 31) {
+    throw new Error("Invalid channel number "+number);
   }
   
   return number | (type << 6);
