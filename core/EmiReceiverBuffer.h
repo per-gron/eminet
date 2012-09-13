@@ -51,13 +51,15 @@ class EmiReceiverBuffer {
             EmiNonWrappingSequenceNumber parent;
             unsigned rank;
             int flags;
-            EmiNonWrappingSequenceNumber lastMessage; // The largest sequence number in this set
+            EmiNonWrappingSequenceNumber firstMessage; // The smallest sequence number in this set
+            EmiNonWrappingSequenceNumber lastMessage;  // The largest  sequence number in this set
             size_t size; // The total size, in bytes, of the messages in this set
             
             DisjointSet(EmiNonWrappingSequenceNumber i) :
             parent(i),
             rank(0),
             flags(0),
+            firstMessage(EMI_NON_WRAPPING_SEQUENCE_NUMBER_MAX),
             lastMessage(0),
             size(0) { }
         };
@@ -129,8 +131,10 @@ class EmiReceiverBuffer {
                 
                 nonRoot.parent = newRootSn;
                 newRoot.flags |= nonRoot.flags;
-                newRoot.lastMessage = std::max(newRoot.lastMessage,
-                                               nonRoot.lastMessage);
+                newRoot.firstMessage = std::min(newRoot.firstMessage,
+                                                nonRoot.firstMessage);
+                newRoot.lastMessage  = std::max(newRoot.lastMessage,
+                                                nonRoot.lastMessage);
                 newRoot.size += nonRoot.size;
                 
                 return (iIsTheNewRoot ? findIResult : findJResult);
@@ -169,7 +173,8 @@ class EmiReceiverBuffer {
             if (first) root.flags |= DISJOINT_SET_HAS_FIRST_MESSAGE;
             if (last)  root.flags |= DISJOINT_SET_HAS_LAST_MESSAGE;
             
-            root.lastMessage = std::max(root.lastMessage, i);
+            root.firstMessage = std::min(i, root.firstMessage);
+            root.lastMessage  = std::max(i, root.lastMessage);
             root.size += messageSize;
         }
         
@@ -222,15 +227,6 @@ class EmiReceiverBuffer {
             _forest.erase(_forest.lower_bound(ForestKey(cq, 0)),
                           _forest.upper_bound(ForestKey(cq, root.lastMessage)));
         }
-        
-        // Removes all messages stored for a given channel.
-        //
-        // This method is supposed to be used to implement unreliable
-        // channels.
-        void clearChannel(EmiChannelQualifier cq) {
-            _forest.erase(_forest.lower_bound(ForestKey(cq, 0)),
-                          _forest.upper_bound(ForestKey(cq, EMI_NON_WRAPPING_SEQUENCE_NUMBER_MAX)));
-        }
     };
     
     class Entry {
@@ -266,10 +262,9 @@ class EmiReceiverBuffer {
             EmiChannelQualifier acq = a->header.channelQualifier;
             EmiChannelQualifier bcq = b->header.channelQualifier;
             
-            if (acq != bcq) return acq < bcq;
-            else {
-                return a->guessedNonWrappedSequenceNumber < b->guessedNonWrappedSequenceNumber;
-            }
+            return (acq != bcq ?
+                    acq < bcq :
+                    a->guessedNonWrappedSequenceNumber < b->guessedNonWrappedSequenceNumber);
         }
     };
     
@@ -329,26 +324,38 @@ private:
             }
         }
     }
-                
-    void remove(Entry *entry) {
-        size_t msgSize = EmiReceiverBuffer::bufferEntrySize(entry->header.headerLength,
-                                                            entry->header.length);
-        
-        size_t numErasedElements = _tree.erase(entry);
-        if (0 != numErasedElements) {
-            // Only decrement this._bufferSize if the message was in the buffer
-            _bufferSize -= msgSize;
+    
+    void remove(BufferTreeIter begin, BufferTreeIter end) {
+        BufferTreeIter iter = begin;
+        while (iter != end) {
+            Entry *entry = *iter;
+            
+            _bufferSize -= EmiReceiverBuffer::bufferEntrySize(entry->header.headerLength,
+                                                              entry->header.length);
+            
+            delete entry;
+            
+            ++iter;
         }
         
-        delete entry;
+        _tree.erase(begin, end);
     }
     
+    // Processes a set of messages in a split that is known to be complete.
+    // This method iterates through the messages and fills buf so that it
+    // is a continuous buffer of the data of the messages.
+    //
+    // iter must point to the first Entry of the message set.
+    //
+    // The return value is an iterator pointing to the first entry that is
+    // in the buffer that is not part of the message set. Note that the
+    // return value can be _tree.end() or an iterator to a message with a
+    // different channelQualifier.
     BufferTreeIter processMessageSetData(EmiChannelQualifier channelQualifier,
                                          EmiNonWrappingSequenceNumber largestSequenceNumberInSet,
                                          BufferTreeIter iter,
-                                         BufferTreeIter end,
-                                         std::vector<Entry *>& toBeRemoved,
                                          uint8_t *buf, size_t bufSize) {
+        BufferTreeIter end = _tree.end();
         Entry *entry = *iter;
         size_t bufPos = 0;
         
@@ -360,8 +367,6 @@ private:
             memcpy(buf+bufPos, Binding::extractData(entry->data), edlen);
             bufPos += edlen;
             
-            toBeRemoved.push_back(entry);
-            
             ++iter;
         } while (iter != end &&
                  (entry = *iter) &&
@@ -369,36 +374,43 @@ private:
         
         ASSERT(bufPos == bufSize);
         
-        // This message set has now been processed and can be safely
-        // removed from _messageSets (not doing this is effectively
-        // a memory leak)
-        _messageSets.removeMessageAndOlderMessages(channelQualifier,
-                                                   largestSequenceNumberInSet);
-        
         return iter;
     }
     
-    void flushBuffer(EmiTimeInterval now,
-                     EmiChannelQualifier channelQualifier,
-                     EmiNonWrappingSequenceNumber expectedSequenceNumber) {
-        if (_tree.empty()) return;
+    // This method iterates through the buffer and emits as many
+    // complete messages as it can find, while still enforcing
+    // strict message ordering (no skipped messages).
+    //
+    // The search begins in iter.
+    //
+    // The return value is an iterator that points to the message
+    // after the last one that was processed by processBuffer. Note
+    // that the return value can be _tree.end() or an iterator to a
+    // message with a different channelQualifier.
+    BufferTreeIter processBuffer(EmiChannelQualifier channelQualifier,
+                                 BufferTreeIter iter,
+                                 EmiNonWrappingSequenceNumber expectedSequenceNumber,
+                                 int64_t *largestProcessedMessageSet) {
         
-        Entry mockEntry;
-        mockEntry.guessedNonWrappedSequenceNumber = 0;
-        mockEntry.header.channelQualifier = channelQualifier;
+        if (largestProcessedMessageSet) {
+            *largestProcessedMessageSet = -1;
+        }
         
-        BufferTreeIter iter = _tree.lower_bound(&mockEntry);
         BufferTreeIter end = _tree.end();
         
-        typedef std::vector<Entry *>           EntryVector;
-        typedef typename EntryVector::iterator EntryVectorIter;
-        // The iterator gets messed up if we modify _tree from
-        // within the loop, so we store changes in an intermediary
-        // vector and perform the mutations after we're done with
-        // iterating _tree.
-        EntryVector toBeRemoved;
+        Entry *entry = *iter;
         
-        Entry *entry;
+        if (entry->header.flags & EMI_SPLIT_NOT_FIRST_FLAG) {
+            // The first message is in the middle of a split.
+            // That means that there is no complete message that
+            // we can process.
+            //
+            // This check is needed in order to ensure that we
+            // don't invoke processMessageSetData with an
+            // incomplete message set.
+            return iter;
+        }
+        
         while (iter != end &&
                (entry = *iter) &&
                entry->header.channelQualifier == channelQualifier &&
@@ -439,7 +451,6 @@ private:
                                       /*offset:*/0,
                                       entry->header.length);
                 
-                toBeRemoved.push_back(entry);
                 ++iter;
             }
             else {
@@ -449,25 +460,78 @@ private:
                 
                 iter = processMessageSetData(channelQualifier,
                                              largestSequenceNumberInSet,
-                                             iter, end,
-                                             toBeRemoved,
+                                             iter,
                                              /*buf:*/Binding::extractData(mergedData),
                                              /*bufSize:*/Binding::extractLength(mergedData));
+                
+                if (largestProcessedMessageSet) {
+                    *largestProcessedMessageSet = largestSequenceNumberInSet;
+                }
                 
                 _receiver.emitMessage(channelQualifier,
                                       mergedData,
                                       /*offset:*/0,
                                       Binding::extractLength(mergedData));
             }
-            
         }
         
-        EntryVectorIter viter = toBeRemoved.begin();
-        EntryVectorIter vend  = toBeRemoved.end();
-        while (viter != vend) {
-            remove(*viter);
-            ++viter;
+        return iter;
+    }
+    
+    // This is works with RELIABLE_ORDERED channels.
+    //
+    // It goes through the receiver buffer, emits all messages
+    // that are ready, and removes the emitted messages from the
+    // buffer.
+    void flushBuffer(EmiChannelQualifier channelQualifier,
+                     EmiNonWrappingSequenceNumber expectedSequenceNumber) {
+        if (_tree.empty()) return;
+        
+        Entry mockEntry;
+        mockEntry.guessedNonWrappedSequenceNumber = 0;
+        mockEntry.header.channelQualifier = channelQualifier;
+        
+        BufferTreeIter iter = _tree.lower_bound(&mockEntry);
+        
+        int64_t largestProcessedMessageSet;
+        
+        BufferTreeIter end = processBuffer(channelQualifier,
+                                           iter,
+                                           expectedSequenceNumber,
+                                           &largestProcessedMessageSet);
+        
+        // We have now processed and emitted messages. The next
+        // step is to remove those from the buffer data structure.
+        //
+        // To do this correctly, we need to remove data from both
+        // _messageSets and _tree.
+        
+        if (-1 != largestProcessedMessageSet) {
+            _messageSets.removeMessageAndOlderMessages(channelQualifier,
+                                                       largestProcessedMessageSet);
         }
+        remove(iter, end);
+    }
+    
+    void processUnorderedMessage(EmiNonWrappingSequenceNumber guessedNonWrappedSequenceNumber,
+                                 const EmiMessageHeader& header,
+                                 const TemporaryData& data, size_t offset) {
+        /*if (0 == (header.flags & (EMI_SPLIT_NOT_FIRST_FLAG | EMI_SPLIT_NOT_LAST_FLAG))) {
+            // This is a non-split message, so we don't need to worry
+            // about reconstructing the split etc.
+            */
+            _receiver.emitMessage(header.channelQualifier, data, offset, header.length);
+            /*
+            // TODO Remove older messages from _tree and _messageSets
+        }
+        else {
+            bufferMessage(guessedNonWrappedSequenceNumber,
+                          header, data, offset, header.length);
+            flushBuffer(header.channelQualifier,
+                        EMI_NON_WRAPPING_SEQUENCE_NUMBER_MAX);
+            
+            // TODO Remove older messages form _tree and _messageSets
+        }*/
     }
     
 public:
@@ -476,14 +540,7 @@ public:
     _size(size), _bufferSize(0), _receiver(receiver) {}
     
     virtual ~EmiReceiverBuffer() {
-        BufferTreeIter iter = _tree.begin();
-        while (iter != _tree.end()) {
-            remove(*iter);
-            
-            // We can't just increment iter, because the call to
-            // remove invalidated iter.
-            iter = _tree.begin();
-        }
+        remove(_tree.begin(), _tree.end());
         
         _size = 0;
         _bufferSize = 0;
@@ -542,7 +599,9 @@ public:
                 return false;
             }
             
-            _receiver.emitMessage(channelQualifier, data, offset, header.length);
+            processUnorderedMessage(guessedNonWrappedSequenceNumber,
+                                    header,
+                                    data, offset);
         }
         else if (EMI_CHANNEL_TYPE_RELIABLE_SEQUENCED == channelType) {
             if (header.flags & EMI_SACK_FLAG) EMI_GOT_INVALID_PACKET("SACK does not make sense on RELIABLE_SEQUENCED channels");
@@ -594,13 +653,13 @@ public:
                     
                     // The connection might have been closed when invoking emitMessage
                     if (!_receiver.isClosed()) {
-                        flushBuffer(now, channelQualifier, newExpectedSn);
+                        flushBuffer(channelQualifier, newExpectedSn);
                     }
                 }
                 else if (seqDiff <= 0) {
                     bufferMessage(guessedNonWrappedSequenceNumber,
                                   header, data, offset, header.length);
-                    flushBuffer(now, channelQualifier, expectedSn);
+                    flushBuffer(channelQualifier, expectedSn);
                 }
             }
         }
