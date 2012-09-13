@@ -285,7 +285,32 @@ class EmiReceiverBuffer {
     BufferTree _tree;
     size_t _bufferSize;
     
-    EmiNonWrappingSequenceNumberMemo _otherHostSequenceMemo;
+    // This is a map that contains the next message's expected
+    // sequence number.
+    //
+    // For RELIABLE_SEQUENCED channels, this map contains not the
+    // next message's expected sequence number, but the sequence
+    // number *after* the first message in the split group of the
+    // next expected message.
+    //
+    // The reason for this seemingly odd thing for those channels
+    // is to be able to know which ACK to send when receiving split
+    // messages:
+    //
+    // The ack to be sent on each received reliable sequenced
+    // message is the newest sequence number of the message set that
+    // contains the most recently received message that is the first
+    // part of a split.
+    //
+    // Note that because _expectedSnMemo is also used when guessing
+    // sequence number wrapping, this implicitly sets a limit on
+    // how large messages can be for reliable sequenced channels.
+    // With a message MSS of 500 bytes, this is slightly below 4GB.
+    // I don't see how this will ever be a problem, but if it is,
+    // the obvious fix is to use two sequence number memo maps, one
+    // for guessing sequence number wrapping and another one to
+    // figure out which ack to send on reliable sequenced channels.
+    EmiNonWrappingSequenceNumberMemo _expectedSnMemo;
     
     Receiver &_receiver;
     
@@ -299,8 +324,8 @@ private:
     }
     
     EmiNonWrappingSequenceNumber expectedSequenceNumber(const EmiMessageHeader& header) {
-        EmiNonWrappingSequenceNumberMemo::iterator cur = _otherHostSequenceMemo.find(header.channelQualifier);
-        EmiNonWrappingSequenceNumberMemo::iterator end = _otherHostSequenceMemo.end();
+        EmiNonWrappingSequenceNumberMemo::iterator cur = _expectedSnMemo.find(header.channelQualifier);
+        EmiNonWrappingSequenceNumberMemo::iterator end = _expectedSnMemo.end();
         
         return (end == cur ? _receiver.getOtherHostInitialSequenceNumber() : (*cur).second);
     }
@@ -397,10 +422,14 @@ private:
     // message with a different channelQualifier.
     BufferTreeIter processBuffer(EmiChannelQualifier channelQualifier,
                                  BufferTreeIter iter,
-                                 int64_t *largestProcessedMessageSet) {
+                                 int64_t *largestProcessedMessageSet,
+                                 EmiNonWrappingSequenceNumber *outExpectedSn) {
         
         if (largestProcessedMessageSet) {
             *largestProcessedMessageSet = -1;
+        }
+        if (outExpectedSn) {
+            *outExpectedSn = -1;
         }
         
         BufferTreeIter end = _tree.end();
@@ -443,7 +472,7 @@ private:
             // number in the set, and enqueue an acknowledgment to the other
             // host that we have received all data up to that point.
             expectedSequenceNumber = largestSequenceNumberInSet+1;
-            _otherHostSequenceMemo[channelQualifier] = largestSequenceNumberInSet+1;
+            if (outExpectedSn) *outExpectedSn = largestSequenceNumberInSet+1;
             _receiver.enqueueAck(channelQualifier, largestSequenceNumberInSet & EMI_HEADER_SEQUENCE_NUMBER_MASK);
             
             // If the set is not complete, we can not continue from here;
@@ -520,9 +549,15 @@ private:
         }
         
         int64_t largestProcessedMessageSet;
+        EmiNonWrappingSequenceNumber newExpectedSn;
         BufferTreeIter end = processBuffer(channelQualifier,
                                            iter,
-                                           &largestProcessedMessageSet);
+                                           &largestProcessedMessageSet,
+                                           &newExpectedSn);
+        
+        if (-1 != newExpectedSn) {
+            _expectedSnMemo[channelQualifier] = newExpectedSn;
+        }
         
         // We have now processed and emitted messages. The next
         // step is to remove those from the buffer data structure.
@@ -582,7 +617,8 @@ private:
             
             BufferTreeIter end = processBuffer(header.channelQualifier,
                                                iter,
-                                               &largestProcessedMessageSet);
+                                               &largestProcessedMessageSet,
+                                               /*outExpectedSn:*/NULL);
             
             // Remove processed and older messages from _tree and _messageSets
             if (-1 != largestProcessedMessageSet) {
@@ -610,7 +646,7 @@ public:
         _bufferSize = 0;
     }
     
-#define EMI_GOT_INVALID_PACKET(err) do { /* NSLog(err); */ return false; } while (1)
+#define EMI_GOT_INVALID_MESSAGE(err) do { /* NSLog(err); */ return false; } while (1)
     bool gotMessage(EmiTimeInterval now,
                     const EmiMessageHeader& header,
                     const TemporaryData& data, size_t offset) {
@@ -639,27 +675,44 @@ public:
              EMI_CHANNEL_TYPE_RELIABLE_SEQUENCED   == channelType) &&
             -1 != header.sequenceNumber) {
             
-            _otherHostSequenceMemo[header.channelQualifier] = std::max(expectedSn, guessedNonWrappedSequenceNumber+1);
+            if (EMI_CHANNEL_TYPE_UNRELIABLE_SEQUENCED == channelType ||
+                !(header.flags & EMI_SPLIT_NOT_FIRST_FLAG)) {
+                // For reliable sequenced channels, only ever set
+                // _expectedSnMemo to sequence numbers for messages
+                // that are the first part in their split group.
+                //
+                // For why we're doing this, refer to the comment
+                // above the declaration of _expectedSnMemo
+                
+                _expectedSnMemo[header.channelQualifier] = std::max(expectedSn,
+                                                                    guessedNonWrappedSequenceNumber+1);
+            }
             
             int64_t snDiff = (int64_t)expectedSn - (int64_t)guessedNonWrappedSequenceNumber;
             
             if (snDiff > 0) {
-                // The packet arrived out of order; drop it
+                // The message arrived out of order; drop it
                 return false;
             }
-            else if (snDiff < 0) {
-                // We have lost one or more packets.
+            
+            // Packet loss notification only really make sense for
+            // unreliable sequenced channels, since lost packets will
+            // sometimes be resent on reliable channels (this happens
+            // when messages are split).
+            if (snDiff < 0 &&
+                EMI_CHANNEL_TYPE_UNRELIABLE_SEQUENCED == channelType) {
+                
+                // We have lost one or more messages.
                 _receiver.emitPacketLoss(channelQualifier, -snDiff);
             }
         }
         
         if (EMI_CHANNEL_TYPE_UNRELIABLE == channelType || EMI_CHANNEL_TYPE_UNRELIABLE_SEQUENCED == channelType) {
-            if (header.flags & EMI_ACK_FLAG) EMI_GOT_INVALID_PACKET("Got unreliable message with ACK flag");
-            if (header.flags & EMI_SACK_FLAG) EMI_GOT_INVALID_PACKET("Got unreliable message with SACK flag");
+            if (header.flags & EMI_ACK_FLAG) EMI_GOT_INVALID_MESSAGE("Got unreliable message with ACK flag");
+            if (header.flags & EMI_SACK_FLAG) EMI_GOT_INVALID_MESSAGE("Got unreliable message with SACK flag");
             
-            if (0 == header.length ||
-                -1 == header.sequenceNumber) {
-                // Unreliable packets with zero header length are nonsensical
+            if (0 == header.length) {
+                // Unreliable messages with zero header length are nonsensical
                 return false;
             }
             
@@ -668,7 +721,7 @@ public:
                                     data, offset);
         }
         else if (EMI_CHANNEL_TYPE_RELIABLE_SEQUENCED == channelType) {
-            if (header.flags & EMI_SACK_FLAG) EMI_GOT_INVALID_PACKET("SACK does not make sense on RELIABLE_SEQUENCED channels");
+            if (header.flags & EMI_SACK_FLAG) EMI_GOT_INVALID_MESSAGE("SACK does not make sense on RELIABLE_SEQUENCED channels");
             
             _receiver.enqueueAck(channelQualifier, header.sequenceNumber);
             
@@ -676,7 +729,7 @@ public:
                 _receiver.gotReliableSequencedAck(now, channelQualifier, header.ack);
             }
             
-            // A packet with zero length indicates that it is just an ACK packet
+            // A message with zero length indicates that it is just an ACK message
             if (-1 != header.sequenceNumber) {
                 ASSERT(0 != header.length);
                 
@@ -684,7 +737,7 @@ public:
             }
         }
         else if (EMI_CHANNEL_TYPE_RELIABLE_ORDERED == channelType) {
-            if (header.flags & EMI_SACK_FLAG) EMI_GOT_INVALID_PACKET("SACK is not implemented");
+            if (header.flags & EMI_SACK_FLAG) EMI_GOT_INVALID_MESSAGE("SACK is not implemented");
             
             if (header.flags & EMI_ACK_FLAG) {
                 EmiNonWrappingSequenceNumber nonWrappedAck = _receiver.guessSequenceNumberWrapping(channelQualifier, header.ack);
@@ -711,7 +764,7 @@ public:
                     // message split mechanism.
                     
                     EmiSequenceNumber newExpectedSn = expectedSn+1;
-                    _otherHostSequenceMemo[channelQualifier] = newExpectedSn;
+                    _expectedSnMemo[channelQualifier] = newExpectedSn;
                     
                     _receiver.emitMessage(channelQualifier, data, offset, header.length);
                     
@@ -728,12 +781,12 @@ public:
             }
         }
         else {
-            EMI_GOT_INVALID_PACKET("Unknown channel type");
+            EMI_GOT_INVALID_MESSAGE("Unknown channel type");
         }
         
         return true;
     }
-#undef EMI_GOT_INVALID_PACKET
+#undef EMI_GOT_INVALID_MESSAGE
 };
 
 #endif
