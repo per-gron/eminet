@@ -747,30 +747,22 @@ public:
             }
         }
         
-        if (EMI_CHANNEL_TYPE_UNRELIABLE == channelType || EMI_CHANNEL_TYPE_UNRELIABLE_SEQUENCED == channelType) {
-            if (header.flags & EMI_ACK_FLAG) EMI_GOT_INVALID_MESSAGE("Got unreliable message with ACK flag");
+        if (EMI_CHANNEL_TYPE_UNRELIABLE == channelType ||
+            EMI_CHANNEL_TYPE_UNRELIABLE_SEQUENCED == channelType ||
+            EMI_CHANNEL_TYPE_RELIABLE_SEQUENCED == channelType) {
+            
             if (header.flags & EMI_SACK_FLAG) EMI_GOT_INVALID_MESSAGE("Got unreliable message with SACK flag");
             
-            if (0 == header.length) {
-                // Unreliable messages with zero header length are nonsensical
-                return false;
-            }
-            
-            processUnorderedMessage(guessedNonWrappedSequenceNumber,
-                                    header,
-                                    data, offset);
-        }
-        else if (EMI_CHANNEL_TYPE_RELIABLE_SEQUENCED == channelType) {
-            if (header.flags & EMI_SACK_FLAG) EMI_GOT_INVALID_MESSAGE("SACK does not make sense on RELIABLE_SEQUENCED channels");
-            
             if (header.flags & EMI_ACK_FLAG) {
-                _receiver.gotReliableSequencedAck(now, channelQualifier, header.ack);
+                if (EMI_CHANNEL_TYPE_RELIABLE_SEQUENCED == channelType) {
+                    _receiver.gotReliableSequencedAck(now, channelQualifier, header.ack);
+                }
+                else {
+                    EMI_GOT_INVALID_MESSAGE("Got unreliable message with ACK flag");
+                }
             }
             
-            // A message with zero length indicates that it is just an ACK message
-            if (-1 != header.sequenceNumber) {
-                ASSERT(0 != header.length);
-                
+            if (0 != header.length) {
                 processUnorderedMessage(guessedNonWrappedSequenceNumber,
                                         header,
                                         data, offset);
@@ -821,7 +813,7 @@ public:
             }
         }
         else {
-            EMI_GOT_INVALID_MESSAGE("Unknown channel type");
+            ASSERT(0 && "Unknown channel type");
         }
         
         return true;
