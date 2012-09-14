@@ -429,13 +429,13 @@ private:
     BufferTreeIter processBuffer(EmiChannelQualifier channelQualifier,
                                  BufferTreeIter iter,
                                  int64_t *largestProcessedMessageSet,
-                                 EmiNonWrappingSequenceNumber *outExpectedSn) {
+                                 EmiNonWrappingSequenceNumber *largestProcessedSn) {
         
         if (largestProcessedMessageSet) {
             *largestProcessedMessageSet = -1;
         }
-        if (outExpectedSn) {
-            *outExpectedSn = -1;
+        if (largestProcessedSn) {
+            *largestProcessedSn = -1;
         }
         
         BufferTreeIter end = _tree.end();
@@ -478,8 +478,9 @@ private:
             // number in the set, and enqueue an acknowledgment to the other
             // host that we have received all data up to that point.
             expectedSequenceNumber = largestSequenceNumberInSet+1;
-            if (outExpectedSn) *outExpectedSn = largestSequenceNumberInSet+1;
-            _receiver.enqueueAck(channelQualifier, largestSequenceNumberInSet & EMI_HEADER_SEQUENCE_NUMBER_MASK);
+            if (largestProcessedSn) {
+                *largestProcessedSn = largestSequenceNumberInSet;
+            }
             
             // If the set is not complete, we can not continue from here;
             // we need to wait for it to be completed.
@@ -556,14 +557,15 @@ private:
         }
         
         int64_t largestProcessedMessageSet;
-        EmiNonWrappingSequenceNumber newExpectedSn;
+        EmiNonWrappingSequenceNumber largestProcessedSn;
         BufferTreeIter end = processBuffer(channelQualifier,
                                            iter,
                                            &largestProcessedMessageSet,
-                                           &newExpectedSn);
+                                           &largestProcessedSn);
         
-        if (-1 != newExpectedSn) {
-            _expectedSnMemo[channelQualifier] = newExpectedSn;
+        if (-1 != largestProcessedSn) {
+            _receiver.enqueueAck(channelQualifier, largestProcessedSn & EMI_HEADER_SEQUENCE_NUMBER_MASK);
+            _expectedSnMemo[channelQualifier] = largestProcessedSn+1;
         }
         
         // We have now processed and emitted messages. The next
@@ -635,7 +637,7 @@ private:
                 EmiNonWrappingSequenceNumber sn = _messageSets.getLastSequenceNumberInSet(header.channelQualifier,
                                                                                           _expectedSnMemo[header.channelQualifier]);
                 _expectedSnMemo[header.channelQualifier] = sn;
-                _receiver.enqueueAck(header.channelQualifier, sn);
+                _receiver.enqueueAck(header.channelQualifier, sn & EMI_HEADER_SEQUENCE_NUMBER_MASK);
             }
             
             if (_tree.end() == iter) {
@@ -658,7 +660,7 @@ private:
             BufferTreeIter processEnd = processBuffer(header.channelQualifier,
                                                       iter,
                                                       &largestProcessedMessageSet,
-                                                      /*outExpectedSn:*/NULL);
+                                                      /*largestProcessedSn:*/NULL);
             
             // Remove processed and older messages from _tree and _messageSets
             if (-1 != largestProcessedMessageSet) {
@@ -785,7 +787,7 @@ public:
                 if (seqDiff >= 0) {
                     // Send an ACK only if the received message's sequence number is
                     // what we were expecting or if if it was older than we expected.
-                    _receiver.enqueueAck(channelQualifier, header.sequenceNumber);
+                    _receiver.enqueueAck(channelQualifier, expectedSn & EMI_HEADER_SEQUENCE_NUMBER_MASK);
                 }
                 
                 if (0 == seqDiff && 0 == (header.flags & (EMI_SPLIT_NOT_FIRST_FLAG | EMI_SPLIT_NOT_LAST_FLAG))) {
