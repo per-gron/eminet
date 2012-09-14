@@ -734,11 +734,15 @@ public:
         else {
             size_t msgSize = msg->approximateSize();
             
+            // This can be useful for debugging/stress testing.
+            static const bool FORCE_ONE_MESSAGE_PER_PACKET = false;
+            
             // _bufLength is the MTU of the EmiSocket.
             // mss is short for maximum segment size.
             size_t mss = _bufLength - EMI_PACKET_HEADER_MAX_LENGTH - EMI_UDP_HEADER_SIZE;
             if (_queue.sizeInBytes() + msgSize >= mss ||
-                EMI_PRIORITY_IMMEDIATE == msg->priority) {
+                EMI_PRIORITY_IMMEDIATE == msg->priority ||
+                FORCE_ONE_MESSAGE_PER_PACKET) {
                 flush(congestionControl, connTime, now);
             }
             

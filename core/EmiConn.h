@@ -363,7 +363,9 @@ public:
                           bool reliable,
                           bool allowSplit,
                           Error& err) {
-#if 0 // Set to 1 to stress test message split code
+        // Set to 1 to stress test message split code. For maximum effect,
+        // make sure to also disallow multiple messages per packet.
+#if 0
         static const size_t MAX_MESSAGE_LENGTH = 1;
 #else
         static const size_t MAX_MESSAGE_LENGTH = (EMI_MINIMAL_MTU -
