@@ -504,12 +504,13 @@ private:
             else {
                 // The message set contains more than one message
                 
-                TemporaryData mergedData = Binding::makeTemporaryData(totalSizeOfSet);
+                uint8_t *mergedDataBuf;
+                TemporaryData mergedData = Binding::makeTemporaryData(totalSizeOfSet, &mergedDataBuf);
                 
                 iter = processMessageSetData(channelQualifier,
                                              largestSequenceNumberInSet,
                                              iter,
-                                             /*buf:*/Binding::extractData(mergedData),
+                                             /*buf:*/mergedDataBuf,
                                              /*bufSize:*/Binding::extractLength(mergedData));
                 
                 _receiver.emitMessage(channelQualifier,

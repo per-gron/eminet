@@ -12,7 +12,7 @@
 
 @class GCDAsyncUdpSocket;
 
-typedef NSMutableData* EmiOnMessageTemporaryData;
+typedef NSData* EmiOnMessageTemporaryData;
 typedef void (EmiOnMessage)(GCDAsyncUdpSocket *socket,
                             void *userData,
                             EmiTimeInterval now,

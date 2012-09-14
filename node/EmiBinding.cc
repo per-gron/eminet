@@ -26,10 +26,14 @@ Persistent<Object> EmiBinding::makePersistentData(const uint8_t *data, size_t le
     return Persistent<Object>::New(buf->handle_);
 }
 
-Local<Object> EmiBinding::makeTemporaryData(size_t size) {
+Local<Object> EmiBinding::makeTemporaryData(size_t size, uint8_t **outData) {
     HandleScope scope;
     
+    // TODO It would probably be better to use the slab allocator here
+    
     node::Buffer *buf(node::Buffer::New(size));
+    
+    *outData = (uint8_t *)node::Buffer::Data(buf);
     
     return scope.Close(buf->handle_);
 }

@@ -46,7 +46,7 @@ public:
     }
     
     static v8::Persistent<v8::Object> makePersistentData(const uint8_t *data, size_t length);
-    static v8::Local<v8::Object> makeTemporaryData(size_t size);
+    static v8::Local<v8::Object> makeTemporaryData(size_t size, uint8_t **outData);
     inline static void releasePersistentData(v8::Persistent<v8::Object> buf) {
         buf.Dispose();
     }
@@ -54,7 +54,7 @@ public:
         return v8::Local<v8::Object>::New(data);
     }
     
-    inline static uint8_t *extractData(v8::Handle<v8::Object> data) {
+    inline static const uint8_t *extractData(v8::Handle<v8::Object> data) {
         return (uint8_t *)(data.IsEmpty() ? NULL : node::Buffer::Data(data));
     }
     inline static size_t extractLength(v8::Handle<v8::Object> data) {
