@@ -50,6 +50,11 @@ class EmiLogicalConnection {
     ConnectionOpenedCallbackCookie _connectionOpenedCallbackCookie;
     bool _sendingSyn;
     
+    // _sequenceMemo is a map that contains the sequence number that
+    // the next message in each channel should have. If the map has
+    // no value for a particular channel, it means that the sequence
+    // number for the next message on that channel is
+    // _initialSequenceNumber.
     EmiNonWrappingSequenceNumberMemo _sequenceMemo;
     EmiNonWrappingSequenceNumberMemo _reliableSequencedBuffer;
     

@@ -787,7 +787,11 @@ public:
                 if (seqDiff >= 0) {
                     // Send an ACK only if the received message's sequence number is
                     // what we were expecting or if if it was older than we expected.
-                    _receiver.enqueueAck(channelQualifier, expectedSn & EMI_HEADER_SEQUENCE_NUMBER_MASK);
+                    
+                    _receiver.enqueueAck(channelQualifier,
+                                         (0 == seqDiff ?
+                                          guessedNonWrappedSequenceNumber :
+                                          expectedSn-1) & EMI_HEADER_SEQUENCE_NUMBER_MASK);
                 }
                 
                 if (0 == seqDiff && 0 == (header.flags & (EMI_SPLIT_NOT_FIRST_FLAG | EMI_SPLIT_NOT_LAST_FLAG))) {
