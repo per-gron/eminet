@@ -12,14 +12,6 @@ var es = EmiNet.open({ fabricatedPacketDropRate: packetLossPerSocket }),
       rateLimit: 1000
     });
 
-es2.on('connection', function(socket) {
-  socket.on('disconnect', function(reason) {
-    if (EmiNet.OTHER_HOST_CLOSED != reason) {
-      console.log("                                  Server: Lost connection", reason);
-    }
-  });
-});
-
 var open = function(msg, cb) {
   var callbackWasInvoked = false;
   
@@ -50,7 +42,7 @@ var open = function(msg, cb) {
     });
     
     socket.on('lost', function() {
-      // console.log("Client "+msg+": LOST!");
+      console.log("Client "+msg+": LOST!");
     });
     
     socket.on('regained', function() {

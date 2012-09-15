@@ -236,6 +236,8 @@ public:
             // Because we just NULLed out _conn, we need to delete
             // it.
             deleteELC(conn);
+            
+            _timers.deschedule();
         }
     }
     

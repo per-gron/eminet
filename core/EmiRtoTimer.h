@@ -115,6 +115,11 @@ public:
         Binding::freeTimer(_connectionTimer);
     }
     
+    void deschedule() {
+        Binding::descheduleTimer(_rtoTimer);
+        Binding::descheduleTimer(_connectionTimer);
+    }
+    
     void forceResetRtoTimer() {
         Binding::descheduleTimer(_rtoTimer);
         updateRtoTimeout();

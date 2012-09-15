@@ -124,6 +124,12 @@ public:
         Binding::freeTimer(_heartbeatTimer);
     }
     
+    void deschedule() {
+        _rtoTimer.deschedule();
+        Binding::descheduleTimer(_nakTimer);
+        Binding::descheduleTimer(_tickTimer);
+        Binding::descheduleTimer(_heartbeatTimer);
+    }
     
     void sentPacket() {
         _sentDataSinceLastHeartbeat = true;
