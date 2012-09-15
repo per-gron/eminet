@@ -20,25 +20,6 @@ es2.on('connection', function(socket) {
   socket.on('message', function(channelQualifier, buf) {
     console.log("                               Server got message", buf.toString());
   });
-  
-  es2.connect(socket.getRemoteAddress(), 2312, function(err, socket) {
-    if (err) {
-      console.log("ERR:", err);
-      return;
-    }
-    
-    console.log("Connected to client as a server");
-  
-    socket.on('message', function(channelQualifier, buf) {
-      console.log("Server client got message", buf.toString());
-    });
-    
-    var counter = 0;
-    setInterval(function() {
-      var m = 'server client '+(counter += 1);
-      socket.send(new Buffer(m), { channelQualifier: EmiNet.channelQualifier(EmiNet.RELIABLE_ORDERED) });
-    }, 300);
-  })
 });
 
 var open = function(msg) {
