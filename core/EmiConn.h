@@ -354,9 +354,13 @@ public:
     //
     // enqueueMessage assumes overship of the PersistentData object (unless
     // the pointer is NULL)
+    //
+    // channelQualifier is int32_t and not EmiChannelQualifier because it
+    // has to be capable of holding -1, the special SYN/RST message channel
+    // as used by EmiSenderBuffer
     size_t enqueueMessage(EmiTimeInterval now,
                           EmiPriority priority,
-                          EmiChannelQualifier channelQualifier,
+                          int32_t channelQualifier,
                           EmiNonWrappingSequenceNumber nonWrappingSequenceNumber,
                           EmiMessageFlags flags,
                           const PersistentData *data,
