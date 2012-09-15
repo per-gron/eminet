@@ -13,19 +13,14 @@ var es = EmiNet.open({ fabricatedPacketDropRate: packetLossPerSocket }),
     });
 
 es2.on('connection', function(socket) {
-  console.log("                                  Server: Got connection");
-  
   socket.on('disconnect', function(reason) {
-    if (EmiNet.OTHER_HOST_CLOSED == reason) {
-      console.log("                                  Server: Client closed the connection");
-    }
-    else {
+    if (EmiNet.OTHER_HOST_CLOSED != reason) {
       console.log("                                  Server: Lost connection", reason);
     }
   });
 });
 
-var open = function(msg) {
+var open = function(msg, cb) {
   var callbackWasInvoked = false;
   
   es.connect('127.0.0.1', 2345, function(err, socket) {
@@ -41,11 +36,9 @@ var open = function(msg) {
       return;
     }
     
-    console.log("Client "+msg+": Connected");
-    
     socket.on('disconnect', function(reason) {
       if (EmiNet.THIS_HOST_CLOSED == reason) {
-        console.log("Client "+msg+": Connection successfully closed");
+        cb();
       }
       else {
         console.log("Client "+msg+" lost connection", reason);
@@ -57,7 +50,7 @@ var open = function(msg) {
     });
     
     socket.on('lost', function() {
-      console.log("Client "+msg+": LOST!");
+      // console.log("Client "+msg+": LOST!");
     });
     
     socket.on('regained', function() {
@@ -68,15 +61,20 @@ var open = function(msg) {
   });
 };
 
-open('a');
-/*open('b');
-open('c');
-open('d');
-open('1');
-open('2');
-open('3');
-open('4');
-open('A');
-open('B');
-open('C');
-open('D'); */
+var arr = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k',
+           'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v',
+           'w', 'x', 'y', 'z', '1', '2', '3', '4', '5', '6', '7',
+           '8', '9', '0'];
+// arr = ['a'];
+var success = 0;
+arr.forEach(function(name) {
+  open(name, function() {
+    success += 1;
+    if (success == arr.length) {
+      console.log("SUCCESS!!!");
+    }
+    else {
+      console.log("Remaining:", arr.length - success);
+    }
+  });
+});

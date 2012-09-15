@@ -146,11 +146,15 @@ private:
                 conn = NULL;
             }
             else {
-                ENSURE(acceptConnections,
-                       "Got SYN but this socket doesn't \
-                       accept incoming connections");
-                
                 if (!conn) {
+                    // It is important to only do this check if we actually need
+                    // to create a new connection object. Otherwise the check
+                    // will prevent re-sending of SYN-RST messages in case the
+                    // first packet was lost.
+                    ENSURE(acceptConnections,
+                           "Got SYN but this socket doesn't \
+                           accept incoming connections");
+                    
                     conn = _delegate.makeServerConnection(remoteAddress, inboundPort);
                 }
                 
