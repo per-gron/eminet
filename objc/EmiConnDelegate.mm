@@ -90,7 +90,9 @@ void EmiConnDelegate::emiConnLost() {
         id<EmiConnectionDelegate> connDelegate = _conn.delegate;
         EmiConnection *conn = _conn;
         dispatch_group_async(_dispatchGroup, _conn.delegateQueue, ^{
-            [connDelegate emiConnectionLost:conn];
+            if ([connDelegate respondsToSelector:@selector(emiConnectionLost:)]) {
+                [connDelegate emiConnectionLost:conn];
+            }
         });
     }
 }
@@ -100,7 +102,9 @@ void EmiConnDelegate::emiConnRegained() {
         id<EmiConnectionDelegate> connDelegate = _conn.delegate;
         EmiConnection *conn = _conn;
         dispatch_group_async(_dispatchGroup, _conn.delegateQueue, ^{
-            [connDelegate emiConnectionRegained:conn];
+            if ([connDelegate respondsToSelector:@selector(emiConnectionRegained:)]) {
+                [connDelegate emiConnectionRegained:conn];
+            }
         });
     }
 }

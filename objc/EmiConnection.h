@@ -20,12 +20,14 @@ typedef void (^EmiConnectionSendFinishedBlock)(NSError *err);
 - (void)emiConnectionOpened:(EmiConnection *)connection userData:(id)userData;
 - (void)emiConnectionFailedToConnect:(EmiSocket *)socket error:(NSError *)error userData:(id)userData;
 
-- (void)emiConnectionLost:(EmiConnection *)connection;
-- (void)emiConnectionRegained:(EmiConnection *)connection;
 - (void)emiConnectionDisconnect:(EmiConnection *)connection forReason:(EmiDisconnectReason)reason;
 - (void)emiConnectionMessage:(EmiConnection *)connection
             channelQualifier:(EmiChannelQualifier)channelQualifier
                         data:(NSData *)data;
+
+@optional
+- (void)emiConnectionLost:(EmiConnection *)connection;
+- (void)emiConnectionRegained:(EmiConnection *)connection;
 
 @optional
 
