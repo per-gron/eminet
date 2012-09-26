@@ -190,6 +190,10 @@
     SYNC_RETURN(BOOL, ((EC *)_ec)->isOpening());
 }
 
+- (BOOL)closed {
+    SYNC_RETURN(BOOL, ((EC *)_ec)->isClosed());
+}
+
 - (EmiP2PState)p2pState {
     SYNC_RETURN(EmiP2PState, ((EC *)_ec)->getP2PState());
 }
