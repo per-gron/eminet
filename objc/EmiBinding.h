@@ -65,7 +65,7 @@ public:
         return [NSData dataWithBytes:data length:length];
     }
     inline static NSData *makeTemporaryData(size_t size, uint8_t **outData) {
-        NSMutableData *result = [NSMutableData dataWithCapacity:size];
+        NSMutableData *result = [NSMutableData dataWithLength:size];
         *outData = (uint8_t *)[result bytes];
         return result;
     }
