@@ -84,7 +84,7 @@ void EmiBinding::scheduleTimer(Timer *timer, TimerCb *timerCb, void *data, EmiTi
     
     *(reinterpret_cast<TimerCb**>(timer+1)) = timerCb;
     
-    uint64_t timeout = interval*EmiNodeUtil::MSECS_PER_SEC;
+    uint64_t timeout = static_cast<uint64_t>(interval*EmiNodeUtil::MSECS_PER_SEC);
     timer->data = data;
     uv_timer_start(timer,
                    timer_cb,

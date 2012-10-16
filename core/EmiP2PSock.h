@@ -83,7 +83,7 @@ private:
         
         uint8_t complementaryByte = (complementary ? 0 : 1);
         
-        uint64_t integerStamp = floor(stamp/EMI_P2P_COOKIE_RESOLUTION - (minusOne ? 1 : 0));
+        uint64_t integerStamp = static_cast<uint64_t>(floor(stamp/EMI_P2P_COOKIE_RESOLUTION)) - (minusOne ? 1 : 0);
         
         uint8_t toBeHashed[EMI_P2P_RAND_NUM_SIZE+sizeof(integerStamp)+sizeof(complementaryByte)];
         

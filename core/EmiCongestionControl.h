@@ -295,8 +295,8 @@ public:
                                                                                                _newestSeenAckSN)/2;
         }
         
-        size_t cwndAllowance = _congestionWindow - packetsInTransit*_avgPacketSize;
-        size_t rateAllowance = _sendingRate * EMI_TICK_TIME;
+        size_t cwndAllowance = static_cast<size_t>(_congestionWindow - packetsInTransit*_avgPacketSize);
+        size_t rateAllowance = static_cast<size_t>(_sendingRate * EMI_TICK_TIME);
         
         if (0 == rateAllowance) {
             return cwndAllowance;
