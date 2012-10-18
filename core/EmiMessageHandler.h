@@ -33,6 +33,17 @@ private:
     
     MessageHandlerDelegate& _delegate;
     
+    void sendSynRstAck(EUS *sock,
+                       const sockaddr_storage& inboundAddress,
+                       const sockaddr_storage& remoteAddress) {
+        uint8_t buf[96];
+        size_t size = EmiMessage<Binding>::writeControlPacket(EMI_SYN_FLAG | EMI_RST_FLAG | EMI_ACK_FLAG,
+                                                              buf, sizeof(buf));
+        ASSERT(0 != size); // size == 0 when the buffer was too small
+        
+        sock->sendData(inboundAddress, remoteAddress, buf, size);
+    }
+    
     bool processMessage(bool acceptConnections,
                         EmiTimeInterval now,
                         uint16_t inboundPort,
@@ -54,6 +65,28 @@ private:
 #define ENSURE_CONN_TEST(test, msg)                         \
         do {                                                \
             if (!(test)) {                                  \
+                /* We got a message that requires an open */\
+                /* connection, but we don't have one.     */\
+                /* This most likely means that the other  */\
+                /* host honestly believes that the        */\
+                /* connection is open. To spare the other */\
+                /* host from having to wait for a full    */\
+                /* connection timeout, which would have   */\
+                /* happened if we silently ignored the    */\
+                /* message, we respond with a SYN-RST-ACK */\
+                /* message. The other host will interpret */\
+                /* that as if this host closed the        */\
+                /* connection, and allow it to re-connect */\
+                /* immediately if desired.                */\
+                /*                                        */\
+                /* This is by the way probably not far    */\
+                /* from the truth. A common way to        */\
+                /* trigger this code is to restart the    */\
+                /* server process.                        */\
+                sendSynRstAck(sock,                         \
+                              inboundAddress,               \
+                              remoteAddress);               \
+                                                            \
                 err = "Got "msg" message but has no "       \
                       "open connection for that address";   \
                 return false;                               \
@@ -167,15 +200,19 @@ private:
                 // This is a close connection ack message
                 
                 ENSURE(!sackFlag, "Got SYN-RST-ACK message with SACK flag");
-                ENSURE(conn,
-                       "Got SYN-RST-ACK message but has no open \
-                       connection for that address. Ignoring the \
-                       packet. (This is not really an error \
-                       condition, it is part of normal operation \
-                       of the protocol.)");
                 
-                conn->gotSynRstAck();
-                conn = NULL;
+                if (conn) {
+                    conn->gotSynRstAck();
+                    conn = NULL;
+                }
+                else {
+                    // Receiving SYN-RST-ACK messages that don't have
+                    // an open connection associated with them is part
+                    // of the normal operation of the protocol.
+                    //
+                    // This can happen for instance when receiving
+                    // duplicate SYN-RST-ACK messages.
+                }
             }
             else {
                 // This is a connection initiated message
@@ -199,21 +236,11 @@ private:
             
             // Regardless of whether we still have a connection up,
             // respond with a SYN-RST-ACK message.
-            uint8_t buf[96];
-            size_t size = EmiMessage<Binding>::writeControlPacket(EMI_SYN_FLAG | EMI_RST_FLAG | EMI_ACK_FLAG,
-                                                                  buf, sizeof(buf));
-            ASSERT(0 != size); // size == 0 when the buffer was too small
-            
-            sock->sendData(inboundAddress, remoteAddress, buf, size);
+            sendSynRstAck(sock, inboundAddress, remoteAddress);
             
             // Note that this has to be done after we send the control
             // packet, since invoking gotRst might deallocate the sock
             // object.
-            //
-            // TODO: Closing the socket here might be the wrong thing
-            // to do. It might be better to let it stay alive for a full
-            // connection timeout cycle, just to make sure that the other
-            // host gets our SYN-RST-ACK response.
             if (conn) {
                 conn->gotRst();
                 conn = NULL;
