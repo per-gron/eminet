@@ -1,13 +1,13 @@
 //
 //  EmiNetUtil.h
-//  roshambo
+//  eminet
 //
 //  Created by Per Eckerdal on 2012-04-12.
-//  Copyright (c) 2012 __MyCompanyName__. All rights reserved.
+//  Copyright (c) 2012 Per Eckerdal. All rights reserved.
 //
 
-#ifndef emilir_EmiNetUtil_h
-#define emilir_EmiNetUtil_h
+#ifndef eminet_EmiNetUtil_h
+#define eminet_EmiNetUtil_h
 
 #include <netinet/in.h>
 #include <stdlib.h>

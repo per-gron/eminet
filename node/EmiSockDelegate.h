@@ -1,6 +1,6 @@
 #define BUILDING_NODE_EXTENSION
-#ifndef emilir_EmiSockDelegate_h
-#define emilir_EmiSockDelegate_h
+#ifndef eminet_EmiSockDelegate_h
+#define eminet_EmiSockDelegate_h
 
 #include "EmiError.h"
 #include "EmiBinding.h"

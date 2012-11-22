@@ -1,13 +1,13 @@
 //
 //  EmiDispatchTimer.h
-//  rock
+//  eminet
 //
 //  Created by Per Eckerdal on 2012-06-12.
-//  Copyright (c) 2012 __MyCompanyName__. All rights reserved.
+//  Copyright (c) 2012 Per Eckerdal. All rights reserved.
 //
 
-#ifndef rock_EmiDispatchTimer_h
-#define rock_EmiDispatchTimer_h
+#ifndef eminet_EmiDispatchTimer_h
+#define eminet_EmiDispatchTimer_h
 
 #include "EmiTypes.h"
 

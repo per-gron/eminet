@@ -1,13 +1,13 @@
 //
 //  EmiConnDelegate.h
-//  roshambo
+//  eminet
 //
 //  Created by Per Eckerdal on 2012-04-11.
-//  Copyright (c) 2012 __MyCompanyName__. All rights reserved.
+//  Copyright (c) 2012 Per Eckerdal. All rights reserved.
 //
 
-#ifndef emilir_EmiConnDelegate_h
-#define emilir_EmiConnDelegate_h
+#ifndef eminet_EmiConnDelegate_h
+#define eminet_EmiConnDelegate_h
 
 #import "EmiConnection.h"
 #import "EmiDispatchQueueWrapper.h"

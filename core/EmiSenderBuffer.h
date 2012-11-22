@@ -1,13 +1,13 @@
 //
 //  EmiSenderBuffer.h
-//  roshambo
+//  eminet
 //
 //  Created by Per Eckerdal on 2012-02-16.
-//  Copyright (c) 2012 __MyCompanyName__. All rights reserved.
+//  Copyright (c) 2012 Per Eckerdal. All rights reserved.
 //
 
-#ifndef emilir_EmiSenderBuffer_h
-#define emilir_EmiSenderBuffer_h
+#ifndef eminet_EmiSenderBuffer_h
+#define eminet_EmiSenderBuffer_h
 
 #include "EmiMessage.h"
 #include "EmiNetUtil.h"

@@ -1,13 +1,13 @@
 //
 //  EmiDataArrivalRate.h
-//  rock
+//  eminet
 //
 //  Created by Per Eckerdal on 2012-05-22.
-//  Copyright (c) 2012 __MyCompanyName__. All rights reserved.
+//  Copyright (c) 2012 Per Eckerdal. All rights reserved.
 //
 
-#ifndef rock_EmiDataArrivalRate_h
-#define rock_EmiDataArrivalRate_h
+#ifndef eminet_EmiDataArrivalRate_h
+#define eminet_EmiDataArrivalRate_h
 
 #include "EmiTypes.h"
 #include "EmiMedianFilter.h"

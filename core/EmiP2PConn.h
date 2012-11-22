@@ -1,13 +1,13 @@
 //
 //  EmiP2PConn.h
-//  roshambo
+//  eminet
 //
 //  Created by Per Eckerdal on 2012-04-24.
-//  Copyright (c) 2012 __MyCompanyName__. All rights reserved.
+//  Copyright (c) 2012 Per Eckerdal. All rights reserved.
 //
 
-#ifndef roshambo_EmiP2PConn_h
-#define roshambo_EmiP2PConn_h
+#ifndef eminet_EmiP2PConn_h
+#define eminet_EmiP2PConn_h
 
 #include "EmiTypes.h"
 #include "EmiNetUtil.h"

@@ -1,9 +1,9 @@
 //
 //  EmiConnectionOpenedBlockWrapper.h
-//  rock
+//  eminet
 //
 //  Created by Per Eckerdal on 2012-06-13.
-//  Copyright (c) 2012 __MyCompanyName__. All rights reserved.
+//  Copyright (c) 2012 Per Eckerdal. All rights reserved.
 //
 
 #import <Foundation/Foundation.h>

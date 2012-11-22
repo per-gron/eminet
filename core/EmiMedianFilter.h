@@ -1,13 +1,13 @@
 //
 //  EmiMedianFilter.h
-//  rock
+//  eminet
 //
 //  Created by Per Eckerdal on 2012-05-22.
-//  Copyright (c) 2012 __MyCompanyName__. All rights reserved.
+//  Copyright (c) 2012 Per Eckerdal. All rights reserved.
 //
 
-#ifndef rock_EmiMedianFilter_h
-#define rock_EmiMedianFilter_h
+#ifndef eminet_EmiMedianFilter_h
+#define eminet_EmiMedianFilter_h
 
 #include <algorithm>
 #include <cmath>

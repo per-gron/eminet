@@ -1,13 +1,13 @@
 //
 //  EmiNatPunchthrough.h
-//  rock
+//  eminet
 //
 //  Created by Per Eckerdal on 2012-05-10.
-//  Copyright (c) 2012 __MyCompanyName__. All rights reserved.
+//  Copyright (c) 2012 Per Eckerdal. All rights reserved.
 //
 
-#ifndef rock_EmiNatPunchthrough_h
-#define rock_EmiNatPunchthrough_h
+#ifndef eminet_EmiNatPunchthrough_h
+#define eminet_EmiNatPunchthrough_h
 
 #include "EmiNetUtil.h"
 #include "EmiConnTime.h"

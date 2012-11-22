@@ -1,13 +1,13 @@
 //
 //  EmiLossList.h
-//  rock
+//  eminet
 //
 //  Created by Per Eckerdal on 2012-05-23.
-//  Copyright (c) 2012 __MyCompanyName__. All rights reserved.
+//  Copyright (c) 2012 Per Eckerdal. All rights reserved.
 //
 
-#ifndef rock_EmiLossList_h
-#define rock_EmiLossList_h
+#ifndef eminet_EmiLossList_h
+#define eminet_EmiLossList_h
 
 #include "EmiTypes.h"
 #include "EmiNetUtil.h"

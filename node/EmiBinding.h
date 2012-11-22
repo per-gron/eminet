@@ -1,6 +1,6 @@
 #define BUILDING_NODE_EXTENSION
-#ifndef emilir_EmiBinding_h
-#define emilir_EmiBinding_h
+#ifndef eminet_EmiBinding_h
+#define eminet_EmiBinding_h
 
 #include "EmiError.h"
 

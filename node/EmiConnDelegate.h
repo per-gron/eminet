@@ -1,6 +1,6 @@
 #define BUILDING_NODE_EXTENSION
-#ifndef emilir_EmiConnDelegate_h
-#define emilir_EmiConnDelegate_h
+#ifndef eminet_EmiConnDelegate_h
+#define eminet_EmiConnDelegate_h
 
 #include "../core/EmiTypes.h"
 #include <uv.h>

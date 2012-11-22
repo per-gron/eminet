@@ -1,6 +1,6 @@
 //
 //  EmiNetRandom.h
-//  rock
+//  eminet
 //
 //  Derived from bsd-arc4random.c from OpenBSD
 //
@@ -21,8 +21,8 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#ifndef rock_EmiNetRandom_h
-#define rock_EmiNetRandom_h
+#ifndef eminet_EmiNetRandom_h
+#define eminet_EmiNetRandom_h
 
 #include "EmiRC4.h"
 

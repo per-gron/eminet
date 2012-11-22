@@ -1,9 +1,9 @@
 //
 //  EmiBinding.mm
-//  roshambo
+//  eminet
 //
 //  Created by Per Eckerdal on 2012-04-24.
-//  Copyright (c) 2012 __MyCompanyName__. All rights reserved.
+//  Copyright (c) 2012 Per Eckerdal. All rights reserved.
 //
 
 #include "EmiBinding.h"

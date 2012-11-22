@@ -1,13 +1,13 @@
 //
 //  EmiCongestionControl.h
-//  rock
+//  eminet
 //
 //  Created by Per Eckerdal on 2012-05-24.
-//  Copyright (c) 2012 __MyCompanyName__. All rights reserved.
+//  Copyright (c) 2012 Per Eckerdal. All rights reserved.
 //
 
-#ifndef rock_EmiCongestionControl_h
-#define rock_EmiCongestionControl_h
+#ifndef eminet_EmiCongestionControl_h
+#define eminet_EmiCongestionControl_h
 
 #include "EmiLinkCapacity.h"
 #include "EmiDataArrivalRate.h"

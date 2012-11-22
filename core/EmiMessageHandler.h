@@ -1,13 +1,13 @@
 //
 //  EmiMessageHandler.h
-//  rock
+//  eminet
 //
 //  Created by Per Eckerdal on 2012-06-08.
-//  Copyright (c) 2012 __MyCompanyName__. All rights reserved.
+//  Copyright (c) 2012 Per Eckerdal. All rights reserved.
 //
 
-#ifndef rock_EmiMessageHandler_h
-#define rock_EmiMessageHandler_h
+#ifndef eminet_EmiMessageHandler_h
+#define eminet_EmiMessageHandler_h
 
 #include "EmiMessageHeader.h"
 #include "EmiUdpSocket.h"

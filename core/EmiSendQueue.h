@@ -1,13 +1,13 @@
 //
 //  EmiSendQueue.h
-//  roshambo
+//  eminet
 //
 //  Created by Per Eckerdal on 2012-02-16.
-//  Copyright (c) 2012 __MyCompanyName__. All rights reserved.
+//  Copyright (c) 2012 Per Eckerdal. All rights reserved.
 //
 
-#ifndef emilir_EmiSendQueue_h
-#define emilir_EmiSendQueue_h
+#ifndef eminet_EmiSendQueue_h
+#define eminet_EmiSendQueue_h
 
 #include "EmiMessage.h"
 #include "EmiNetUtil.h"

@@ -1,6 +1,6 @@
 #define BUILDING_NODE_EXTENSION
-#ifndef emilir_EmiP2PSocket_h
-#define emilir_EmiP2PSocket_h
+#ifndef eminet_EmiP2PSocket_h
+#define eminet_EmiP2PSocket_h
 
 #include "EmiObjectWrap.h"
 #include "EmiBinding.h"

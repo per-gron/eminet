@@ -1,15 +1,15 @@
 //
 //  EmiRC4.h
-//  rock
+//  eminet
 //
 //  RC4 implementation derived from LibTomCrypt
 //
 //  Created by Per Eckerdal on 2012-06-22.
-//  Copyright (c) 2012 __MyCompanyName__. All rights reserved.
+//  Copyright (c) 2012 Per Eckerdal. All rights reserved.
 //
 
-#ifndef rock_EmiRC4_h
-#define rock_EmiRC4_h
+#ifndef eminet_EmiRC4_h
+#define eminet_EmiRC4_h
 
 #include <stddef.h>
 

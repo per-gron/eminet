@@ -1,13 +1,13 @@
 //
 //  EmiLogicalConnection.h
-//  roshambo
+//  eminet
 //
 //  Created by Per Eckerdal on 2012-02-16.
-//  Copyright (c) 2012 __MyCompanyName__. All rights reserved.
+//  Copyright (c) 2012 Per Eckerdal. All rights reserved.
 //
 
-#ifndef emilir_EmiLogicalConnection_h
-#define emilir_EmiLogicalConnection_h
+#ifndef eminet_EmiLogicalConnection_h
+#define eminet_EmiLogicalConnection_h
 
 #include "EmiMessage.h"
 #include "EmiNetUtil.h"

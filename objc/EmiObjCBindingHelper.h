@@ -1,13 +1,13 @@
 //
 //  EmiObjCBindingHelper.h
-//  rock
+//  eminet
 //
 //  Created by Per Eckerdal on 2012-06-12.
-//  Copyright (c) 2012 __MyCompanyName__. All rights reserved.
+//  Copyright (c) 2012 Per Eckerdal. All rights reserved.
 //
 
-#ifndef rock_EmiObjCBindingHelper_h
-#define rock_EmiObjCBindingHelper_h
+#ifndef eminet_EmiObjCBindingHelper_h
+#define eminet_EmiObjCBindingHelper_h
 
 #define DISPATCH_SYNC_OR_ASYNC(queue, block, method)        \
     {                                                       \

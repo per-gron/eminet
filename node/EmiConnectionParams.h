@@ -1,6 +1,6 @@
 #define BUILDING_NODE_EXTENSION
-#ifndef emilir_EmiConnectionParams_h
-#define emilir_EmiConnectionParams_h
+#ifndef eminet_EmiConnectionParams_h
+#define eminet_EmiConnectionParams_h
 
 #include "EmiBinding.h"
 #include "EmiConnDelegate.h"

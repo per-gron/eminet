@@ -1,13 +1,13 @@
 //
 //  EmiRtoTimer.h
-//  roshambo
+//  eminet
 //
 //  Created by Per Eckerdal on 2012-04-25.
-//  Copyright (c) 2012 __MyCompanyName__. All rights reserved.
+//  Copyright (c) 2012 Per Eckerdal. All rights reserved.
 //
 
-#ifndef roshambo_EmiRtoTimer_h
-#define roshambo_EmiRtoTimer_h
+#ifndef eminet_EmiRtoTimer_h
+#define eminet_EmiRtoTimer_h
 
 // This class is separated from EmiConnTimers because its functionality
 // is shared between EmiConn and EmiP2PConn, while only EmiConn uses

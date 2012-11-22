@@ -1,13 +1,13 @@
 //
 //  EmiConnTimers.h
-//  roshambo
+//  eminet
 //
 //  Created by Per Eckerdal on 2012-05-01.
-//  Copyright (c) 2012 __MyCompanyName__. All rights reserved.
+//  Copyright (c) 2012 Per Eckerdal. All rights reserved.
 //
 
-#ifndef emilir_EmiConnTimers_h
-#define emilir_EmiConnTimers_h
+#ifndef eminet_EmiConnTimers_h
+#define eminet_EmiConnTimers_h
 
 #include "EmiSockConfig.h"
 #include "EmiConnTime.h"

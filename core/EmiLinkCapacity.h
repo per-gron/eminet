@@ -1,13 +1,13 @@
 //
 //  EmiLinkCapacity.h
-//  rock
+//  eminet
 //
 //  Created by Per Eckerdal on 2012-05-24.
-//  Copyright (c) 2012 __MyCompanyName__. All rights reserved.
+//  Copyright (c) 2012 Per Eckerdal. All rights reserved.
 //
 
-#ifndef rock_EmiLinkCapacity_h
-#define rock_EmiLinkCapacity_h
+#ifndef eminet_EmiLinkCapacity_h
+#define eminet_EmiLinkCapacity_h
 
 #include "EmiTypes.h"
 #include "EmiMedianFilter.h"

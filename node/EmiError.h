@@ -1,5 +1,5 @@
-#ifndef emilir_EmiError_h
-#define emilir_EmiError_h
+#ifndef eminet_EmiError_h
+#define eminet_EmiError_h
 
 #include <string>
 #include <cstring>

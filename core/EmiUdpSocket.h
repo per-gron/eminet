@@ -1,13 +1,13 @@
 //
 //  EmiUdpSocket.h
-//  roshambo
+//  eminet
 //
 //  Created by Per Eckerdal on 2012-04-27.
-//  Copyright (c) 2012 __MyCompanyName__. All rights reserved.
+//  Copyright (c) 2012 Per Eckerdal. All rights reserved.
 //
 
-#ifndef roshambo_EmiUdpSocket_h
-#define roshambo_EmiUdpSocket_h
+#ifndef eminet_EmiUdpSocket_h
+#define eminet_EmiUdpSocket_h
 
 #include "EmiAddressCmp.h"
 

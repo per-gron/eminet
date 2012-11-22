@@ -1,13 +1,13 @@
 //
 //  EmiP2PEndpoints.h
-//  rock
+//  eminet
 //
 //  Created by Per Eckerdal on 2012-06-27.
-//  Copyright (c) 2012 __MyCompanyName__. All rights reserved.
+//  Copyright (c) 2012 Per Eckerdal. All rights reserved.
 //
 
-#ifndef rock_EmiP2PEndpoints_h
-#define rock_EmiP2PEndpoints_h
+#ifndef eminet_EmiP2PEndpoints_h
+#define eminet_EmiP2PEndpoints_h
 
 #include <cstring>
 

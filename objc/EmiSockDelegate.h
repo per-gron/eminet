@@ -1,13 +1,13 @@
 //
 //  EmiSockDelegate.h
-//  roshambo
+//  eminet
 //
 //  Created by Per Eckerdal on 2012-04-12.
-//  Copyright (c) 2012 __MyCompanyName__. All rights reserved.
+//  Copyright (c) 2012 Per Eckerdal. All rights reserved.
 //
 
-#ifndef emilir_EmiSockDelegate_h
-#define emilir_EmiSockDelegate_h
+#ifndef eminet_EmiSockDelegate_h
+#define eminet_EmiSockDelegate_h
 
 #include "EmiBinding.h"
 #import "EmiDispatchQueueWrapper.h"

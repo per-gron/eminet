@@ -1,13 +1,13 @@
 //
 //  EmiConnParams.h
-//  roshambo
+//  eminet
 //
 //  Created by Per Eckerdal on 2012-04-23.
-//  Copyright (c) 2012 __MyCompanyName__. All rights reserved.
+//  Copyright (c) 2012 Per Eckerdal. All rights reserved.
 //
 
-#ifndef roshambo_EmiConnParams_h
-#define roshambo_EmiConnParams_h
+#ifndef eminet_EmiConnParams_h
+#define eminet_EmiConnParams_h
 
 #include "EmiP2PData.h"
 #include "EmiUdpSocket.h"

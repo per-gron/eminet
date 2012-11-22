@@ -1,13 +1,13 @@
 //
 //  EmiBinding.h
-//  roshambo
+//  eminet
 //
 //  Created by Per Eckerdal on 2012-04-24.
-//  Copyright (c) 2012 __MyCompanyName__. All rights reserved.
+//  Copyright (c) 2012 Per Eckerdal. All rights reserved.
 //
 
-#ifndef roshambo_EmiBinding_h
-#define roshambo_EmiBinding_h
+#ifndef eminet_EmiBinding_h
+#define eminet_EmiBinding_h
 
 #import "EmiSocketUserDataWrapper.h"
 #include "EmiDispatchTimer.h"

@@ -1,6 +1,6 @@
 #define BUILDING_NODE_EXTENSION
-#ifndef emilir_EmiObjectWrap
-#define emilir_EmiObjectWrap
+#ifndef eminet_EmiObjectWrap
+#define eminet_EmiObjectWrap
 
 #include <node.h>
 

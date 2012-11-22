@@ -1,13 +1,13 @@
 //
 //  EmiP2PData.h
-//  roshambo
+//  eminet
 //
 //  Created by Per Eckerdal on 2012-04-26.
-//  Copyright (c) 2012 __MyCompanyName__. All rights reserved.
+//  Copyright (c) 2012 Per Eckerdal. All rights reserved.
 //
 
-#ifndef roshambo_EmiP2PData_h
-#define roshambo_EmiP2PData_h
+#ifndef eminet_EmiP2PData_h
+#define eminet_EmiP2PData_h
 
 #include <cstring>
 

@@ -1,13 +1,13 @@
 //
 //  EmiAddressCmp.h
-//  roshambo
+//  eminet
 //
 //  Created by Per Eckerdal on 2012-04-12.
-//  Copyright (c) 2012 __MyCompanyName__. All rights reserved.
+//  Copyright (c) 2012 Per Eckerdal. All rights reserved.
 //
 
-#ifndef roshambo_EmiAddressCmp_h
-#define roshambo_EmiAddressCmp_h
+#ifndef eminet_EmiAddressCmp_h
+#define eminet_EmiAddressCmp_h
 
 #include <netinet/in.h>
 #include <cstring>
