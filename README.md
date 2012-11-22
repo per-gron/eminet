@@ -50,7 +50,7 @@ Messages that are too large to fit in a UDP packet are automatically split up an
 
 ### P2P
 
-In order to initiate a P2P connection, a third party *mediator* is required. The mediator must have a public IP and port, and must not be behind NAT. The mediator aids in the NAT punch through process and acts as a proxy (possibly with a limit on network throughput for each channel) if necessary. The steps to set up a P2P connection are:
+In order to initiate a P2P connection, a third party *mediator* is required. The mediator must have a public IP and port, and must not be behind NAT. The mediator aids in the NAT punch through process and acts as a proxy (possibly with a rate limit for each connection) if necessary. The steps to set up a P2P connection are:
 
 1. The mediator generates a *cookie pair* and a *shared secret*.
 2. The shared secret and a cookie is sent to each of the peers that will initiate a P2P connection. This is normally done through other means than EmiNet itself.
