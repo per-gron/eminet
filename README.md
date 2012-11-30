@@ -46,7 +46,7 @@ When opening client-server connections, EmiNet uses a two-way handshake. This ma
 
 ### Long messages
 
-Messages that are too large to fit in a UDP packet are automatically split up and sent in separate packets. However, please note that unreliable channels do not do anything to re-send parts of split messages, so the probability of messages being lost increase exponentially to the number of splits. For messages longer than 1-2KB or so, I'd recommend using a reliable channel.
+Messages that are too large to fit in a UDP packet are automatically split up and sent in separate packets. However, please note that unreliable channels do not do anything to re-send parts of split messages, so the probability of a message being delivered decreases exponentially to the number of splits. For messages longer than 1-2KB or so, I'd recommend using a reliable channel.
 
 ### P2P
 
@@ -122,4 +122,4 @@ Objective-C EmiNet employs a GCD based concurrency model inspired by CocoaAsyncS
 
 To use the Objective-C wrapper in Xcode, simply add the files in the `objc` and `core` directories to the project (within groups, not folders). The Objective-C wrapper depends on the excellent [CocoaAsyncSocket](https://github.com/robbiehanson/CocoaAsyncSocket) library.
 
-To use the Javascript wrapper, add an npm dependency in your project's `package.json` like so: `"eminet": "git+ssh://git@bitbucket.org:per_eckerdal/eminet.git"`
+`eminet` is a package in the public `npm` registry, and can be used like any other node.js package.

@@ -7,6 +7,5 @@
   "scripts": {
     "preinstall": "node-waf configure build"
   },
-  "main": "./node/eminet",
-  "private": true
+  "main": "./node/eminet"
 }
