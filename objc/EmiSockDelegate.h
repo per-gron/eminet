@@ -58,8 +58,8 @@ public:
     void connectionGotMessage(EC *conn,
                               EmiUdpSocket<EmiBinding> *socket,
                               EmiTimeInterval now,
-                              const sockaddr_storage& inboundAddress,
-                              const sockaddr_storage& remoteAddress,
+                              sockaddr_storage inboundAddress,
+                              sockaddr_storage remoteAddress,
                               NSData *data,
                               size_t offset,
                               size_t len);
