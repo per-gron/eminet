@@ -32,8 +32,8 @@
 
 @property (nonatomic, weak, readonly) id<EmiConnectionDelegate> delegate;
 @property (nonatomic, strong, readonly) dispatch_queue_t delegateQueue;
-@property (nonatomic, retain, readonly) NSData *cookie;
-@property (nonatomic, retain, readonly) NSData *sharedSecret;
-@property (nonatomic, retain, readonly) id userData;
+@property (nonatomic, strong, readonly) NSData *cookie;
+@property (nonatomic, strong, readonly) NSData *sharedSecret;
+@property (nonatomic, strong, readonly) id userData;
 
 @end
