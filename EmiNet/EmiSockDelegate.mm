@@ -112,3 +112,8 @@ void EmiSockDelegate::connectionGotMessage(EC *conn,
                         data, offset, len);
     });
 }
+
+dispatch_queue_t EmiSockDelegate::getSocketCookie() {
+    // This method will always be called from the socketqueue
+    return _socket.socketQueue;
+}

@@ -64,9 +64,7 @@ public:
                               size_t len);
     
     // This method will always be called from the socketqueue
-    inline dispatch_queue_t getSocketCookie() {
-        return dispatch_get_current_queue();
-    }
+    dispatch_queue_t getSocketCookie();
 };
 
 #endif
