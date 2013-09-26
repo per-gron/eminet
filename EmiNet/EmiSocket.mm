@@ -253,7 +253,7 @@ withFilterContext:(id)filterContext {
     }
     
     if (!result) {
-        DISPATCH_ASYNC(wrapper.delegateQueue, ^{
+        dispatch_async(wrapper.delegateQueue, ^{
             [wrapper.delegate emiConnectionFailedToConnect:self error:err userData:wrapper.userData];
         });
     }
@@ -271,7 +271,7 @@ withFilterContext:(id)filterContext {
     
     _resolveSocket = nil;
     
-    DISPATCH_ASYNC(wrapper.delegateQueue, ^{
+    dispatch_async(wrapper.delegateQueue, ^{
         [wrapper.delegate emiConnectionFailedToConnect:self error:error userData:wrapper.userData];
     });
 }

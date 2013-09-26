@@ -26,7 +26,4 @@
 #define DISPATCH_SYNC(queue, block)                         \
     DISPATCH_SYNC_OR_ASYNC(queue, block, sync)
 
-#define DISPATCH_ASYNC(queue, block)                        \
-    DISPATCH_SYNC_OR_ASYNC(queue, block, async)
-
 #endif

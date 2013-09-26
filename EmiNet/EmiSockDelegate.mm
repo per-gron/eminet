@@ -90,7 +90,7 @@ void EmiSockDelegate::connectionOpened(ConnectionOpenedCallbackCookie& cookie, b
     // might receive messages before the delegate is set.
     [conn setDelegate:wrapper.delegate delegateQueue:wrapper.delegateQueue];
     
-    DISPATCH_ASYNC(wrapper.delegateQueue, ^{
+    dispatch_async(wrapper.delegateQueue, ^{
         if (error) {
             [wrapper.delegate emiConnectionFailedToConnect:conn.emiSocket
                                                      error:EmiBinding::makeError("com.emilir.eminet.disconnect", reason)

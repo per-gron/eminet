@@ -166,7 +166,7 @@
         dispatch_retain(blockQueue);
     }
     
-    DISPATCH_ASYNC(_connectionQueue, ^{
+    dispatch_async(_connectionQueue, ^{
         NSError *err;
         BOOL retVal = ((EC *)_ec)->send([self _now], data, channelQualifier, priority, err);
         
