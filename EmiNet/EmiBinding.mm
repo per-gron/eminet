@@ -13,7 +13,7 @@
 #import "EmiDispatchQueueWrapper.h"
 
 #import "GCDAsyncUdpSocket.h"
-#include <Security/Security.h>
+#include <Security/SecRandom.h>
 #include <CommonCrypto/CommonHMAC.h>
 #include <arpa/inet.h>
 #include <net/if.h>
