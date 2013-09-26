@@ -9,11 +9,12 @@
 #include "EmiDispatchTimer.h"
 
 #include "EmiObjCBindingHelper.h"
-#import "EmiDispatchQueueWrapper.h"
 #include "EmiNetUtil.h"
 
-EmiDispatchTimer::EmiDispatchTimer(EmiDispatchQueueWrapper *timerCookie) :
-_timerQueue(timerCookie->queue), _timer(NULL) {
+#import <Foundation/Foundation.h>
+
+EmiDispatchTimer::EmiDispatchTimer(dispatch_queue_t timerCookie) :
+_timerQueue(timerCookie), _timer(NULL) {
     ASSERT(_timerQueue);
 }
 

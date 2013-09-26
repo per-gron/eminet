@@ -19,15 +19,14 @@
 
 class EmiSockDelegate;
 @class GCDAsyncUdpSocket;
-@class EmiDispatchQueueWrapper;
 
 class EmiBinding {
 private:
     inline EmiBinding();
 public:
     
-    typedef EmiDispatchTimer         Timer;
-    typedef EmiDispatchQueueWrapper* TimerCookie;
+    typedef EmiDispatchTimer Timer;
+    typedef dispatch_queue_t TimerCookie;
     
     typedef __strong NSError* Error;
     typedef GCDAsyncUdpSocket SocketHandle;
@@ -89,7 +88,7 @@ public:
                          uint8_t *buf, size_t bufLen);
     static void randomBytes(uint8_t *buf, size_t bufSize);
     
-    inline static Timer *makeTimer(EmiDispatchQueueWrapper *timerCookie) {
+    inline static Timer *makeTimer(dispatch_queue_t timerCookie) {
         return new Timer(timerCookie);
     }
     inline static void freeTimer(Timer *timer) {
@@ -109,7 +108,7 @@ public:
     static void freeNetworkInterfaces(const NetworkInterfaces& ni);
     
     static void closeSocket(GCDAsyncUdpSocket *socket);
-    static GCDAsyncUdpSocket *openSocket(EmiDispatchQueueWrapper *socketCookie,
+    static GCDAsyncUdpSocket *openSocket(dispatch_queue_t socketCookie,
                                          EmiOnMessage *callback,
                                          void *userData,
                                          const sockaddr_storage& address,

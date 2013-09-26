@@ -10,7 +10,6 @@
 #define eminet_EmiSockDelegate_h
 
 #include "EmiBinding.h"
-#import "EmiDispatchQueueWrapper.h"
 
 #include "EmiTypes.h"
 #import <Foundation/Foundation.h>
@@ -65,8 +64,8 @@ public:
                               size_t len);
     
     // This method will always be called from the socketqueue
-    inline EmiDispatchQueueWrapper *getSocketCookie() {
-        return [[EmiDispatchQueueWrapper alloc] initWithQueue:dispatch_get_current_queue()];
+    inline dispatch_queue_t getSocketCookie() {
+        return dispatch_get_current_queue();
     }
 };
 

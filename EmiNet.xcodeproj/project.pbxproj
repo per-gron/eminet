@@ -42,7 +42,6 @@
 		CB9D87E117F4A8A10069FF66 /* EmiConnDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = CB9D87C717F4A8A10069FF66 /* EmiConnDelegate.mm */; };
 		CB9D87E217F4A8A10069FF66 /* EmiConnection.mm in Sources */ = {isa = PBXBuildFile; fileRef = CB9D87C917F4A8A10069FF66 /* EmiConnection.mm */; };
 		CB9D87E317F4A8A10069FF66 /* EmiConnectionOpenedBlockWrapper.m in Sources */ = {isa = PBXBuildFile; fileRef = CB9D87CC17F4A8A10069FF66 /* EmiConnectionOpenedBlockWrapper.m */; };
-		CB9D87E417F4A8A10069FF66 /* EmiDispatchQueueWrapper.m in Sources */ = {isa = PBXBuildFile; fileRef = CB9D87CE17F4A8A10069FF66 /* EmiDispatchQueueWrapper.m */; };
 		CB9D87E517F4A8A10069FF66 /* EmiDispatchTimer.mm in Sources */ = {isa = PBXBuildFile; fileRef = CB9D87D017F4A8A10069FF66 /* EmiDispatchTimer.mm */; };
 		CB9D87E617F4A8A10069FF66 /* EmiP2PSocketConfig.mm in Sources */ = {isa = PBXBuildFile; fileRef = CB9D87D417F4A8A10069FF66 /* EmiP2PSocketConfig.mm */; };
 		CB9D87E717F4A8A10069FF66 /* EmiSockDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = CB9D87D717F4A8A10069FF66 /* EmiSockDelegate.mm */; };
@@ -58,7 +57,6 @@
 		CB9D87F217F4AAE40069FF66 /* EmiConnDelegate.h in Headers */ = {isa = PBXBuildFile; fileRef = CB9D87C617F4A8A10069FF66 /* EmiConnDelegate.h */; };
 		CB9D87F317F4AAE90069FF66 /* EmiConnectionInternal.h in Headers */ = {isa = PBXBuildFile; fileRef = CB9D87CA17F4A8A10069FF66 /* EmiConnectionInternal.h */; };
 		CB9D87F417F4AAEC0069FF66 /* EmiConnectionOpenedBlockWrapper.h in Headers */ = {isa = PBXBuildFile; fileRef = CB9D87CB17F4A8A10069FF66 /* EmiConnectionOpenedBlockWrapper.h */; };
-		CB9D87F517F4AAEE0069FF66 /* EmiDispatchQueueWrapper.h in Headers */ = {isa = PBXBuildFile; fileRef = CB9D87CD17F4A8A10069FF66 /* EmiDispatchQueueWrapper.h */; };
 		CB9D87F617F4AAF10069FF66 /* EmiDispatchTimer.h in Headers */ = {isa = PBXBuildFile; fileRef = CB9D87CF17F4A8A10069FF66 /* EmiDispatchTimer.h */; };
 		CB9D87F717F4AAF50069FF66 /* EmiP2PSocketConfig.h in Headers */ = {isa = PBXBuildFile; fileRef = CB9D87D317F4A8A10069FF66 /* EmiP2PSocketConfig.h */; };
 		CB9D87F817F4AAF80069FF66 /* EmiP2PSocketConfigInternal.h in Headers */ = {isa = PBXBuildFile; fileRef = CB9D87D517F4A8A10069FF66 /* EmiP2PSocketConfigInternal.h */; };
@@ -188,8 +186,6 @@
 		CB9D87CA17F4A8A10069FF66 /* EmiConnectionInternal.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = EmiConnectionInternal.h; path = EmiNet/EmiConnectionInternal.h; sourceTree = "<group>"; };
 		CB9D87CB17F4A8A10069FF66 /* EmiConnectionOpenedBlockWrapper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = EmiConnectionOpenedBlockWrapper.h; path = EmiNet/EmiConnectionOpenedBlockWrapper.h; sourceTree = "<group>"; };
 		CB9D87CC17F4A8A10069FF66 /* EmiConnectionOpenedBlockWrapper.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = EmiConnectionOpenedBlockWrapper.m; path = EmiNet/EmiConnectionOpenedBlockWrapper.m; sourceTree = "<group>"; };
-		CB9D87CD17F4A8A10069FF66 /* EmiDispatchQueueWrapper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = EmiDispatchQueueWrapper.h; path = EmiNet/EmiDispatchQueueWrapper.h; sourceTree = "<group>"; };
-		CB9D87CE17F4A8A10069FF66 /* EmiDispatchQueueWrapper.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = EmiDispatchQueueWrapper.m; path = EmiNet/EmiDispatchQueueWrapper.m; sourceTree = "<group>"; };
 		CB9D87CF17F4A8A10069FF66 /* EmiDispatchTimer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = EmiDispatchTimer.h; path = EmiNet/EmiDispatchTimer.h; sourceTree = "<group>"; };
 		CB9D87D017F4A8A10069FF66 /* EmiDispatchTimer.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = EmiDispatchTimer.mm; path = EmiNet/EmiDispatchTimer.mm; sourceTree = "<group>"; };
 		CB9D87D117F4A8A10069FF66 /* EmiNet.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = EmiNet.h; path = EmiNet/EmiNet.h; sourceTree = "<group>"; };
@@ -303,8 +299,6 @@
 				CB9D87CA17F4A8A10069FF66 /* EmiConnectionInternal.h */,
 				CB9D87CB17F4A8A10069FF66 /* EmiConnectionOpenedBlockWrapper.h */,
 				CB9D87CC17F4A8A10069FF66 /* EmiConnectionOpenedBlockWrapper.m */,
-				CB9D87CD17F4A8A10069FF66 /* EmiDispatchQueueWrapper.h */,
-				CB9D87CE17F4A8A10069FF66 /* EmiDispatchQueueWrapper.m */,
 				CB9D87CF17F4A8A10069FF66 /* EmiDispatchTimer.h */,
 				CB9D87D017F4A8A10069FF66 /* EmiDispatchTimer.mm */,
 				CB9D87D117F4A8A10069FF66 /* EmiNet.h */,
@@ -398,7 +392,6 @@
 				CB9D882817F4AC310069FF66 /* EmiP2PData.h in Headers */,
 				CB9D880317F4AB1A0069FF66 /* EmiDataArrivalRate.h in Headers */,
 				CB9D882917F4AC330069FF66 /* EmiP2PEndpoints.h in Headers */,
-				CB9D87F517F4AAEE0069FF66 /* EmiDispatchQueueWrapper.h in Headers */,
 				CB9D880717F4AB260069FF66 /* EmiMedianFilter.h in Headers */,
 				CB9D882D17F4AC3E0069FF66 /* EmiRC4.h in Headers */,
 				CB9D882417F4AC1B0069FF66 /* EmiNatPunchthrough.h in Headers */,
@@ -558,7 +551,6 @@
 				CB9D87C117F4A8920069FF66 /* EmiNetUtil.cc in Sources */,
 				CB9D87E917F4A8A10069FF66 /* EmiSocketConfig.mm in Sources */,
 				CB9D87C217F4A8920069FF66 /* EmiPacketHeader.cc in Sources */,
-				CB9D87E417F4A8A10069FF66 /* EmiDispatchQueueWrapper.m in Sources */,
 				CB9D87E217F4A8A10069FF66 /* EmiConnection.mm in Sources */,
 				CB9D87C317F4A8920069FF66 /* EmiRC4.cc in Sources */,
 				CB9D87BF17F4A8920069FF66 /* EmiLossList.cc in Sources */,

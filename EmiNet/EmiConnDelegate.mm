@@ -13,7 +13,7 @@
 
 EmiConnDelegate::EmiConnDelegate(EmiConnection *conn) :
 _conn(conn),
-_queueWrapper([[EmiDispatchQueueWrapper alloc] initWithQueue:conn.connectionQueue]),
+_queue(conn.connectionQueue),
 _dispatchGroup(dispatch_group_create()) {
     
 }
@@ -24,12 +24,12 @@ EmiConnDelegate::~EmiConnDelegate() {
 
 EmiConnDelegate::EmiConnDelegate(const EmiConnDelegate& other) :
 _conn(other._conn),
-_queueWrapper(other._queueWrapper),
+_queue(other._queue),
 _dispatchGroup(other._dispatchGroup) {}
 
 EmiConnDelegate& EmiConnDelegate::operator=(const EmiConnDelegate& other) {
     _conn = other._conn;
-    _queueWrapper = other._queueWrapper;
+    _queue = other._queue;
     _dispatchGroup = other._dispatchGroup;
     return *this;
 }

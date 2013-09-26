@@ -12,8 +12,6 @@
 #include "EmiTypes.h"
 #include <dispatch/dispatch.h>
 
-@class EmiDispatchQueueWrapper;
-
 class EmiDispatchTimer;
 typedef void (TimerCb)(EmiTimeInterval now, EmiDispatchTimer *timer, void *data);
 class EmiDispatchTimer {
@@ -32,7 +30,7 @@ private:
                    bool repeating, bool reschedule);
     
 public:
-    EmiDispatchTimer(EmiDispatchQueueWrapper *timerCookie);
+    EmiDispatchTimer(dispatch_queue_t timerCookie);
     virtual ~EmiDispatchTimer();
     
     void schedule(TimerCb *timerCb, void *data, EmiTimeInterval interval,

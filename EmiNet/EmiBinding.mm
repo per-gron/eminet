@@ -10,7 +10,6 @@
 
 #import "EmiSocket.h"
 #include "EmiNetUtil.h"
-#import "EmiDispatchQueueWrapper.h"
 
 #import "GCDAsyncUdpSocket.h"
 #include <Security/SecRandom.h>
@@ -83,14 +82,14 @@ void EmiBinding::closeSocket(GCDAsyncUdpSocket *socket) {
     [socket close];
 }
 
-GCDAsyncUdpSocket *EmiBinding::openSocket(EmiDispatchQueueWrapper *socketCookie,
+GCDAsyncUdpSocket *EmiBinding::openSocket(dispatch_queue_t socketCookie,
                                           EmiOnMessage *callback,
                                           void *userData,
                                           const sockaddr_storage& address,
                                           __strong NSError*& err) {
     GCDAsyncUdpSocket *socket = [[GCDAsyncUdpSocket alloc] initWithDelegate:[EmiSocket class]
-                                                              delegateQueue:socketCookie->queue
-                                                                socketQueue:socketCookie->queue];
+                                                              delegateQueue:socketCookie
+                                                                socketQueue:socketCookie];
     socket.userData = [[EmiSocketUserDataWrapper alloc] initWithUserData:userData callback:callback];
     
     if (![socket bindToAddress:[NSData dataWithBytes:&address

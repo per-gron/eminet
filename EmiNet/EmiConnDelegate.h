@@ -10,11 +10,10 @@
 #define eminet_EmiConnDelegate_h
 
 #import "EmiConnection.h"
-#import "EmiDispatchQueueWrapper.h"
 
 class EmiConnDelegate {
     EmiConnection *_conn;
-    EmiDispatchQueueWrapper *_queueWrapper;
+    dispatch_queue_t _queue;
     dispatch_group_t _dispatchGroup;
     
 public:
@@ -38,12 +37,12 @@ public:
     
     inline EmiConnection *getConn() { return _conn; }
     
-    inline EmiDispatchQueueWrapper *getSocketCookie() {
-        return _queueWrapper;
+    inline dispatch_queue_t getSocketCookie() {
+        return _queue;
     }
     
-    inline EmiDispatchQueueWrapper *getTimerCookie() {
-        return _queueWrapper;
+    inline dispatch_queue_t getTimerCookie() {
+        return _queue;
     }
     
     void waitForDelegateBlocks();
