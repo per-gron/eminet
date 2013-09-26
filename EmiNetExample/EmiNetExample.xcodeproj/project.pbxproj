@@ -1,0 +1,528 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		CB9D884A17F4B1E40069FF66 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CB9D884917F4B1E40069FF66 /* Foundation.framework */; };
+		CB9D884C17F4B1E40069FF66 /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CB9D884B17F4B1E40069FF66 /* CoreGraphics.framework */; };
+		CB9D884E17F4B1E40069FF66 /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CB9D884D17F4B1E40069FF66 /* UIKit.framework */; };
+		CB9D885417F4B1E40069FF66 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = CB9D885217F4B1E40069FF66 /* InfoPlist.strings */; };
+		CB9D885617F4B1E40069FF66 /* main.mm in Sources */ = {isa = PBXBuildFile; fileRef = CB9D885517F4B1E40069FF66 /* main.mm */; };
+		CB9D885A17F4B1E40069FF66 /* EEAppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = CB9D885917F4B1E40069FF66 /* EEAppDelegate.m */; };
+		CB9D885C17F4B1E40069FF66 /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = CB9D885B17F4B1E40069FF66 /* Images.xcassets */; };
+		CB9D886317F4B1E40069FF66 /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CB9D886217F4B1E40069FF66 /* XCTest.framework */; };
+		CB9D886417F4B1E40069FF66 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CB9D884917F4B1E40069FF66 /* Foundation.framework */; };
+		CB9D886517F4B1E40069FF66 /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CB9D884D17F4B1E40069FF66 /* UIKit.framework */; };
+		CB9D886D17F4B1E40069FF66 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = CB9D886B17F4B1E40069FF66 /* InfoPlist.strings */; };
+		CB9D886F17F4B1E40069FF66 /* EmiNetExampleTests.m in Sources */ = {isa = PBXBuildFile; fileRef = CB9D886E17F4B1E40069FF66 /* EmiNetExampleTests.m */; };
+		CB9D888617F4B2500069FF66 /* libEmiNet.a in Frameworks */ = {isa = PBXBuildFile; fileRef = CB9D888317F4B23E0069FF66 /* libEmiNet.a */; };
+		CB9D888B17F4B2B30069FF66 /* EEEmiNetTest.m in Sources */ = {isa = PBXBuildFile; fileRef = CB9D888A17F4B2B30069FF66 /* EEEmiNetTest.m */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		CB9D886617F4B1E40069FF66 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = CB9D883E17F4B1E40069FF66 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = CB9D884517F4B1E40069FF66;
+			remoteInfo = EmiNetExample;
+		};
+		CB9D888217F4B23E0069FF66 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = CB9D887C17F4B23E0069FF66 /* EmiNet.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = CB2C268C17F4A3A800E30C74;
+			remoteInfo = EmiNet;
+		};
+		CB9D888417F4B23E0069FF66 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = CB9D887C17F4B23E0069FF66 /* EmiNet.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = CB2C269C17F4A3A800E30C74;
+			remoteInfo = EmiNetTests;
+		};
+		CB9D888717F4B2650069FF66 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = CB9D887C17F4B23E0069FF66 /* EmiNet.xcodeproj */;
+			proxyType = 1;
+			remoteGlobalIDString = CB2C268B17F4A3A800E30C74;
+			remoteInfo = EmiNet;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		CB9D884617F4B1E40069FF66 /* EmiNetExample.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = EmiNetExample.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		CB9D884917F4B1E40069FF66 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
+		CB9D884B17F4B1E40069FF66 /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
+		CB9D884D17F4B1E40069FF66 /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
+		CB9D885117F4B1E40069FF66 /* EmiNetExample-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "EmiNetExample-Info.plist"; sourceTree = "<group>"; };
+		CB9D885317F4B1E40069FF66 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		CB9D885517F4B1E40069FF66 /* main.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = main.mm; sourceTree = "<group>"; };
+		CB9D885717F4B1E40069FF66 /* EmiNetExample-Prefix.pch */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "EmiNetExample-Prefix.pch"; sourceTree = "<group>"; };
+		CB9D885817F4B1E40069FF66 /* EEAppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = EEAppDelegate.h; sourceTree = "<group>"; };
+		CB9D885917F4B1E40069FF66 /* EEAppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = EEAppDelegate.m; sourceTree = "<group>"; };
+		CB9D885B17F4B1E40069FF66 /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Images.xcassets; sourceTree = "<group>"; };
+		CB9D886117F4B1E40069FF66 /* EmiNetExampleTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = EmiNetExampleTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		CB9D886217F4B1E40069FF66 /* XCTest.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = XCTest.framework; path = Library/Frameworks/XCTest.framework; sourceTree = DEVELOPER_DIR; };
+		CB9D886A17F4B1E40069FF66 /* EmiNetExampleTests-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "EmiNetExampleTests-Info.plist"; sourceTree = "<group>"; };
+		CB9D886C17F4B1E40069FF66 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		CB9D886E17F4B1E40069FF66 /* EmiNetExampleTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = EmiNetExampleTests.m; sourceTree = "<group>"; };
+		CB9D887C17F4B23E0069FF66 /* EmiNet.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = EmiNet.xcodeproj; path = ../EmiNet.xcodeproj; sourceTree = "<group>"; };
+		CB9D888917F4B2B30069FF66 /* EEEmiNetTest.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = EEEmiNetTest.h; sourceTree = "<group>"; };
+		CB9D888A17F4B2B30069FF66 /* EEEmiNetTest.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = EEEmiNetTest.m; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		CB9D884317F4B1E40069FF66 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				CB9D888617F4B2500069FF66 /* libEmiNet.a in Frameworks */,
+				CB9D884C17F4B1E40069FF66 /* CoreGraphics.framework in Frameworks */,
+				CB9D884E17F4B1E40069FF66 /* UIKit.framework in Frameworks */,
+				CB9D884A17F4B1E40069FF66 /* Foundation.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		CB9D885E17F4B1E40069FF66 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				CB9D886317F4B1E40069FF66 /* XCTest.framework in Frameworks */,
+				CB9D886517F4B1E40069FF66 /* UIKit.framework in Frameworks */,
+				CB9D886417F4B1E40069FF66 /* Foundation.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		CB9D883D17F4B1E40069FF66 = {
+			isa = PBXGroup;
+			children = (
+				CB9D884F17F4B1E40069FF66 /* EmiNetExample */,
+				CB9D886817F4B1E40069FF66 /* EmiNetExampleTests */,
+				CB9D884817F4B1E40069FF66 /* Frameworks */,
+				CB9D884717F4B1E40069FF66 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		CB9D884717F4B1E40069FF66 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				CB9D884617F4B1E40069FF66 /* EmiNetExample.app */,
+				CB9D886117F4B1E40069FF66 /* EmiNetExampleTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		CB9D884817F4B1E40069FF66 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				CB9D887C17F4B23E0069FF66 /* EmiNet.xcodeproj */,
+				CB9D884917F4B1E40069FF66 /* Foundation.framework */,
+				CB9D884B17F4B1E40069FF66 /* CoreGraphics.framework */,
+				CB9D884D17F4B1E40069FF66 /* UIKit.framework */,
+				CB9D886217F4B1E40069FF66 /* XCTest.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		CB9D884F17F4B1E40069FF66 /* EmiNetExample */ = {
+			isa = PBXGroup;
+			children = (
+				CB9D888917F4B2B30069FF66 /* EEEmiNetTest.h */,
+				CB9D888A17F4B2B30069FF66 /* EEEmiNetTest.m */,
+				CB9D885817F4B1E40069FF66 /* EEAppDelegate.h */,
+				CB9D885917F4B1E40069FF66 /* EEAppDelegate.m */,
+				CB9D885B17F4B1E40069FF66 /* Images.xcassets */,
+				CB9D885017F4B1E40069FF66 /* Supporting Files */,
+			);
+			path = EmiNetExample;
+			sourceTree = "<group>";
+		};
+		CB9D885017F4B1E40069FF66 /* Supporting Files */ = {
+			isa = PBXGroup;
+			children = (
+				CB9D885117F4B1E40069FF66 /* EmiNetExample-Info.plist */,
+				CB9D885217F4B1E40069FF66 /* InfoPlist.strings */,
+				CB9D885517F4B1E40069FF66 /* main.mm */,
+				CB9D885717F4B1E40069FF66 /* EmiNetExample-Prefix.pch */,
+			);
+			name = "Supporting Files";
+			sourceTree = "<group>";
+		};
+		CB9D886817F4B1E40069FF66 /* EmiNetExampleTests */ = {
+			isa = PBXGroup;
+			children = (
+				CB9D886E17F4B1E40069FF66 /* EmiNetExampleTests.m */,
+				CB9D886917F4B1E40069FF66 /* Supporting Files */,
+			);
+			path = EmiNetExampleTests;
+			sourceTree = "<group>";
+		};
+		CB9D886917F4B1E40069FF66 /* Supporting Files */ = {
+			isa = PBXGroup;
+			children = (
+				CB9D886A17F4B1E40069FF66 /* EmiNetExampleTests-Info.plist */,
+				CB9D886B17F4B1E40069FF66 /* InfoPlist.strings */,
+			);
+			name = "Supporting Files";
+			sourceTree = "<group>";
+		};
+		CB9D887D17F4B23E0069FF66 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				CB9D888317F4B23E0069FF66 /* libEmiNet.a */,
+				CB9D888517F4B23E0069FF66 /* EmiNetTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		CB9D884517F4B1E40069FF66 /* EmiNetExample */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = CB9D887217F4B1E40069FF66 /* Build configuration list for PBXNativeTarget "EmiNetExample" */;
+			buildPhases = (
+				CB9D884217F4B1E40069FF66 /* Sources */,
+				CB9D884317F4B1E40069FF66 /* Frameworks */,
+				CB9D884417F4B1E40069FF66 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				CB9D888817F4B2650069FF66 /* PBXTargetDependency */,
+			);
+			name = EmiNetExample;
+			productName = EmiNetExample;
+			productReference = CB9D884617F4B1E40069FF66 /* EmiNetExample.app */;
+			productType = "com.apple.product-type.application";
+		};
+		CB9D886017F4B1E40069FF66 /* EmiNetExampleTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = CB9D887517F4B1E40069FF66 /* Build configuration list for PBXNativeTarget "EmiNetExampleTests" */;
+			buildPhases = (
+				CB9D885D17F4B1E40069FF66 /* Sources */,
+				CB9D885E17F4B1E40069FF66 /* Frameworks */,
+				CB9D885F17F4B1E40069FF66 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				CB9D886717F4B1E40069FF66 /* PBXTargetDependency */,
+			);
+			name = EmiNetExampleTests;
+			productName = EmiNetExampleTests;
+			productReference = CB9D886117F4B1E40069FF66 /* EmiNetExampleTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		CB9D883E17F4B1E40069FF66 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				CLASSPREFIX = EE;
+				LastUpgradeCheck = 0500;
+				ORGANIZATIONNAME = "Per Eckerdal";
+				TargetAttributes = {
+					CB9D886017F4B1E40069FF66 = {
+						TestTargetID = CB9D884517F4B1E40069FF66;
+					};
+				};
+			};
+			buildConfigurationList = CB9D884117F4B1E40069FF66 /* Build configuration list for PBXProject "EmiNetExample" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+			);
+			mainGroup = CB9D883D17F4B1E40069FF66;
+			productRefGroup = CB9D884717F4B1E40069FF66 /* Products */;
+			projectDirPath = "";
+			projectReferences = (
+				{
+					ProductGroup = CB9D887D17F4B23E0069FF66 /* Products */;
+					ProjectRef = CB9D887C17F4B23E0069FF66 /* EmiNet.xcodeproj */;
+				},
+			);
+			projectRoot = "";
+			targets = (
+				CB9D884517F4B1E40069FF66 /* EmiNetExample */,
+				CB9D886017F4B1E40069FF66 /* EmiNetExampleTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXReferenceProxy section */
+		CB9D888317F4B23E0069FF66 /* libEmiNet.a */ = {
+			isa = PBXReferenceProxy;
+			fileType = archive.ar;
+			path = libEmiNet.a;
+			remoteRef = CB9D888217F4B23E0069FF66 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		CB9D888517F4B23E0069FF66 /* EmiNetTests.xctest */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.cfbundle;
+			path = EmiNetTests.xctest;
+			remoteRef = CB9D888417F4B23E0069FF66 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+/* End PBXReferenceProxy section */
+
+/* Begin PBXResourcesBuildPhase section */
+		CB9D884417F4B1E40069FF66 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				CB9D885417F4B1E40069FF66 /* InfoPlist.strings in Resources */,
+				CB9D885C17F4B1E40069FF66 /* Images.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		CB9D885F17F4B1E40069FF66 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				CB9D886D17F4B1E40069FF66 /* InfoPlist.strings in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		CB9D884217F4B1E40069FF66 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				CB9D888B17F4B2B30069FF66 /* EEEmiNetTest.m in Sources */,
+				CB9D885A17F4B1E40069FF66 /* EEAppDelegate.m in Sources */,
+				CB9D885617F4B1E40069FF66 /* main.mm in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		CB9D885D17F4B1E40069FF66 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				CB9D886F17F4B1E40069FF66 /* EmiNetExampleTests.m in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		CB9D886717F4B1E40069FF66 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = CB9D884517F4B1E40069FF66 /* EmiNetExample */;
+			targetProxy = CB9D886617F4B1E40069FF66 /* PBXContainerItemProxy */;
+		};
+		CB9D888817F4B2650069FF66 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = EmiNet;
+			targetProxy = CB9D888717F4B2650069FF66 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin PBXVariantGroup section */
+		CB9D885217F4B1E40069FF66 /* InfoPlist.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				CB9D885317F4B1E40069FF66 /* en */,
+			);
+			name = InfoPlist.strings;
+			sourceTree = "<group>";
+		};
+		CB9D886B17F4B1E40069FF66 /* InfoPlist.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				CB9D886C17F4B1E40069FF66 /* en */,
+			);
+			name = InfoPlist.strings;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
+
+/* Begin XCBuildConfiguration section */
+		CB9D887017F4B1E40069FF66 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = "$(ARCHS_STANDARD_INCLUDING_64_BIT)";
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				COPY_PHASE_STRIP = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 7.0;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+			};
+			name = Debug;
+		};
+		CB9D887117F4B1E40069FF66 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = "$(ARCHS_STANDARD_INCLUDING_64_BIT)";
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				COPY_PHASE_STRIP = YES;
+				ENABLE_NS_ASSERTIONS = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 7.0;
+				SDKROOT = iphoneos;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		CB9D887317F4B1E40069FF66 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_LAUNCHIMAGE_NAME = LaunchImage;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = "EmiNetExample/EmiNetExample-Prefix.pch";
+				INFOPLIST_FILE = "EmiNetExample/EmiNetExample-Info.plist";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				WRAPPER_EXTENSION = app;
+			};
+			name = Debug;
+		};
+		CB9D887417F4B1E40069FF66 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_LAUNCHIMAGE_NAME = LaunchImage;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = "EmiNetExample/EmiNetExample-Prefix.pch";
+				INFOPLIST_FILE = "EmiNetExample/EmiNetExample-Info.plist";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				WRAPPER_EXTENSION = app;
+			};
+			name = Release;
+		};
+		CB9D887617F4B1E40069FF66 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = "$(ARCHS_STANDARD_INCLUDING_64_BIT)";
+				BUNDLE_LOADER = "$(BUILT_PRODUCTS_DIR)/EmiNetExample.app/EmiNetExample";
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(SDKROOT)/Developer/Library/Frameworks",
+					"$(inherited)",
+					"$(DEVELOPER_FRAMEWORKS_DIR)",
+				);
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = "EmiNetExample/EmiNetExample-Prefix.pch";
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				INFOPLIST_FILE = "EmiNetExampleTests/EmiNetExampleTests-Info.plist";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				TEST_HOST = "$(BUNDLE_LOADER)";
+				WRAPPER_EXTENSION = xctest;
+			};
+			name = Debug;
+		};
+		CB9D887717F4B1E40069FF66 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = "$(ARCHS_STANDARD_INCLUDING_64_BIT)";
+				BUNDLE_LOADER = "$(BUILT_PRODUCTS_DIR)/EmiNetExample.app/EmiNetExample";
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(SDKROOT)/Developer/Library/Frameworks",
+					"$(inherited)",
+					"$(DEVELOPER_FRAMEWORKS_DIR)",
+				);
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = "EmiNetExample/EmiNetExample-Prefix.pch";
+				INFOPLIST_FILE = "EmiNetExampleTests/EmiNetExampleTests-Info.plist";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				TEST_HOST = "$(BUNDLE_LOADER)";
+				WRAPPER_EXTENSION = xctest;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		CB9D884117F4B1E40069FF66 /* Build configuration list for PBXProject "EmiNetExample" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				CB9D887017F4B1E40069FF66 /* Debug */,
+				CB9D887117F4B1E40069FF66 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		CB9D887217F4B1E40069FF66 /* Build configuration list for PBXNativeTarget "EmiNetExample" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				CB9D887317F4B1E40069FF66 /* Debug */,
+				CB9D887417F4B1E40069FF66 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		CB9D887517F4B1E40069FF66 /* Build configuration list for PBXNativeTarget "EmiNetExampleTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				CB9D887617F4B1E40069FF66 /* Debug */,
+				CB9D887717F4B1E40069FF66 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = CB9D883E17F4B1E40069FF66 /* Project object */;
+}
