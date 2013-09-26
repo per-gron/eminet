@@ -8,7 +8,7 @@
 
 @implementation EEEmiNetTest
 
-- (void)run
+- (void)runOnPort:(uint16_t)port
 {
     EmiSocketConfig *sc = [[EmiSocketConfig alloc] init];
     sc.serverPort = 1234;
@@ -22,7 +22,7 @@
     }
     
     if (![socket connectToHost:@"127.0.0.1"
-                        onPort:1234
+                        onPort:port
                       delegate:self
                  delegateQueue:dispatch_get_main_queue()
                       userData:nil
@@ -32,6 +32,8 @@
     }
     
     NSLog(@"Hej!");
+    
+    socket = nil;
 }
 
 - (void)emiSocket:(EmiSocket *)socket gotConnection:(EmiConnection *)connection

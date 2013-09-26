@@ -46,7 +46,7 @@ typedef void (^EmiConnectionSendFinishedBlock)(NSError *err);
     void *_ec;
     
 	dispatch_queue_t _delegateQueue;
-    id<EmiConnectionDelegate> __unsafe_unretained _delegate;
+    __weak id<EmiConnectionDelegate> _delegate;
 	dispatch_queue_t _connectionQueue;
 }
 
@@ -92,14 +92,14 @@ typedef void (^EmiConnectionSendFinishedBlock)(NSError *err);
       delegateQueue:(dispatch_queue_t)delegateQueue;
 
 
-@property (nonatomic, readonly, unsafe_unretained) id<EmiConnectionDelegate> delegate;
+@property (nonatomic, readonly, weak) id<EmiConnectionDelegate> delegate;
 @property (nonatomic, readonly, assign) dispatch_queue_t delegateQueue;
 @property (nonatomic, readonly, assign) dispatch_queue_t connectionQueue;
 
 @property (nonatomic, readonly, assign) BOOL issuedConnectionWarning;
-@property (nonatomic, readonly, unsafe_unretained) EmiSocket *emiSocket;
-@property (nonatomic, readonly, unsafe_unretained) NSData *localAddress;
-@property (nonatomic, readonly, unsafe_unretained) NSData *remoteAddress;
+@property (nonatomic, readonly, weak) EmiSocket *emiSocket;
+@property (nonatomic, readonly, weak) NSData *localAddress;
+@property (nonatomic, readonly, weak) NSData *remoteAddress;
 @property (nonatomic, readonly, assign) uint16_t inboundPort;
 @property (nonatomic, readonly, assign) BOOL open;
 @property (nonatomic, readonly, assign) BOOL opening;

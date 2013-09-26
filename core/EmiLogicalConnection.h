@@ -189,7 +189,7 @@ public:
         ASSERT(sendInitMessage(now, err));
     }
     virtual ~EmiLogicalConnection() {
-        // Just to be sure, since these ivars are __unsafe_unretained
+        // Just to be sure, since these ivars are __weak
         _conn = NULL;
         
         if (_natPunchthrough) {

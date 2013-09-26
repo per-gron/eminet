@@ -17,7 +17,7 @@ typedef void (EmiOnMessage)(GCDAsyncUdpSocket *socket,
                             void *userData,
                             EmiTimeInterval now,
                             const sockaddr_storage& address,
-                            const __unsafe_unretained EmiOnMessageTemporaryData& data,
+                            const __weak EmiOnMessageTemporaryData& data,
                             size_t offset,
                             size_t len);
 
