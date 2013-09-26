@@ -51,7 +51,7 @@
     void *_sock;
     
 	dispatch_queue_t _delegateQueue;
-    id<EmiSocketDelegate> __unsafe_unretained _delegate;
+    __weak id<EmiSocketDelegate> _delegate;
 	dispatch_queue_t _socketQueue;
 }
 
@@ -76,7 +76,7 @@
 - (BOOL)startWithConfig:(EmiSocketConfig *)config error:(NSError **)error;
 
 - (BOOL)connectToAddress:(NSData *)address
-                delegate:(__unsafe_unretained id<EmiConnectionDelegate>)delegate
+                delegate:(__weak id<EmiConnectionDelegate>)delegate
            delegateQueue:(dispatch_queue_t)delegateQueue
                 userData:(id)userData
                    error:(NSError **)errPtr;
@@ -84,7 +84,7 @@
 - (BOOL)connectToAddress:(NSData *)address
                   cookie:(NSData *)cookie
             sharedSecret:(NSData *)sharedSecret
-                delegate:(__unsafe_unretained id<EmiConnectionDelegate>)delegate
+                delegate:(__weak id<EmiConnectionDelegate>)delegate
            delegateQueue:(dispatch_queue_t)delegateQueue
                 userData:(id)userData
                    error:(NSError **)errPtr;
@@ -93,7 +93,7 @@
 // Otherwise, this method returns YES and begins the asynchronous connection process.
 - (BOOL)connectToHost:(NSString *)host
                onPort:(uint16_t)port
-             delegate:(__unsafe_unretained id<EmiConnectionDelegate>)delegate
+             delegate:(__weak id<EmiConnectionDelegate>)delegate
         delegateQueue:(dispatch_queue_t)delegateQueue
              userData:(id)userData
                 error:(NSError **)errPtr;
@@ -106,7 +106,7 @@
                onPort:(uint16_t)port
                cookie:(NSData *)cookie
          sharedSecret:(NSData *)sharedSecret
-             delegate:(__unsafe_unretained id<EmiConnectionDelegate>)delegate
+             delegate:(__weak id<EmiConnectionDelegate>)delegate
         delegateQueue:(dispatch_queue_t)delegateQueue
              userData:(id)userData
                 error:(NSError **)errPtr;
@@ -115,7 +115,7 @@
 - (void)setDelegate:(id<EmiConnectionDelegate>)delegate
       delegateQueue:(dispatch_queue_t)delegateQueue;
 
-@property (nonatomic, readonly, unsafe_unretained) id<EmiSocketDelegate> delegate;
+@property (nonatomic, readonly, weak) id<EmiSocketDelegate> delegate;
 @property (nonatomic, readonly, assign) dispatch_queue_t delegateQueue;
 @property (nonatomic, readonly, assign) dispatch_queue_t socketQueue;
 

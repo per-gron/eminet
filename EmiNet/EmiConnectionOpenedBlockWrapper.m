@@ -16,7 +16,7 @@
 @synthesize sharedSecret = _sharedSecret;
 @synthesize userData = _userData;
 
-- (id)initWithDelegate:(__unsafe_unretained id<EmiConnectionDelegate>)delegate
+- (id)initWithDelegate:(__weak id<EmiConnectionDelegate>)delegate
          delegateQueue:(dispatch_queue_t)delegateQueue
                 cookie:(NSData *)cookie
           sharedSecret:(NSData *)sharedSecret
@@ -41,7 +41,7 @@
     }
 }
 
-+ (EmiConnectionOpenedBlockWrapper *)wrapperWithDelegate:(__unsafe_unretained id<EmiConnectionDelegate>)delegate
++ (EmiConnectionOpenedBlockWrapper *)wrapperWithDelegate:(__weak id<EmiConnectionDelegate>)delegate
                                            delegateQueue:(dispatch_queue_t)delegateQueue
                                                   cookie:(NSData *)cookie
                                             sharedSecret:(NSData *)sharedSecret

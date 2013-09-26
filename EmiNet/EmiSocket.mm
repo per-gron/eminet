@@ -108,7 +108,7 @@
 }
 
 - (BOOL)connectToAddress:(NSData *)address
-                delegate:(__unsafe_unretained id<EmiConnectionDelegate>)delegate
+                delegate:(__weak id<EmiConnectionDelegate>)delegate
            delegateQueue:(dispatch_queue_t)delegateQueue
                 userData:(id)userData
                    error:(NSError **)errPtr {
@@ -122,7 +122,7 @@
 - (BOOL)connectToAddress:(NSData *)address
                   cookie:(NSData *)cookie
             sharedSecret:(NSData *)sharedSecret
-                delegate:(__unsafe_unretained id<EmiConnectionDelegate>)delegate
+                delegate:(__weak id<EmiConnectionDelegate>)delegate
            delegateQueue:(dispatch_queue_t)delegateQueue
                 userData:(id)userData
                    error:(NSError **)errPtr {
@@ -157,7 +157,7 @@
 
 - (BOOL)connectToHost:(NSString *)host
                onPort:(uint16_t)port
-             delegate:(__unsafe_unretained id<EmiConnectionDelegate>)delegate
+             delegate:(__weak id<EmiConnectionDelegate>)delegate
         delegateQueue:(dispatch_queue_t)delegateQueue
              userData:(id)userData
                 error:(NSError **)err {
@@ -172,7 +172,7 @@
                onPort:(uint16_t)port
                cookie:(NSData *)cookie
          sharedSecret:(NSData *)sharedSecret
-             delegate:(__unsafe_unretained id<EmiConnectionDelegate>)delegate
+             delegate:(__weak id<EmiConnectionDelegate>)delegate
         delegateQueue:(dispatch_queue_t)delegateQueue
              userData:(id)userData
                 error:(NSError **)err {

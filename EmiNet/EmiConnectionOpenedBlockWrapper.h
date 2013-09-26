@@ -11,26 +11,26 @@
 @protocol EmiConnectionDelegate;
 
 @interface EmiConnectionOpenedBlockWrapper : NSObject {
-    __unsafe_unretained id<EmiConnectionDelegate> _delegate;
+    __weak id<EmiConnectionDelegate> _delegate;
     dispatch_queue_t _delegateQueue;
     NSData *_cookie;
     NSData *_sharedSecret;
     id _userData;
 }
 
-- (id)initWithDelegate:(__unsafe_unretained id<EmiConnectionDelegate>)delegate
+- (id)initWithDelegate:(__weak id<EmiConnectionDelegate>)delegate
          delegateQueue:(dispatch_queue_t)delegateQueue
                 cookie:(NSData *)cookie
           sharedSecret:(NSData *)sharedSecret
               userData:(id)userData;
 
-+ (EmiConnectionOpenedBlockWrapper *)wrapperWithDelegate:(__unsafe_unretained id<EmiConnectionDelegate>)delegate
++ (EmiConnectionOpenedBlockWrapper *)wrapperWithDelegate:(__weak id<EmiConnectionDelegate>)delegate
                                            delegateQueue:(dispatch_queue_t)delegateQueue
                                                   cookie:(NSData *)cookie
                                             sharedSecret:(NSData *)sharedSecret
                                                 userData:(id)userData;
 
-@property (nonatomic, unsafe_unretained, readonly) id<EmiConnectionDelegate> delegate;
+@property (nonatomic, weak, readonly) id<EmiConnectionDelegate> delegate;
 @property (nonatomic, assign, readonly) dispatch_queue_t delegateQueue;
 @property (nonatomic, retain, readonly) NSData *cookie;
 @property (nonatomic, retain, readonly) NSData *sharedSecret;
