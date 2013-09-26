@@ -87,7 +87,7 @@ private:
                               inboundAddress,               \
                               remoteAddress);               \
                                                             \
-                err = "Got " msg " message but has no "       \
+                err = "Got " msg " message but has no "     \
                       "open connection for that address";   \
                 return false;                               \
             }                                               \

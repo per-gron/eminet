@@ -1,0 +1,862 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXAggregateTarget section */
+		CB9D883617F4AF1C0069FF66 /* Framework */ = {
+			isa = PBXAggregateTarget;
+			buildConfigurationList = CB9D883717F4AF1D0069FF66 /* Build configuration list for PBXAggregateTarget "Framework" */;
+			buildPhases = (
+				CB9D883C17F4AF540069FF66 /* Build For Other Platforms */,
+			);
+			dependencies = (
+				CB9D883B17F4AF2A0069FF66 /* PBXTargetDependency */,
+			);
+			name = Framework;
+			productName = Framework;
+		};
+/* End PBXAggregateTarget section */
+
+/* Begin PBXBuildFile section */
+		CB2C269017F4A3A800E30C74 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CB2C268F17F4A3A800E30C74 /* Foundation.framework */; };
+		CB2C269E17F4A3A800E30C74 /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CB2C269D17F4A3A800E30C74 /* XCTest.framework */; };
+		CB2C269F17F4A3A800E30C74 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CB2C268F17F4A3A800E30C74 /* Foundation.framework */; };
+		CB2C26A117F4A3A800E30C74 /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CB2C26A017F4A3A800E30C74 /* UIKit.framework */; };
+		CB2C26A417F4A3A800E30C74 /* libEmiNet.a in Frameworks */ = {isa = PBXBuildFile; fileRef = CB2C268C17F4A3A800E30C74 /* libEmiNet.a */; };
+		CB2C26AA17F4A3A800E30C74 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = CB2C26A817F4A3A800E30C74 /* InfoPlist.strings */; };
+		CB2C26AC17F4A3A800E30C74 /* EmiNetTests.m in Sources */ = {isa = PBXBuildFile; fileRef = CB2C26AB17F4A3A800E30C74 /* EmiNetTests.m */; };
+		CB2C26C917F4A6BE00E30C74 /* GCDAsyncUdpSocket.m in Sources */ = {isa = PBXBuildFile; fileRef = CB2C26C817F4A6BE00E30C74 /* GCDAsyncUdpSocket.m */; };
+		CB9D87BC17F4A8920069FF66 /* EmiConnTime.cc in Sources */ = {isa = PBXBuildFile; fileRef = CB9D879817F4A8920069FF66 /* EmiConnTime.cc */; };
+		CB9D87BD17F4A8920069FF66 /* EmiDataArrivalRate.cc in Sources */ = {isa = PBXBuildFile; fileRef = CB9D879B17F4A8920069FF66 /* EmiDataArrivalRate.cc */; };
+		CB9D87BE17F4A8920069FF66 /* EmiLinkCapacity.cc in Sources */ = {isa = PBXBuildFile; fileRef = CB9D879D17F4A8920069FF66 /* EmiLinkCapacity.cc */; };
+		CB9D87BF17F4A8920069FF66 /* EmiLossList.cc in Sources */ = {isa = PBXBuildFile; fileRef = CB9D87A017F4A8920069FF66 /* EmiLossList.cc */; };
+		CB9D87C017F4A8920069FF66 /* EmiMessageHeader.cc in Sources */ = {isa = PBXBuildFile; fileRef = CB9D87A517F4A8920069FF66 /* EmiMessageHeader.cc */; };
+		CB9D87C117F4A8920069FF66 /* EmiNetUtil.cc in Sources */ = {isa = PBXBuildFile; fileRef = CB9D87A917F4A8920069FF66 /* EmiNetUtil.cc */; };
+		CB9D87C217F4A8920069FF66 /* EmiPacketHeader.cc in Sources */ = {isa = PBXBuildFile; fileRef = CB9D87B017F4A8920069FF66 /* EmiPacketHeader.cc */; };
+		CB9D87C317F4A8920069FF66 /* EmiRC4.cc in Sources */ = {isa = PBXBuildFile; fileRef = CB9D87B217F4A8920069FF66 /* EmiRC4.cc */; };
+		CB9D87E017F4A8A10069FF66 /* EmiBinding.mm in Sources */ = {isa = PBXBuildFile; fileRef = CB9D87C517F4A8A10069FF66 /* EmiBinding.mm */; };
+		CB9D87E117F4A8A10069FF66 /* EmiConnDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = CB9D87C717F4A8A10069FF66 /* EmiConnDelegate.mm */; };
+		CB9D87E217F4A8A10069FF66 /* EmiConnection.mm in Sources */ = {isa = PBXBuildFile; fileRef = CB9D87C917F4A8A10069FF66 /* EmiConnection.mm */; };
+		CB9D87E317F4A8A10069FF66 /* EmiConnectionOpenedBlockWrapper.m in Sources */ = {isa = PBXBuildFile; fileRef = CB9D87CC17F4A8A10069FF66 /* EmiConnectionOpenedBlockWrapper.m */; };
+		CB9D87E417F4A8A10069FF66 /* EmiDispatchQueueWrapper.m in Sources */ = {isa = PBXBuildFile; fileRef = CB9D87CE17F4A8A10069FF66 /* EmiDispatchQueueWrapper.m */; };
+		CB9D87E517F4A8A10069FF66 /* EmiDispatchTimer.mm in Sources */ = {isa = PBXBuildFile; fileRef = CB9D87D017F4A8A10069FF66 /* EmiDispatchTimer.mm */; };
+		CB9D87E617F4A8A10069FF66 /* EmiP2PSocketConfig.mm in Sources */ = {isa = PBXBuildFile; fileRef = CB9D87D417F4A8A10069FF66 /* EmiP2PSocketConfig.mm */; };
+		CB9D87E717F4A8A10069FF66 /* EmiSockDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = CB9D87D717F4A8A10069FF66 /* EmiSockDelegate.mm */; };
+		CB9D87E817F4A8A10069FF66 /* EmiSocket.mm in Sources */ = {isa = PBXBuildFile; fileRef = CB9D87D917F4A8A10069FF66 /* EmiSocket.mm */; };
+		CB9D87E917F4A8A10069FF66 /* EmiSocketConfig.mm in Sources */ = {isa = PBXBuildFile; fileRef = CB9D87DB17F4A8A10069FF66 /* EmiSocketConfig.mm */; };
+		CB9D87EA17F4A8A10069FF66 /* EmiSocketUserDataWrapper.mm in Sources */ = {isa = PBXBuildFile; fileRef = CB9D87DF17F4A8A10069FF66 /* EmiSocketUserDataWrapper.mm */; };
+		CB9D87EC17F4A9E20069FF66 /* EmiTypes.h in Headers */ = {isa = PBXBuildFile; fileRef = CB9D87BA17F4A8920069FF66 /* EmiTypes.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		CB9D87ED17F4AA140069FF66 /* EmiNet.h in Headers */ = {isa = PBXBuildFile; fileRef = CB9D87D117F4A8A10069FF66 /* EmiNet.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		CB9D87EE17F4AA220069FF66 /* EmiSocket.h in Headers */ = {isa = PBXBuildFile; fileRef = CB9D87D817F4A8A10069FF66 /* EmiSocket.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		CB9D87EF17F4AA290069FF66 /* EmiConnection.h in Headers */ = {isa = PBXBuildFile; fileRef = CB9D87C817F4A8A10069FF66 /* EmiConnection.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		CB9D87F017F4AA3F0069FF66 /* EmiSocketConfig.h in Headers */ = {isa = PBXBuildFile; fileRef = CB9D87DA17F4A8A10069FF66 /* EmiSocketConfig.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		CB9D87F117F4AAE10069FF66 /* EmiBinding.h in Headers */ = {isa = PBXBuildFile; fileRef = CB9D87C417F4A8A10069FF66 /* EmiBinding.h */; };
+		CB9D87F217F4AAE40069FF66 /* EmiConnDelegate.h in Headers */ = {isa = PBXBuildFile; fileRef = CB9D87C617F4A8A10069FF66 /* EmiConnDelegate.h */; };
+		CB9D87F317F4AAE90069FF66 /* EmiConnectionInternal.h in Headers */ = {isa = PBXBuildFile; fileRef = CB9D87CA17F4A8A10069FF66 /* EmiConnectionInternal.h */; };
+		CB9D87F417F4AAEC0069FF66 /* EmiConnectionOpenedBlockWrapper.h in Headers */ = {isa = PBXBuildFile; fileRef = CB9D87CB17F4A8A10069FF66 /* EmiConnectionOpenedBlockWrapper.h */; };
+		CB9D87F517F4AAEE0069FF66 /* EmiDispatchQueueWrapper.h in Headers */ = {isa = PBXBuildFile; fileRef = CB9D87CD17F4A8A10069FF66 /* EmiDispatchQueueWrapper.h */; };
+		CB9D87F617F4AAF10069FF66 /* EmiDispatchTimer.h in Headers */ = {isa = PBXBuildFile; fileRef = CB9D87CF17F4A8A10069FF66 /* EmiDispatchTimer.h */; };
+		CB9D87F717F4AAF50069FF66 /* EmiP2PSocketConfig.h in Headers */ = {isa = PBXBuildFile; fileRef = CB9D87D317F4A8A10069FF66 /* EmiP2PSocketConfig.h */; };
+		CB9D87F817F4AAF80069FF66 /* EmiP2PSocketConfigInternal.h in Headers */ = {isa = PBXBuildFile; fileRef = CB9D87D517F4A8A10069FF66 /* EmiP2PSocketConfigInternal.h */; };
+		CB9D87F917F4AAFB0069FF66 /* EmiSockDelegate.h in Headers */ = {isa = PBXBuildFile; fileRef = CB9D87D617F4A8A10069FF66 /* EmiSockDelegate.h */; };
+		CB9D87FA17F4AB020069FF66 /* EmiSocketConfigInternal.h in Headers */ = {isa = PBXBuildFile; fileRef = CB9D87DC17F4A8A10069FF66 /* EmiSocketConfigInternal.h */; };
+		CB9D87FB17F4AB050069FF66 /* EmiSocketInternal.h in Headers */ = {isa = PBXBuildFile; fileRef = CB9D87DD17F4A8A10069FF66 /* EmiSocketInternal.h */; };
+		CB9D87FC17F4AB070069FF66 /* EmiSocketUserDataWrapper.h in Headers */ = {isa = PBXBuildFile; fileRef = CB9D87DE17F4A8A10069FF66 /* EmiSocketUserDataWrapper.h */; };
+		CB9D87FD17F4AB0B0069FF66 /* EmiAddressCmp.h in Headers */ = {isa = PBXBuildFile; fileRef = CB9D879417F4A8890069FF66 /* EmiAddressCmp.h */; };
+		CB9D87FE17F4AB0E0069FF66 /* EmiCongestionControl.h in Headers */ = {isa = PBXBuildFile; fileRef = CB9D879517F4A8920069FF66 /* EmiCongestionControl.h */; };
+		CB9D87FF17F4AB100069FF66 /* EmiConn.h in Headers */ = {isa = PBXBuildFile; fileRef = CB9D879617F4A8920069FF66 /* EmiConn.h */; };
+		CB9D880017F4AB130069FF66 /* EmiConnParams.h in Headers */ = {isa = PBXBuildFile; fileRef = CB9D879717F4A8920069FF66 /* EmiConnParams.h */; };
+		CB9D880117F4AB150069FF66 /* EmiConnTime.h in Headers */ = {isa = PBXBuildFile; fileRef = CB9D879917F4A8920069FF66 /* EmiConnTime.h */; };
+		CB9D880217F4AB170069FF66 /* EmiConnTimers.h in Headers */ = {isa = PBXBuildFile; fileRef = CB9D879A17F4A8920069FF66 /* EmiConnTimers.h */; };
+		CB9D880317F4AB1A0069FF66 /* EmiDataArrivalRate.h in Headers */ = {isa = PBXBuildFile; fileRef = CB9D879C17F4A8920069FF66 /* EmiDataArrivalRate.h */; };
+		CB9D880417F4AB1C0069FF66 /* EmiLinkCapacity.h in Headers */ = {isa = PBXBuildFile; fileRef = CB9D879E17F4A8920069FF66 /* EmiLinkCapacity.h */; };
+		CB9D880517F4AB1F0069FF66 /* EmiLogicalConnection.h in Headers */ = {isa = PBXBuildFile; fileRef = CB9D879F17F4A8920069FF66 /* EmiLogicalConnection.h */; };
+		CB9D880617F4AB210069FF66 /* EmiLossList.h in Headers */ = {isa = PBXBuildFile; fileRef = CB9D87A117F4A8920069FF66 /* EmiLossList.h */; };
+		CB9D880717F4AB260069FF66 /* EmiMedianFilter.h in Headers */ = {isa = PBXBuildFile; fileRef = CB9D87A217F4A8920069FF66 /* EmiMedianFilter.h */; };
+		CB9D882117F4AC130069FF66 /* EmiMessage.h in Headers */ = {isa = PBXBuildFile; fileRef = CB9D87A317F4A8920069FF66 /* EmiMessage.h */; };
+		CB9D882217F4AC160069FF66 /* EmiMessageHandler.h in Headers */ = {isa = PBXBuildFile; fileRef = CB9D87A417F4A8920069FF66 /* EmiMessageHandler.h */; };
+		CB9D882317F4AC190069FF66 /* EmiMessageHeader.h in Headers */ = {isa = PBXBuildFile; fileRef = CB9D87A617F4A8920069FF66 /* EmiMessageHeader.h */; };
+		CB9D882417F4AC1B0069FF66 /* EmiNatPunchthrough.h in Headers */ = {isa = PBXBuildFile; fileRef = CB9D87A717F4A8920069FF66 /* EmiNatPunchthrough.h */; };
+		CB9D882517F4AC1E0069FF66 /* EmiNetRandom.h in Headers */ = {isa = PBXBuildFile; fileRef = CB9D87A817F4A8920069FF66 /* EmiNetRandom.h */; };
+		CB9D882617F4AC2A0069FF66 /* EmiNetUtil.h in Headers */ = {isa = PBXBuildFile; fileRef = CB9D87AA17F4A8920069FF66 /* EmiNetUtil.h */; };
+		CB9D882717F4AC2D0069FF66 /* EmiP2PConn.h in Headers */ = {isa = PBXBuildFile; fileRef = CB9D87AB17F4A8920069FF66 /* EmiP2PConn.h */; };
+		CB9D882817F4AC310069FF66 /* EmiP2PData.h in Headers */ = {isa = PBXBuildFile; fileRef = CB9D87AC17F4A8920069FF66 /* EmiP2PData.h */; };
+		CB9D882917F4AC330069FF66 /* EmiP2PEndpoints.h in Headers */ = {isa = PBXBuildFile; fileRef = CB9D87AD17F4A8920069FF66 /* EmiP2PEndpoints.h */; };
+		CB9D882A17F4AC360069FF66 /* EmiP2PSock.h in Headers */ = {isa = PBXBuildFile; fileRef = CB9D87AE17F4A8920069FF66 /* EmiP2PSock.h */; };
+		CB9D882B17F4AC390069FF66 /* EmiP2PSockConfig.h in Headers */ = {isa = PBXBuildFile; fileRef = CB9D87AF17F4A8920069FF66 /* EmiP2PSockConfig.h */; };
+		CB9D882C17F4AC3B0069FF66 /* EmiPacketHeader.h in Headers */ = {isa = PBXBuildFile; fileRef = CB9D87B117F4A8920069FF66 /* EmiPacketHeader.h */; };
+		CB9D882D17F4AC3E0069FF66 /* EmiRC4.h in Headers */ = {isa = PBXBuildFile; fileRef = CB9D87B317F4A8920069FF66 /* EmiRC4.h */; };
+		CB9D882E17F4AC430069FF66 /* EmiReceiverBuffer.h in Headers */ = {isa = PBXBuildFile; fileRef = CB9D87B417F4A8920069FF66 /* EmiReceiverBuffer.h */; };
+		CB9D882F17F4AC460069FF66 /* EmiRtoTimer.h in Headers */ = {isa = PBXBuildFile; fileRef = CB9D87B517F4A8920069FF66 /* EmiRtoTimer.h */; };
+		CB9D883017F4AC540069FF66 /* EmiSenderBuffer.h in Headers */ = {isa = PBXBuildFile; fileRef = CB9D87B617F4A8920069FF66 /* EmiSenderBuffer.h */; };
+		CB9D883117F4AC560069FF66 /* EmiSendQueue.h in Headers */ = {isa = PBXBuildFile; fileRef = CB9D87B717F4A8920069FF66 /* EmiSendQueue.h */; };
+		CB9D883217F4AC620069FF66 /* EmiSock.h in Headers */ = {isa = PBXBuildFile; fileRef = CB9D87B817F4A8920069FF66 /* EmiSock.h */; };
+		CB9D883317F4AC640069FF66 /* EmiSockConfig.h in Headers */ = {isa = PBXBuildFile; fileRef = CB9D87B917F4A8920069FF66 /* EmiSockConfig.h */; };
+		CB9D883417F4AC690069FF66 /* EmiUdpSocket.h in Headers */ = {isa = PBXBuildFile; fileRef = CB9D87BB17F4A8920069FF66 /* EmiUdpSocket.h */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		CB2C26A217F4A3A800E30C74 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = CB2C262217F4A05500E30C74 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = CB2C268B17F4A3A800E30C74;
+			remoteInfo = EmiNet;
+		};
+		CB9D883A17F4AF2A0069FF66 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = CB2C262217F4A05500E30C74 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = CB2C268B17F4A3A800E30C74;
+			remoteInfo = EmiNet;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		CB2C268A17F4A3A800E30C74 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "include/$(PRODUCT_NAME)";
+			dstSubfolderSpec = 16;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		CB2C268C17F4A3A800E30C74 /* libEmiNet.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libEmiNet.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		CB2C268F17F4A3A800E30C74 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
+		CB2C269C17F4A3A800E30C74 /* EmiNetTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = EmiNetTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		CB2C269D17F4A3A800E30C74 /* XCTest.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = XCTest.framework; path = Library/Frameworks/XCTest.framework; sourceTree = DEVELOPER_DIR; };
+		CB2C26A017F4A3A800E30C74 /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = Library/Frameworks/UIKit.framework; sourceTree = DEVELOPER_DIR; };
+		CB2C26A717F4A3A800E30C74 /* EmiNetTests-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "EmiNetTests-Info.plist"; sourceTree = "<group>"; };
+		CB2C26A917F4A3A800E30C74 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		CB2C26AB17F4A3A800E30C74 /* EmiNetTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = EmiNetTests.m; sourceTree = "<group>"; };
+		CB2C26C717F4A6BE00E30C74 /* GCDAsyncUdpSocket.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = GCDAsyncUdpSocket.h; path = vendor/CocoaAsyncSocket/GCD/GCDAsyncUdpSocket.h; sourceTree = "<group>"; };
+		CB2C26C817F4A6BE00E30C74 /* GCDAsyncUdpSocket.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = GCDAsyncUdpSocket.m; path = vendor/CocoaAsyncSocket/GCD/GCDAsyncUdpSocket.m; sourceTree = "<group>"; };
+		CB9D879417F4A8890069FF66 /* EmiAddressCmp.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = EmiAddressCmp.h; path = core/EmiAddressCmp.h; sourceTree = "<group>"; };
+		CB9D879517F4A8920069FF66 /* EmiCongestionControl.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = EmiCongestionControl.h; path = core/EmiCongestionControl.h; sourceTree = "<group>"; };
+		CB9D879617F4A8920069FF66 /* EmiConn.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = EmiConn.h; path = core/EmiConn.h; sourceTree = "<group>"; };
+		CB9D879717F4A8920069FF66 /* EmiConnParams.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = EmiConnParams.h; path = core/EmiConnParams.h; sourceTree = "<group>"; };
+		CB9D879817F4A8920069FF66 /* EmiConnTime.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = EmiConnTime.cc; path = core/EmiConnTime.cc; sourceTree = "<group>"; };
+		CB9D879917F4A8920069FF66 /* EmiConnTime.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = EmiConnTime.h; path = core/EmiConnTime.h; sourceTree = "<group>"; };
+		CB9D879A17F4A8920069FF66 /* EmiConnTimers.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = EmiConnTimers.h; path = core/EmiConnTimers.h; sourceTree = "<group>"; };
+		CB9D879B17F4A8920069FF66 /* EmiDataArrivalRate.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = EmiDataArrivalRate.cc; path = core/EmiDataArrivalRate.cc; sourceTree = "<group>"; };
+		CB9D879C17F4A8920069FF66 /* EmiDataArrivalRate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = EmiDataArrivalRate.h; path = core/EmiDataArrivalRate.h; sourceTree = "<group>"; };
+		CB9D879D17F4A8920069FF66 /* EmiLinkCapacity.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = EmiLinkCapacity.cc; path = core/EmiLinkCapacity.cc; sourceTree = "<group>"; };
+		CB9D879E17F4A8920069FF66 /* EmiLinkCapacity.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = EmiLinkCapacity.h; path = core/EmiLinkCapacity.h; sourceTree = "<group>"; };
+		CB9D879F17F4A8920069FF66 /* EmiLogicalConnection.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = EmiLogicalConnection.h; path = core/EmiLogicalConnection.h; sourceTree = "<group>"; };
+		CB9D87A017F4A8920069FF66 /* EmiLossList.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = EmiLossList.cc; path = core/EmiLossList.cc; sourceTree = "<group>"; };
+		CB9D87A117F4A8920069FF66 /* EmiLossList.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = EmiLossList.h; path = core/EmiLossList.h; sourceTree = "<group>"; };
+		CB9D87A217F4A8920069FF66 /* EmiMedianFilter.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = EmiMedianFilter.h; path = core/EmiMedianFilter.h; sourceTree = "<group>"; };
+		CB9D87A317F4A8920069FF66 /* EmiMessage.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = EmiMessage.h; path = core/EmiMessage.h; sourceTree = "<group>"; };
+		CB9D87A417F4A8920069FF66 /* EmiMessageHandler.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = EmiMessageHandler.h; path = core/EmiMessageHandler.h; sourceTree = "<group>"; };
+		CB9D87A517F4A8920069FF66 /* EmiMessageHeader.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = EmiMessageHeader.cc; path = core/EmiMessageHeader.cc; sourceTree = "<group>"; };
+		CB9D87A617F4A8920069FF66 /* EmiMessageHeader.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = EmiMessageHeader.h; path = core/EmiMessageHeader.h; sourceTree = "<group>"; };
+		CB9D87A717F4A8920069FF66 /* EmiNatPunchthrough.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = EmiNatPunchthrough.h; path = core/EmiNatPunchthrough.h; sourceTree = "<group>"; };
+		CB9D87A817F4A8920069FF66 /* EmiNetRandom.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = EmiNetRandom.h; path = core/EmiNetRandom.h; sourceTree = "<group>"; };
+		CB9D87A917F4A8920069FF66 /* EmiNetUtil.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = EmiNetUtil.cc; path = core/EmiNetUtil.cc; sourceTree = "<group>"; };
+		CB9D87AA17F4A8920069FF66 /* EmiNetUtil.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = EmiNetUtil.h; path = core/EmiNetUtil.h; sourceTree = "<group>"; };
+		CB9D87AB17F4A8920069FF66 /* EmiP2PConn.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = EmiP2PConn.h; path = core/EmiP2PConn.h; sourceTree = "<group>"; };
+		CB9D87AC17F4A8920069FF66 /* EmiP2PData.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = EmiP2PData.h; path = core/EmiP2PData.h; sourceTree = "<group>"; };
+		CB9D87AD17F4A8920069FF66 /* EmiP2PEndpoints.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = EmiP2PEndpoints.h; path = core/EmiP2PEndpoints.h; sourceTree = "<group>"; };
+		CB9D87AE17F4A8920069FF66 /* EmiP2PSock.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = EmiP2PSock.h; path = core/EmiP2PSock.h; sourceTree = "<group>"; };
+		CB9D87AF17F4A8920069FF66 /* EmiP2PSockConfig.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = EmiP2PSockConfig.h; path = core/EmiP2PSockConfig.h; sourceTree = "<group>"; };
+		CB9D87B017F4A8920069FF66 /* EmiPacketHeader.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = EmiPacketHeader.cc; path = core/EmiPacketHeader.cc; sourceTree = "<group>"; };
+		CB9D87B117F4A8920069FF66 /* EmiPacketHeader.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = EmiPacketHeader.h; path = core/EmiPacketHeader.h; sourceTree = "<group>"; };
+		CB9D87B217F4A8920069FF66 /* EmiRC4.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = EmiRC4.cc; path = core/EmiRC4.cc; sourceTree = "<group>"; };
+		CB9D87B317F4A8920069FF66 /* EmiRC4.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = EmiRC4.h; path = core/EmiRC4.h; sourceTree = "<group>"; };
+		CB9D87B417F4A8920069FF66 /* EmiReceiverBuffer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = EmiReceiverBuffer.h; path = core/EmiReceiverBuffer.h; sourceTree = "<group>"; };
+		CB9D87B517F4A8920069FF66 /* EmiRtoTimer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = EmiRtoTimer.h; path = core/EmiRtoTimer.h; sourceTree = "<group>"; };
+		CB9D87B617F4A8920069FF66 /* EmiSenderBuffer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = EmiSenderBuffer.h; path = core/EmiSenderBuffer.h; sourceTree = "<group>"; };
+		CB9D87B717F4A8920069FF66 /* EmiSendQueue.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = EmiSendQueue.h; path = core/EmiSendQueue.h; sourceTree = "<group>"; };
+		CB9D87B817F4A8920069FF66 /* EmiSock.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = EmiSock.h; path = core/EmiSock.h; sourceTree = "<group>"; };
+		CB9D87B917F4A8920069FF66 /* EmiSockConfig.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = EmiSockConfig.h; path = core/EmiSockConfig.h; sourceTree = "<group>"; };
+		CB9D87BA17F4A8920069FF66 /* EmiTypes.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = EmiTypes.h; path = core/EmiTypes.h; sourceTree = "<group>"; };
+		CB9D87BB17F4A8920069FF66 /* EmiUdpSocket.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = EmiUdpSocket.h; path = core/EmiUdpSocket.h; sourceTree = "<group>"; };
+		CB9D87C417F4A8A10069FF66 /* EmiBinding.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = EmiBinding.h; path = EmiNet/EmiBinding.h; sourceTree = "<group>"; };
+		CB9D87C517F4A8A10069FF66 /* EmiBinding.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = EmiBinding.mm; path = EmiNet/EmiBinding.mm; sourceTree = "<group>"; };
+		CB9D87C617F4A8A10069FF66 /* EmiConnDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = EmiConnDelegate.h; path = EmiNet/EmiConnDelegate.h; sourceTree = "<group>"; };
+		CB9D87C717F4A8A10069FF66 /* EmiConnDelegate.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = EmiConnDelegate.mm; path = EmiNet/EmiConnDelegate.mm; sourceTree = "<group>"; };
+		CB9D87C817F4A8A10069FF66 /* EmiConnection.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = EmiConnection.h; path = EmiNet/EmiConnection.h; sourceTree = "<group>"; };
+		CB9D87C917F4A8A10069FF66 /* EmiConnection.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = EmiConnection.mm; path = EmiNet/EmiConnection.mm; sourceTree = "<group>"; };
+		CB9D87CA17F4A8A10069FF66 /* EmiConnectionInternal.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = EmiConnectionInternal.h; path = EmiNet/EmiConnectionInternal.h; sourceTree = "<group>"; };
+		CB9D87CB17F4A8A10069FF66 /* EmiConnectionOpenedBlockWrapper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = EmiConnectionOpenedBlockWrapper.h; path = EmiNet/EmiConnectionOpenedBlockWrapper.h; sourceTree = "<group>"; };
+		CB9D87CC17F4A8A10069FF66 /* EmiConnectionOpenedBlockWrapper.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = EmiConnectionOpenedBlockWrapper.m; path = EmiNet/EmiConnectionOpenedBlockWrapper.m; sourceTree = "<group>"; };
+		CB9D87CD17F4A8A10069FF66 /* EmiDispatchQueueWrapper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = EmiDispatchQueueWrapper.h; path = EmiNet/EmiDispatchQueueWrapper.h; sourceTree = "<group>"; };
+		CB9D87CE17F4A8A10069FF66 /* EmiDispatchQueueWrapper.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = EmiDispatchQueueWrapper.m; path = EmiNet/EmiDispatchQueueWrapper.m; sourceTree = "<group>"; };
+		CB9D87CF17F4A8A10069FF66 /* EmiDispatchTimer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = EmiDispatchTimer.h; path = EmiNet/EmiDispatchTimer.h; sourceTree = "<group>"; };
+		CB9D87D017F4A8A10069FF66 /* EmiDispatchTimer.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = EmiDispatchTimer.mm; path = EmiNet/EmiDispatchTimer.mm; sourceTree = "<group>"; };
+		CB9D87D117F4A8A10069FF66 /* EmiNet.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = EmiNet.h; path = EmiNet/EmiNet.h; sourceTree = "<group>"; };
+		CB9D87D217F4A8A10069FF66 /* EmiObjCBindingHelper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = EmiObjCBindingHelper.h; path = EmiNet/EmiObjCBindingHelper.h; sourceTree = "<group>"; };
+		CB9D87D317F4A8A10069FF66 /* EmiP2PSocketConfig.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = EmiP2PSocketConfig.h; path = EmiNet/EmiP2PSocketConfig.h; sourceTree = "<group>"; };
+		CB9D87D417F4A8A10069FF66 /* EmiP2PSocketConfig.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = EmiP2PSocketConfig.mm; path = EmiNet/EmiP2PSocketConfig.mm; sourceTree = "<group>"; };
+		CB9D87D517F4A8A10069FF66 /* EmiP2PSocketConfigInternal.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = EmiP2PSocketConfigInternal.h; path = EmiNet/EmiP2PSocketConfigInternal.h; sourceTree = "<group>"; };
+		CB9D87D617F4A8A10069FF66 /* EmiSockDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = EmiSockDelegate.h; path = EmiNet/EmiSockDelegate.h; sourceTree = "<group>"; };
+		CB9D87D717F4A8A10069FF66 /* EmiSockDelegate.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = EmiSockDelegate.mm; path = EmiNet/EmiSockDelegate.mm; sourceTree = "<group>"; };
+		CB9D87D817F4A8A10069FF66 /* EmiSocket.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = EmiSocket.h; path = EmiNet/EmiSocket.h; sourceTree = "<group>"; };
+		CB9D87D917F4A8A10069FF66 /* EmiSocket.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = EmiSocket.mm; path = EmiNet/EmiSocket.mm; sourceTree = "<group>"; };
+		CB9D87DA17F4A8A10069FF66 /* EmiSocketConfig.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = EmiSocketConfig.h; path = EmiNet/EmiSocketConfig.h; sourceTree = "<group>"; };
+		CB9D87DB17F4A8A10069FF66 /* EmiSocketConfig.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = EmiSocketConfig.mm; path = EmiNet/EmiSocketConfig.mm; sourceTree = "<group>"; };
+		CB9D87DC17F4A8A10069FF66 /* EmiSocketConfigInternal.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = EmiSocketConfigInternal.h; path = EmiNet/EmiSocketConfigInternal.h; sourceTree = "<group>"; };
+		CB9D87DD17F4A8A10069FF66 /* EmiSocketInternal.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = EmiSocketInternal.h; path = EmiNet/EmiSocketInternal.h; sourceTree = "<group>"; };
+		CB9D87DE17F4A8A10069FF66 /* EmiSocketUserDataWrapper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = EmiSocketUserDataWrapper.h; path = EmiNet/EmiSocketUserDataWrapper.h; sourceTree = "<group>"; };
+		CB9D87DF17F4A8A10069FF66 /* EmiSocketUserDataWrapper.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = EmiSocketUserDataWrapper.mm; path = EmiNet/EmiSocketUserDataWrapper.mm; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		CB2C268917F4A3A800E30C74 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				CB2C269017F4A3A800E30C74 /* Foundation.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		CB2C269917F4A3A800E30C74 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				CB2C269E17F4A3A800E30C74 /* XCTest.framework in Frameworks */,
+				CB2C26A117F4A3A800E30C74 /* UIKit.framework in Frameworks */,
+				CB2C269F17F4A3A800E30C74 /* Foundation.framework in Frameworks */,
+				CB2C26A417F4A3A800E30C74 /* libEmiNet.a in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		CB2C262117F4A05500E30C74 = {
+			isa = PBXGroup;
+			children = (
+				CB2C26C617F4A69800E30C74 /* GCDAsyncSocket */,
+				CB2C269117F4A3A800E30C74 /* EmiNet */,
+				CB2C26A517F4A3A800E30C74 /* EmiNetTests */,
+				CB2C268E17F4A3A800E30C74 /* Frameworks */,
+				CB2C268D17F4A3A800E30C74 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		CB2C262817F4A0CB00E30C74 /* Core */ = {
+			isa = PBXGroup;
+			children = (
+				CB9D879417F4A8890069FF66 /* EmiAddressCmp.h */,
+				CB9D879517F4A8920069FF66 /* EmiCongestionControl.h */,
+				CB9D879617F4A8920069FF66 /* EmiConn.h */,
+				CB9D879717F4A8920069FF66 /* EmiConnParams.h */,
+				CB9D879817F4A8920069FF66 /* EmiConnTime.cc */,
+				CB9D879917F4A8920069FF66 /* EmiConnTime.h */,
+				CB9D879A17F4A8920069FF66 /* EmiConnTimers.h */,
+				CB9D879B17F4A8920069FF66 /* EmiDataArrivalRate.cc */,
+				CB9D879C17F4A8920069FF66 /* EmiDataArrivalRate.h */,
+				CB9D879D17F4A8920069FF66 /* EmiLinkCapacity.cc */,
+				CB9D879E17F4A8920069FF66 /* EmiLinkCapacity.h */,
+				CB9D879F17F4A8920069FF66 /* EmiLogicalConnection.h */,
+				CB9D87A017F4A8920069FF66 /* EmiLossList.cc */,
+				CB9D87A117F4A8920069FF66 /* EmiLossList.h */,
+				CB9D87A217F4A8920069FF66 /* EmiMedianFilter.h */,
+				CB9D87A317F4A8920069FF66 /* EmiMessage.h */,
+				CB9D87A417F4A8920069FF66 /* EmiMessageHandler.h */,
+				CB9D87A517F4A8920069FF66 /* EmiMessageHeader.cc */,
+				CB9D87A617F4A8920069FF66 /* EmiMessageHeader.h */,
+				CB9D87A717F4A8920069FF66 /* EmiNatPunchthrough.h */,
+				CB9D87A817F4A8920069FF66 /* EmiNetRandom.h */,
+				CB9D87A917F4A8920069FF66 /* EmiNetUtil.cc */,
+				CB9D87AA17F4A8920069FF66 /* EmiNetUtil.h */,
+				CB9D87AB17F4A8920069FF66 /* EmiP2PConn.h */,
+				CB9D87AC17F4A8920069FF66 /* EmiP2PData.h */,
+				CB9D87AD17F4A8920069FF66 /* EmiP2PEndpoints.h */,
+				CB9D87AE17F4A8920069FF66 /* EmiP2PSock.h */,
+				CB9D87AF17F4A8920069FF66 /* EmiP2PSockConfig.h */,
+				CB9D87B017F4A8920069FF66 /* EmiPacketHeader.cc */,
+				CB9D87B117F4A8920069FF66 /* EmiPacketHeader.h */,
+				CB9D87B217F4A8920069FF66 /* EmiRC4.cc */,
+				CB9D87B317F4A8920069FF66 /* EmiRC4.h */,
+				CB9D87B417F4A8920069FF66 /* EmiReceiverBuffer.h */,
+				CB9D87B517F4A8920069FF66 /* EmiRtoTimer.h */,
+				CB9D87B617F4A8920069FF66 /* EmiSenderBuffer.h */,
+				CB9D87B717F4A8920069FF66 /* EmiSendQueue.h */,
+				CB9D87B817F4A8920069FF66 /* EmiSock.h */,
+				CB9D87B917F4A8920069FF66 /* EmiSockConfig.h */,
+				CB9D87BA17F4A8920069FF66 /* EmiTypes.h */,
+				CB9D87BB17F4A8920069FF66 /* EmiUdpSocket.h */,
+			);
+			name = Core;
+			path = ..;
+			sourceTree = "<group>";
+		};
+		CB2C262917F4A0CF00E30C74 /* ObjC */ = {
+			isa = PBXGroup;
+			children = (
+				CB9D87C417F4A8A10069FF66 /* EmiBinding.h */,
+				CB9D87C517F4A8A10069FF66 /* EmiBinding.mm */,
+				CB9D87C617F4A8A10069FF66 /* EmiConnDelegate.h */,
+				CB9D87C717F4A8A10069FF66 /* EmiConnDelegate.mm */,
+				CB9D87C817F4A8A10069FF66 /* EmiConnection.h */,
+				CB9D87C917F4A8A10069FF66 /* EmiConnection.mm */,
+				CB9D87CA17F4A8A10069FF66 /* EmiConnectionInternal.h */,
+				CB9D87CB17F4A8A10069FF66 /* EmiConnectionOpenedBlockWrapper.h */,
+				CB9D87CC17F4A8A10069FF66 /* EmiConnectionOpenedBlockWrapper.m */,
+				CB9D87CD17F4A8A10069FF66 /* EmiDispatchQueueWrapper.h */,
+				CB9D87CE17F4A8A10069FF66 /* EmiDispatchQueueWrapper.m */,
+				CB9D87CF17F4A8A10069FF66 /* EmiDispatchTimer.h */,
+				CB9D87D017F4A8A10069FF66 /* EmiDispatchTimer.mm */,
+				CB9D87D117F4A8A10069FF66 /* EmiNet.h */,
+				CB9D87D217F4A8A10069FF66 /* EmiObjCBindingHelper.h */,
+				CB9D87D317F4A8A10069FF66 /* EmiP2PSocketConfig.h */,
+				CB9D87D417F4A8A10069FF66 /* EmiP2PSocketConfig.mm */,
+				CB9D87D517F4A8A10069FF66 /* EmiP2PSocketConfigInternal.h */,
+				CB9D87D617F4A8A10069FF66 /* EmiSockDelegate.h */,
+				CB9D87D717F4A8A10069FF66 /* EmiSockDelegate.mm */,
+				CB9D87D817F4A8A10069FF66 /* EmiSocket.h */,
+				CB9D87D917F4A8A10069FF66 /* EmiSocket.mm */,
+				CB9D87DA17F4A8A10069FF66 /* EmiSocketConfig.h */,
+				CB9D87DB17F4A8A10069FF66 /* EmiSocketConfig.mm */,
+				CB9D87DC17F4A8A10069FF66 /* EmiSocketConfigInternal.h */,
+				CB9D87DD17F4A8A10069FF66 /* EmiSocketInternal.h */,
+				CB9D87DE17F4A8A10069FF66 /* EmiSocketUserDataWrapper.h */,
+				CB9D87DF17F4A8A10069FF66 /* EmiSocketUserDataWrapper.mm */,
+			);
+			name = ObjC;
+			path = ..;
+			sourceTree = "<group>";
+		};
+		CB2C268D17F4A3A800E30C74 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				CB2C268C17F4A3A800E30C74 /* libEmiNet.a */,
+				CB2C269C17F4A3A800E30C74 /* EmiNetTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		CB2C268E17F4A3A800E30C74 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				CB2C268F17F4A3A800E30C74 /* Foundation.framework */,
+				CB2C269D17F4A3A800E30C74 /* XCTest.framework */,
+				CB2C26A017F4A3A800E30C74 /* UIKit.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		CB2C269117F4A3A800E30C74 /* EmiNet */ = {
+			isa = PBXGroup;
+			children = (
+				CB2C262817F4A0CB00E30C74 /* Core */,
+				CB2C262917F4A0CF00E30C74 /* ObjC */,
+			);
+			path = EmiNet;
+			sourceTree = "<group>";
+		};
+		CB2C26A517F4A3A800E30C74 /* EmiNetTests */ = {
+			isa = PBXGroup;
+			children = (
+				CB2C26AB17F4A3A800E30C74 /* EmiNetTests.m */,
+				CB2C26A617F4A3A800E30C74 /* Supporting Files */,
+			);
+			path = EmiNetTests;
+			sourceTree = "<group>";
+		};
+		CB2C26A617F4A3A800E30C74 /* Supporting Files */ = {
+			isa = PBXGroup;
+			children = (
+				CB2C26A717F4A3A800E30C74 /* EmiNetTests-Info.plist */,
+				CB2C26A817F4A3A800E30C74 /* InfoPlist.strings */,
+			);
+			name = "Supporting Files";
+			sourceTree = "<group>";
+		};
+		CB2C26C617F4A69800E30C74 /* GCDAsyncSocket */ = {
+			isa = PBXGroup;
+			children = (
+				CB2C26C717F4A6BE00E30C74 /* GCDAsyncUdpSocket.h */,
+				CB2C26C817F4A6BE00E30C74 /* GCDAsyncUdpSocket.m */,
+			);
+			name = GCDAsyncSocket;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXHeadersBuildPhase section */
+		CB9D87EB17F4A9AD0069FF66 /* Headers */ = {
+			isa = PBXHeadersBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				CB9D87FF17F4AB100069FF66 /* EmiConn.h in Headers */,
+				CB9D883417F4AC690069FF66 /* EmiUdpSocket.h in Headers */,
+				CB9D882717F4AC2D0069FF66 /* EmiP2PConn.h in Headers */,
+				CB9D87EF17F4AA290069FF66 /* EmiConnection.h in Headers */,
+				CB9D87FC17F4AB070069FF66 /* EmiSocketUserDataWrapper.h in Headers */,
+				CB9D87F217F4AAE40069FF66 /* EmiConnDelegate.h in Headers */,
+				CB9D882817F4AC310069FF66 /* EmiP2PData.h in Headers */,
+				CB9D880317F4AB1A0069FF66 /* EmiDataArrivalRate.h in Headers */,
+				CB9D882917F4AC330069FF66 /* EmiP2PEndpoints.h in Headers */,
+				CB9D87F517F4AAEE0069FF66 /* EmiDispatchQueueWrapper.h in Headers */,
+				CB9D880717F4AB260069FF66 /* EmiMedianFilter.h in Headers */,
+				CB9D882D17F4AC3E0069FF66 /* EmiRC4.h in Headers */,
+				CB9D882417F4AC1B0069FF66 /* EmiNatPunchthrough.h in Headers */,
+				CB9D882C17F4AC3B0069FF66 /* EmiPacketHeader.h in Headers */,
+				CB9D883017F4AC540069FF66 /* EmiSenderBuffer.h in Headers */,
+				CB9D87FD17F4AB0B0069FF66 /* EmiAddressCmp.h in Headers */,
+				CB9D87F017F4AA3F0069FF66 /* EmiSocketConfig.h in Headers */,
+				CB9D882B17F4AC390069FF66 /* EmiP2PSockConfig.h in Headers */,
+				CB9D880117F4AB150069FF66 /* EmiConnTime.h in Headers */,
+				CB9D880017F4AB130069FF66 /* EmiConnParams.h in Headers */,
+				CB9D87F117F4AAE10069FF66 /* EmiBinding.h in Headers */,
+				CB9D882E17F4AC430069FF66 /* EmiReceiverBuffer.h in Headers */,
+				CB9D87ED17F4AA140069FF66 /* EmiNet.h in Headers */,
+				CB9D883217F4AC620069FF66 /* EmiSock.h in Headers */,
+				CB9D882217F4AC160069FF66 /* EmiMessageHandler.h in Headers */,
+				CB9D880217F4AB170069FF66 /* EmiConnTimers.h in Headers */,
+				CB9D882317F4AC190069FF66 /* EmiMessageHeader.h in Headers */,
+				CB9D87F317F4AAE90069FF66 /* EmiConnectionInternal.h in Headers */,
+				CB9D87FE17F4AB0E0069FF66 /* EmiCongestionControl.h in Headers */,
+				CB9D880617F4AB210069FF66 /* EmiLossList.h in Headers */,
+				CB9D87F417F4AAEC0069FF66 /* EmiConnectionOpenedBlockWrapper.h in Headers */,
+				CB9D880517F4AB1F0069FF66 /* EmiLogicalConnection.h in Headers */,
+				CB9D882117F4AC130069FF66 /* EmiMessage.h in Headers */,
+				CB9D883317F4AC640069FF66 /* EmiSockConfig.h in Headers */,
+				CB9D87F817F4AAF80069FF66 /* EmiP2PSocketConfigInternal.h in Headers */,
+				CB9D87F617F4AAF10069FF66 /* EmiDispatchTimer.h in Headers */,
+				CB9D882F17F4AC460069FF66 /* EmiRtoTimer.h in Headers */,
+				CB9D87FB17F4AB050069FF66 /* EmiSocketInternal.h in Headers */,
+				CB9D882A17F4AC360069FF66 /* EmiP2PSock.h in Headers */,
+				CB9D882617F4AC2A0069FF66 /* EmiNetUtil.h in Headers */,
+				CB9D882517F4AC1E0069FF66 /* EmiNetRandom.h in Headers */,
+				CB9D883117F4AC560069FF66 /* EmiSendQueue.h in Headers */,
+				CB9D87EE17F4AA220069FF66 /* EmiSocket.h in Headers */,
+				CB9D87F917F4AAFB0069FF66 /* EmiSockDelegate.h in Headers */,
+				CB9D87FA17F4AB020069FF66 /* EmiSocketConfigInternal.h in Headers */,
+				CB9D87F717F4AAF50069FF66 /* EmiP2PSocketConfig.h in Headers */,
+				CB9D880417F4AB1C0069FF66 /* EmiLinkCapacity.h in Headers */,
+				CB9D87EC17F4A9E20069FF66 /* EmiTypes.h in Headers */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXHeadersBuildPhase section */
+
+/* Begin PBXNativeTarget section */
+		CB2C268B17F4A3A800E30C74 /* EmiNet */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = CB2C26AD17F4A3A800E30C74 /* Build configuration list for PBXNativeTarget "EmiNet" */;
+			buildPhases = (
+				CB2C268817F4A3A800E30C74 /* Sources */,
+				CB2C268917F4A3A800E30C74 /* Frameworks */,
+				CB2C268A17F4A3A800E30C74 /* CopyFiles */,
+				CB9D87EB17F4A9AD0069FF66 /* Headers */,
+				CB9D883517F4AD2B0069FF66 /* Prepare Framework */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = EmiNet;
+			productName = EmiNet;
+			productReference = CB2C268C17F4A3A800E30C74 /* libEmiNet.a */;
+			productType = "com.apple.product-type.library.static";
+		};
+		CB2C269B17F4A3A800E30C74 /* EmiNetTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = CB2C26B017F4A3A800E30C74 /* Build configuration list for PBXNativeTarget "EmiNetTests" */;
+			buildPhases = (
+				CB2C269817F4A3A800E30C74 /* Sources */,
+				CB2C269917F4A3A800E30C74 /* Frameworks */,
+				CB2C269A17F4A3A800E30C74 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				CB2C26A317F4A3A800E30C74 /* PBXTargetDependency */,
+			);
+			name = EmiNetTests;
+			productName = EmiNetTests;
+			productReference = CB2C269C17F4A3A800E30C74 /* EmiNetTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		CB2C262217F4A05500E30C74 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 0500;
+			};
+			buildConfigurationList = CB2C262517F4A05500E30C74 /* Build configuration list for PBXProject "EmiNet" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+			);
+			mainGroup = CB2C262117F4A05500E30C74;
+			productRefGroup = CB2C268D17F4A3A800E30C74 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				CB2C268B17F4A3A800E30C74 /* EmiNet */,
+				CB2C269B17F4A3A800E30C74 /* EmiNetTests */,
+				CB9D883617F4AF1C0069FF66 /* Framework */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		CB2C269A17F4A3A800E30C74 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				CB2C26AA17F4A3A800E30C74 /* InfoPlist.strings in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		CB9D883517F4AD2B0069FF66 /* Prepare Framework */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "Prepare Framework";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "set -e\n\nmkdir -p \"${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.framework/Versions/A/Headers\"\n\n# Link the \"Current\" version to \"A\"\n/bin/ln -sfh A \"${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.framework/Versions/Current\"\n/bin/ln -sfh Versions/Current/Headers \"${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.framework/Headers\"\n/bin/ln -sfh \"Versions/Current/${PRODUCT_NAME}\" \"${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.framework/${PRODUCT_NAME}\"\n\n# The -a ensures that the headers maintain the source modification date so that we don't constantly\n# cause propagating rebuilds of files that import these headers.\n/bin/cp -a \"${TARGET_BUILD_DIR}/${PUBLIC_HEADERS_FOLDER_PATH}/\" \"${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.framework/Versions/A/Headers\"\n";
+		};
+		CB9D883C17F4AF540069FF66 /* Build For Other Platforms */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "Build For Other Platforms";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "set -e\nset +u\n# Avoid recursively calling this script.\nif [[ $SF_MASTER_SCRIPT_RUNNING ]]\nthen\nexit 0\nfi\nset -u\nexport SF_MASTER_SCRIPT_RUNNING=1\n\nSF_TARGET_NAME=${PROJECT_NAME}\nSF_EXECUTABLE_PATH=\"lib${SF_TARGET_NAME}.a\"\nSF_WRAPPER_NAME=\"${SF_TARGET_NAME}.framework\"\n\n# The following conditionals come from\n# https://github.com/kstenerud/iOS-Universal-Framework\n\nif [[ \"$SDK_NAME\" =~ ([A-Za-z]+) ]]\nthen\nSF_SDK_PLATFORM=${BASH_REMATCH[1]}\nelse\necho \"Could not find platform name from SDK_NAME: $SDK_NAME\"\nexit 1\nfi\n\nif [[ \"$SDK_NAME\" =~ ([0-9]+.*$) ]]\nthen\nSF_SDK_VERSION=${BASH_REMATCH[1]}\nelse\necho \"Could not find sdk version from SDK_NAME: $SDK_NAME\"\nexit 1\nfi\n\nif [[ \"$SF_SDK_PLATFORM\" = \"iphoneos\" ]]\nthen\nSF_OTHER_PLATFORM=iphonesimulator\nelse\nSF_OTHER_PLATFORM=iphoneos\nfi\n\nif [[ \"$BUILT_PRODUCTS_DIR\" =~ (.*)$SF_SDK_PLATFORM$ ]]\nthen\nSF_OTHER_BUILT_PRODUCTS_DIR=\"${BASH_REMATCH[1]}${SF_OTHER_PLATFORM}\"\nelse\necho \"Could not find platform name from build products directory: $BUILT_PRODUCTS_DIR\"\nexit 1\nfi\n\n# Build the other platform.\nxcodebuild -project \"${PROJECT_FILE_PATH}\" -target \"${TARGET_NAME}\" -configuration \"${CONFIGURATION}\" -sdk ${SF_OTHER_PLATFORM}${SF_SDK_VERSION} BUILD_DIR=\"${BUILD_DIR}\" OBJROOT=\"${OBJROOT}\" BUILD_ROOT=\"${BUILD_ROOT}\" SYMROOT=\"${SYMROOT}\" $ACTION\n\n# Smash the two static libraries into one fat binary and store it in the .framework\nlipo -create \"${BUILT_PRODUCTS_DIR}/${SF_EXECUTABLE_PATH}\" \"${SF_OTHER_BUILT_PRODUCTS_DIR}/${SF_EXECUTABLE_PATH}\" -output \"${BUILT_PRODUCTS_DIR}/${SF_WRAPPER_NAME}/Versions/A/${SF_TARGET_NAME}\"\n\n# Copy the binary to the other architecture folder to have a complete framework in both.\ncp -a \"${BUILT_PRODUCTS_DIR}/${SF_WRAPPER_NAME}/Versions/A/${SF_TARGET_NAME}\" \"${SF_OTHER_BUILT_PRODUCTS_DIR}/${SF_WRAPPER_NAME}/Versions/A/${SF_TARGET_NAME}\"\n";
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		CB2C268817F4A3A800E30C74 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				CB9D87BC17F4A8920069FF66 /* EmiConnTime.cc in Sources */,
+				CB9D87C117F4A8920069FF66 /* EmiNetUtil.cc in Sources */,
+				CB9D87E917F4A8A10069FF66 /* EmiSocketConfig.mm in Sources */,
+				CB9D87C217F4A8920069FF66 /* EmiPacketHeader.cc in Sources */,
+				CB9D87E417F4A8A10069FF66 /* EmiDispatchQueueWrapper.m in Sources */,
+				CB9D87E217F4A8A10069FF66 /* EmiConnection.mm in Sources */,
+				CB9D87C317F4A8920069FF66 /* EmiRC4.cc in Sources */,
+				CB9D87BF17F4A8920069FF66 /* EmiLossList.cc in Sources */,
+				CB9D87BE17F4A8920069FF66 /* EmiLinkCapacity.cc in Sources */,
+				CB9D87EA17F4A8A10069FF66 /* EmiSocketUserDataWrapper.mm in Sources */,
+				CB9D87BD17F4A8920069FF66 /* EmiDataArrivalRate.cc in Sources */,
+				CB9D87E617F4A8A10069FF66 /* EmiP2PSocketConfig.mm in Sources */,
+				CB9D87E317F4A8A10069FF66 /* EmiConnectionOpenedBlockWrapper.m in Sources */,
+				CB9D87E017F4A8A10069FF66 /* EmiBinding.mm in Sources */,
+				CB9D87C017F4A8920069FF66 /* EmiMessageHeader.cc in Sources */,
+				CB9D87E717F4A8A10069FF66 /* EmiSockDelegate.mm in Sources */,
+				CB9D87E817F4A8A10069FF66 /* EmiSocket.mm in Sources */,
+				CB9D87E517F4A8A10069FF66 /* EmiDispatchTimer.mm in Sources */,
+				CB9D87E117F4A8A10069FF66 /* EmiConnDelegate.mm in Sources */,
+				CB2C26C917F4A6BE00E30C74 /* GCDAsyncUdpSocket.m in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		CB2C269817F4A3A800E30C74 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				CB2C26AC17F4A3A800E30C74 /* EmiNetTests.m in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		CB2C26A317F4A3A800E30C74 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = CB2C268B17F4A3A800E30C74 /* EmiNet */;
+			targetProxy = CB2C26A217F4A3A800E30C74 /* PBXContainerItemProxy */;
+		};
+		CB9D883B17F4AF2A0069FF66 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = CB2C268B17F4A3A800E30C74 /* EmiNet */;
+			targetProxy = CB9D883A17F4AF2A0069FF66 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin PBXVariantGroup section */
+		CB2C26A817F4A3A800E30C74 /* InfoPlist.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				CB2C26A917F4A3A800E30C74 /* en */,
+			);
+			name = InfoPlist.strings;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
+
+/* Begin XCBuildConfiguration section */
+		CB2C262617F4A05500E30C74 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+			};
+			name = Debug;
+		};
+		CB2C262717F4A05500E30C74 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+			};
+			name = Release;
+		};
+		CB2C26AE17F4A3A800E30C74 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = "$(ARCHS_STANDARD_INCLUDING_64_BIT)";
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = NO;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = NO;
+				DSTROOT = /tmp/EmiNet.dst;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREFIX_HEADER = "";
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)/core",
+				);
+				IPHONEOS_DEPLOYMENT_TARGET = 7.0;
+				ONLY_ACTIVE_ARCH = YES;
+				OTHER_LDFLAGS = "-ObjC";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PUBLIC_HEADERS_FOLDER_PATH = "$(PROJECT_NAME)Headers";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				STRIP_STYLE = "non-global";
+			};
+			name = Debug;
+		};
+		CB2C26AF17F4A3A800E30C74 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = "$(ARCHS_STANDARD_INCLUDING_64_BIT)";
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = NO;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = NO;
+				DSTROOT = /tmp/EmiNet.dst;
+				ENABLE_NS_ASSERTIONS = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_PREFIX_HEADER = "";
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)/core",
+				);
+				IPHONEOS_DEPLOYMENT_TARGET = 7.0;
+				OTHER_LDFLAGS = "-ObjC";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PUBLIC_HEADERS_FOLDER_PATH = "$(PROJECT_NAME)Headers";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				STRIP_STYLE = "non-global";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		CB2C26B117F4A3A800E30C74 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = "$(ARCHS_STANDARD_INCLUDING_64_BIT)";
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(SDKROOT)/Developer/Library/Frameworks",
+					"$(inherited)",
+					"$(DEVELOPER_FRAMEWORKS_DIR)",
+				);
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				INFOPLIST_FILE = "EmiNetTests/EmiNetTests-Info.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 7.0;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				WRAPPER_EXTENSION = xctest;
+			};
+			name = Debug;
+		};
+		CB2C26B217F4A3A800E30C74 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = "$(ARCHS_STANDARD_INCLUDING_64_BIT)";
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = YES;
+				ENABLE_NS_ASSERTIONS = NO;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(SDKROOT)/Developer/Library/Frameworks",
+					"$(inherited)",
+					"$(DEVELOPER_FRAMEWORKS_DIR)",
+				);
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				INFOPLIST_FILE = "EmiNetTests/EmiNetTests-Info.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 7.0;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				VALIDATE_PRODUCT = YES;
+				WRAPPER_EXTENSION = xctest;
+			};
+			name = Release;
+		};
+		CB9D883817F4AF1D0069FF66 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		CB9D883917F4AF1D0069FF66 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		CB2C262517F4A05500E30C74 /* Build configuration list for PBXProject "EmiNet" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				CB2C262617F4A05500E30C74 /* Debug */,
+				CB2C262717F4A05500E30C74 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		CB2C26AD17F4A3A800E30C74 /* Build configuration list for PBXNativeTarget "EmiNet" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				CB2C26AE17F4A3A800E30C74 /* Debug */,
+				CB2C26AF17F4A3A800E30C74 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		CB2C26B017F4A3A800E30C74 /* Build configuration list for PBXNativeTarget "EmiNetTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				CB2C26B117F4A3A800E30C74 /* Debug */,
+				CB2C26B217F4A3A800E30C74 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		CB9D883717F4AF1D0069FF66 /* Build configuration list for PBXAggregateTarget "Framework" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				CB9D883817F4AF1D0069FF66 /* Debug */,
+				CB9D883917F4AF1D0069FF66 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = CB2C262217F4A05500E30C74 /* Project object */;
+}

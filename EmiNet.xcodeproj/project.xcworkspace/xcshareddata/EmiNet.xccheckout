@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>IDESourceControlProjectFavoriteDictionaryKey</key>
+	<false/>
+	<key>IDESourceControlProjectIdentifier</key>
+	<string>9E46684D-5EB5-4009-B8C1-24F5831ECB23</string>
+	<key>IDESourceControlProjectName</key>
+	<string>EmiNet</string>
+	<key>IDESourceControlProjectOriginsDictionary</key>
+	<dict>
+		<key>048CA109-723A-474E-92AE-1EAE0A740E1B</key>
+		<string>ssh://github.com/robbiehanson/CocoaAsyncSocket.git</string>
+		<key>C12AF768-9B38-4BB9-8718-E6C0DEE4DCE0</key>
+		<string>ssh://github.com/pereckerdal/eminet.git</string>
+	</dict>
+	<key>IDESourceControlProjectPath</key>
+	<string>EmiNet/EmiNet.xcodeproj/project.xcworkspace</string>
+	<key>IDESourceControlProjectRelativeInstallPathDictionary</key>
+	<dict>
+		<key>048CA109-723A-474E-92AE-1EAE0A740E1B</key>
+		<string>../../vendor/CocoaAsyncSocket</string>
+		<key>C12AF768-9B38-4BB9-8718-E6C0DEE4DCE0</key>
+		<string>../../..</string>
+	</dict>
+	<key>IDESourceControlProjectURL</key>
+	<string>ssh://github.com/pereckerdal/eminet.git</string>
+	<key>IDESourceControlProjectVersion</key>
+	<integer>110</integer>
+	<key>IDESourceControlProjectWCCIdentifier</key>
+	<string>C12AF768-9B38-4BB9-8718-E6C0DEE4DCE0</string>
+	<key>IDESourceControlProjectWCConfigurations</key>
+	<array>
+		<dict>
+			<key>IDESourceControlRepositoryExtensionIdentifierKey</key>
+			<string>public.vcs.git</string>
+			<key>IDESourceControlWCCIdentifierKey</key>
+			<string>048CA109-723A-474E-92AE-1EAE0A740E1B</string>
+			<key>IDESourceControlWCCName</key>
+			<string>CocoaAsyncSocket</string>
+		</dict>
+		<dict>
+			<key>IDESourceControlRepositoryExtensionIdentifierKey</key>
+			<string>public.vcs.git</string>
+			<key>IDESourceControlWCCIdentifierKey</key>
+			<string>C12AF768-9B38-4BB9-8718-E6C0DEE4DCE0</string>
+			<key>IDESourceControlWCCName</key>
+			<string>eminet</string>
+		</dict>
+	</array>
+</dict>
+</plist>

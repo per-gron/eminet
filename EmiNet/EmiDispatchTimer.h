@@ -10,6 +10,7 @@
 #define eminet_EmiDispatchTimer_h
 
 #include "EmiTypes.h"
+#include <dispatch/dispatch.h>
 
 @class EmiDispatchQueueWrapper;
 
