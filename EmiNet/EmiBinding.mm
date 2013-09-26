@@ -49,12 +49,15 @@ bool EmiBinding::nextNetworkInterface(NetworkInterfaces& ni, const char*& name, 
     ni.second = ifa->ifa_next;
     
     bool loopback = !!(ifa->ifa_flags & IFF_LOOPBACK);
+    // TODO(peck): I don't remember why I skipped loopback interfaces.
+    // I'm disabling that for now.
+    static const bool skipLoopback = false;
     
     int family = ifa->ifa_addr->sa_family;
-    if (!loopback && AF_INET == family) {
+    if (!(skipLoopback && loopback) && AF_INET == family) {
         memcpy(&addr, ifa->ifa_addr, sizeof(sockaddr));
     }
-    else if (!loopback && AF_INET6 == family) {
+    else if (!(skipLoopback && loopback) && AF_INET6 == family) {
         memcpy(&addr, ifa->ifa_addr, sizeof(sockaddr_storage));
     }
     else {
