@@ -2,7 +2,9 @@
 
 #import "EEEmiNetTest.h"
 
-@implementation EEAppDelegate
+@implementation EEAppDelegate {
+    EEEmiNetTest *_test;
+}
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
 {
@@ -11,9 +13,8 @@
     self.window.backgroundColor = [UIColor whiteColor];
     [self.window makeKeyAndVisible];
     
-    EEEmiNetTest *test = [[EEEmiNetTest alloc] init];
-    [test run];
-    test = nil;
+    _test = [[EEEmiNetTest alloc] init];
+    [_test runOnPort:1025];
     
     return YES;
 }

@@ -2,6 +2,6 @@
 
 @interface EEEmiNetTest : NSObject
 
-- (void)run;
+- (void)runOnPort:(uint16_t)port;
 
 @end
