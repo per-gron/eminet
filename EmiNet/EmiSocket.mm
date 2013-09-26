@@ -41,14 +41,7 @@
         _sock = NULL;
         
         _delegate = delegate;
-        
-        if (dq) {
-            dispatch_retain(dq);
-            _delegateQueue = dq;
-        }
-        else {
-            _delegateQueue = NULL;
-        }
+        _delegateQueue = dq;
         
         if (sq) {
             NSAssert(sq != dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_LOW, 0),
@@ -58,7 +51,6 @@
             NSAssert(sq != dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0),
                      @"The given socketQueue parameter must not be a concurrent queue.");
             
-            dispatch_retain(sq);
             _socketQueue = sq;
         }
         else {
@@ -72,10 +64,7 @@
     // This releases _delegateQueue
     [self setDelegate:nil delegateQueue:NULL];
     
-    if (_socketQueue) {
-        dispatch_release(_socketQueue);
-        _socketQueue = NULL;
-    }
+    _socketQueue = NULL;
     
     if (_sock) {
         delete (S *)_sock;
@@ -330,14 +319,6 @@ withFilterContext:(id)filterContext {
 
 - (void)setDelegate:(id<EmiSocketDelegate>)delegate delegateQueue:(dispatch_queue_t)delegateQueue {
 	DISPATCH_SYNC(_socketQueue, ^{
-		if (_delegateQueue) {
-			dispatch_release(_delegateQueue);
-        }
-		
-		if (delegateQueue) {
-			dispatch_retain(delegateQueue);
-        }
-		
 		_delegateQueue = delegateQueue;
         _delegate = delegate;
 	});

@@ -21,23 +21,15 @@ _dispatchGroup(dispatch_group_create()) {}
 
 EmiSockDelegate::~EmiSockDelegate() {
     dispatch_group_wait(_dispatchGroup, DISPATCH_TIME_FOREVER);
-    dispatch_release(_dispatchGroup);
 }
 
 EmiSockDelegate::EmiSockDelegate(const EmiSockDelegate& other) :
 _socket(other._socket),
-_dispatchGroup(other._dispatchGroup) {
-    dispatch_retain(_dispatchGroup);
-}
+_dispatchGroup(other._dispatchGroup) {}
 
 EmiSockDelegate& EmiSockDelegate::operator=(const EmiSockDelegate& other) {
-    if (_dispatchGroup) {
-        dispatch_release(_dispatchGroup);
-    }
-    
     _socket = other._socket;
     _dispatchGroup = other._dispatchGroup;
-    dispatch_retain(_dispatchGroup);
     return *this;
 }
 

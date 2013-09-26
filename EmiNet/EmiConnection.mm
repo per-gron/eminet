@@ -29,7 +29,6 @@
             NSAssert(connectionQueue != dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0),
                      @"The given socketQueue parameter must not be a concurrent queue.");
             
-            dispatch_retain(connectionQueue);
             _connectionQueue = connectionQueue;
         }
         else {
@@ -45,16 +44,10 @@
 }
 
 - (void)dealloc {
-	if (_delegateQueue) {
-		dispatch_release(_delegateQueue);
-    }
-    
     dispatch_queue_t connQueue = _connectionQueue;
     EC *ec = ((EC *)_ec);
     
     dispatch_async(connQueue, ^{
-        dispatch_release(connQueue);
-        
         ec->getDelegate().invalidate();
         delete (EC *)ec;
     });
@@ -162,9 +155,6 @@
     priority:(EmiPriority)priority finished:(EmiConnectionSendFinishedBlock)block {
     
     dispatch_queue_t blockQueue = (block ? dispatch_get_current_queue() : NULL);
-    if (blockQueue) {
-        dispatch_retain(blockQueue);
-    }
     
     dispatch_async(_connectionQueue, ^{
         NSError *err;
@@ -174,10 +164,6 @@
             dispatch_async(blockQueue, ^{
                 block(retVal ? nil : err);
             });
-        }
-        
-        if (blockQueue) {
-            dispatch_release(blockQueue);
         }
     });
 }
@@ -213,11 +199,6 @@
 	DISPATCH_SYNC(_connectionQueue, ^{
         if (_delegateQueue) {
             ((EC *)_ec)->getDelegate().waitForDelegateBlocks();
-			dispatch_release(_delegateQueue);
-        }
-		
-		if (delegateQueue) {
-			dispatch_retain(delegateQueue);
         }
 		
         _delegate = delegate;

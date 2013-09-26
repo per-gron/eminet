@@ -24,21 +24,12 @@
     if (self = [super init]) {
         _delegate = delegate;
         _delegateQueue = delegateQueue;
-        if (_delegateQueue) {
-            dispatch_retain(_delegateQueue);
-        }
         _cookie = cookie;
         _sharedSecret = sharedSecret;
         _userData = userData;
     }
     
     return self;
-}
-
-- (void)dealloc {
-    if (_delegateQueue) {
-        dispatch_release(_delegateQueue);
-    }
 }
 
 + (EmiConnectionOpenedBlockWrapper *)wrapperWithDelegate:(__weak id<EmiConnectionDelegate>)delegate

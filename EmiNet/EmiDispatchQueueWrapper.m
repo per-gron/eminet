@@ -13,18 +13,9 @@
 - (id)initWithQueue:(dispatch_queue_t)queue_ {
     if (self = [super init]) {
         queue = queue_;
-        if (queue) {
-            dispatch_retain(queue);
-        }
     }
     
     return self;
-}
-
-- (void)dealloc {
-    if (queue) {
-        dispatch_release(queue);
-    }
 }
 
 @end

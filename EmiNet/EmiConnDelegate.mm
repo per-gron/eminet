@@ -20,25 +20,17 @@ _dispatchGroup(dispatch_group_create()) {
 
 EmiConnDelegate::~EmiConnDelegate() {
     dispatch_group_wait(_dispatchGroup, DISPATCH_TIME_FOREVER);
-    dispatch_release(_dispatchGroup);
 }
 
 EmiConnDelegate::EmiConnDelegate(const EmiConnDelegate& other) :
 _conn(other._conn),
 _queueWrapper(other._queueWrapper),
-_dispatchGroup(other._dispatchGroup) {
-    dispatch_retain(_dispatchGroup);
-}
+_dispatchGroup(other._dispatchGroup) {}
 
 EmiConnDelegate& EmiConnDelegate::operator=(const EmiConnDelegate& other) {
-    if (_dispatchGroup) {
-        dispatch_release(_dispatchGroup);
-    }
-    
     _conn = other._conn;
     _queueWrapper = other._queueWrapper;
     _dispatchGroup = other._dispatchGroup;
-    dispatch_retain(_dispatchGroup);
     return *this;
 }
 

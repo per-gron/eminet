@@ -616,7 +616,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CLANG_ENABLE_OBJC_ARC = YES;
-				GCC_PREPROCESSOR_DEFINITIONS = "OS_OBJECT_USE_OBJC=0";
+				GCC_PREPROCESSOR_DEFINITIONS = "";
 			};
 			name = Debug;
 		};
@@ -624,7 +624,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CLANG_ENABLE_OBJC_ARC = YES;
-				GCC_PREPROCESSOR_DEFINITIONS = "OS_OBJECT_USE_OBJC=0";
+				GCC_PREPROCESSOR_DEFINITIONS = "";
 			};
 			name = Release;
 		};

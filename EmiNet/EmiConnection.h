@@ -93,8 +93,8 @@ typedef void (^EmiConnectionSendFinishedBlock)(NSError *err);
 
 
 @property (nonatomic, readonly, weak) id<EmiConnectionDelegate> delegate;
-@property (nonatomic, readonly, assign) dispatch_queue_t delegateQueue;
-@property (nonatomic, readonly, assign) dispatch_queue_t connectionQueue;
+@property (nonatomic, readonly, strong) dispatch_queue_t delegateQueue;
+@property (nonatomic, readonly, strong) dispatch_queue_t connectionQueue;
 
 @property (nonatomic, readonly, assign) BOOL issuedConnectionWarning;
 @property (nonatomic, readonly, weak) EmiSocket *emiSocket;
