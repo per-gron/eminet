@@ -746,7 +746,8 @@ public:
                 EMI_CHANNEL_TYPE_UNRELIABLE_SEQUENCED == channelType) {
                 
                 // We have lost one or more messages.
-                _receiver.emitPacketLoss(channelQualifier, -snDiff);
+                _receiver.emitPacketLoss(channelQualifier,
+                                         static_cast<EmiSequenceNumber>(llabs(snDiff)));
             }
         }
         
@@ -802,7 +803,7 @@ public:
                     // mechanism and emit it immediately, without touching the
                     // message split mechanism.
                     
-                    EmiSequenceNumber newExpectedSn = expectedSn+1;
+                    EmiSequenceNumber newExpectedSn = static_cast<EmiSequenceNumber>(expectedSn+1);
                     _expectedSnMemo[channelQualifier] = newExpectedSn;
                     
                     _receiver.emitMessage(channelQualifier, data, offset, header.length);
