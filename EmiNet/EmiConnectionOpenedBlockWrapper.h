@@ -10,13 +10,7 @@
 
 @protocol EmiConnectionDelegate;
 
-@interface EmiConnectionOpenedBlockWrapper : NSObject {
-    __weak id<EmiConnectionDelegate> _delegate;
-    dispatch_queue_t _delegateQueue;
-    NSData *_cookie;
-    NSData *_sharedSecret;
-    id _userData;
-}
+@interface EmiConnectionOpenedBlockWrapper : NSObject
 
 - (id)initWithDelegate:(__weak id<EmiConnectionDelegate>)delegate
          delegateQueue:(dispatch_queue_t)delegateQueue

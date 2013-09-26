@@ -30,17 +30,7 @@
 
 @end
 
-@interface EmiSocket : NSObject {
-    // TODO Hey, isn't it fundamentally incorrect to have one socket
-    // instance variable for resolving hosts, potentially in parallel?
-    GCDAsyncUdpSocket *_resolveSocket;
-    
-    void *_sock;
-    
-	dispatch_queue_t _delegateQueue;
-    __weak id<EmiSocketDelegate> _delegate;
-	dispatch_queue_t _socketQueue;
-}
+@interface EmiSocket : NSObject
 
 // EmiNet uses the standard delegate paradigm, but executes all delegate
 // callbacks on a given delegate dispatch queue. This allows for maximum

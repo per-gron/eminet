@@ -12,7 +12,7 @@
 
 typedef EmiSockConfig EmiSocketConfigSC;
 
-@interface EmiSocketConfig()
+@interface EmiSocketConfig ()
 
 @property (nonatomic, assign, readonly) EmiSocketConfigSC *sockConfig;
 

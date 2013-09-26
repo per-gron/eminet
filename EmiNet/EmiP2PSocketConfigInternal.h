@@ -12,7 +12,7 @@
 
 typedef EmiP2PSockConfig EmiP2PSocketConfigSC;
 
-@interface EmiP2PSocketConfig()
+@interface EmiP2PSocketConfig ()
 
 @property (nonatomic, assign, readonly) EmiP2PSocketConfigSC *sockConfig;
 

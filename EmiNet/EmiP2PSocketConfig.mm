@@ -11,7 +11,9 @@
 
 typedef EmiP2PSocketConfigSC SC;
 
-@implementation EmiP2PSocketConfig
+@implementation EmiP2PSocketConfig {
+    void *_sc;
+}
 
 - (id)init {
     if (self = [super init]) {

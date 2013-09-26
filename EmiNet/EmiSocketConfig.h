@@ -10,9 +10,7 @@
 
 #include "EmiTypes.h"
 
-@interface EmiSocketConfig : NSObject {
-    void *_sc;
-}
+@interface EmiSocketConfig : NSObject
 
 @property (nonatomic, strong) NSData *serverAddress;
 @property (nonatomic, assign) EmiTimeInterval connectionTimeout;

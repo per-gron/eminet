@@ -10,9 +10,7 @@
 
 #include "EmiTypes.h"
 
-@interface EmiP2PSocketConfig : NSObject {
-    void *_sc;
-}
+@interface EmiP2PSocketConfig : NSObject
 
 @property (nonatomic, strong) NSData *serverAddress;
 @property (nonatomic, assign) EmiTimeInterval connectionTimeout;

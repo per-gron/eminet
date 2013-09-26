@@ -20,7 +20,7 @@ template<class Binding>
 class EmiConnParams;
 typedef EmiConn<EmiSockDelegate, EmiConnDelegate> EC;
 
-@interface EmiConnection()
+@interface EmiConnection ()
 
 - (id)initWithSocket:(EmiSocket *)socket
      connectionQueue:(dispatch_queue_t)connectionQueue

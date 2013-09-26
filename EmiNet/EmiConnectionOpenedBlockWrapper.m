@@ -8,7 +8,13 @@
 
 #import "EmiConnectionOpenedBlockWrapper.h"
 
-@implementation EmiConnectionOpenedBlockWrapper
+@implementation EmiConnectionOpenedBlockWrapper {
+    __weak id<EmiConnectionDelegate> _delegate;
+    dispatch_queue_t _delegateQueue;
+    NSData *_cookie;
+    NSData *_sharedSecret;
+    id _userData;
+}
 
 @synthesize delegate = _delegate;
 @synthesize delegateQueue = _delegateQueue;

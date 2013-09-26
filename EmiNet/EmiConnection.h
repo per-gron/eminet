@@ -40,15 +40,7 @@ typedef void (^EmiConnectionSendFinishedBlock)(NSError *err);
 
 @end
 
-@interface EmiConnection : NSObject {
-    EmiSocket *_emiSocket;
-    
-    void *_ec;
-    
-	dispatch_queue_t _delegateQueue;
-    __weak id<EmiConnectionDelegate> _delegate;
-	dispatch_queue_t _connectionQueue;
-}
+@interface EmiConnection : NSObject
 
 - (BOOL)closeWithError:(NSError **)errPtr;
 // Immediately closes the connection without notifying the other host.

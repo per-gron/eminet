@@ -20,7 +20,17 @@
 #include <map>
 #include <set>
 
-@implementation EmiSocket
+@implementation EmiSocket {
+    // TODO Hey, isn't it fundamentally incorrect to have one socket
+    // instance variable for resolving hosts, potentially in parallel?
+    GCDAsyncUdpSocket *_resolveSocket;
+    
+    void *_sock;
+    
+	dispatch_queue_t _delegateQueue;
+    __weak id<EmiSocketDelegate> _delegate;
+	dispatch_queue_t _socketQueue;
+}
 
 #pragma mark - Object lifecycle
 

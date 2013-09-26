@@ -11,7 +11,9 @@
 
 typedef EmiSocketConfigSC SC;
 
-@implementation EmiSocketConfig
+@implementation EmiSocketConfig {
+    void *_sc;
+}
 
 - (id)init {
     if (self = [super init]) {

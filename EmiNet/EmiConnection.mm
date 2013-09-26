@@ -13,7 +13,15 @@
 #import "GCDAsyncUdpSocket.h"
 #include "EmiObjCBindingHelper.h"
 
-@implementation EmiConnection
+@implementation EmiConnection {
+    EmiSocket *_emiSocket;
+    
+    void *_ec;
+    
+	dispatch_queue_t _delegateQueue;
+    __weak id<EmiConnectionDelegate> _delegate;
+	dispatch_queue_t _connectionQueue;
+}
 
 - (id)initWithSocket:(EmiSocket *)socket
      connectionQueue:(dispatch_queue_t)connectionQueue
