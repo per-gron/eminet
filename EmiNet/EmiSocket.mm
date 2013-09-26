@@ -227,8 +227,6 @@ withFilterContext:(id)filterContext {
 // We use the connect functionality of GCDAsyncUdpSocket only to get access to the DNS
 // resolve functions.
 - (void)udpSocket:(GCDAsyncUdpSocket *)sock didConnectToAddress:(NSData *)address {
-    ASSERT(dispatch_get_current_queue() == _socketQueue);
-    
     EmiConnectionOpenedBlockWrapper *wrapper = sock.userData;
     
     _resolveSocket = nil;
@@ -265,8 +263,6 @@ withFilterContext:(id)filterContext {
 // We use the connect functionality of GCDAsyncUdpSocket only to get access to the DNS
 // resolve functions.
 - (void)udpSocket:(GCDAsyncUdpSocket *)sock didNotConnect:(NSError *)error {
-    ASSERT(dispatch_get_current_queue() == _socketQueue);
-    
     EmiConnectionOpenedBlockWrapper *wrapper = sock.userData;
     
     _resolveSocket = nil;
