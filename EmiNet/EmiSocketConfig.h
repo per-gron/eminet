@@ -8,7 +8,7 @@
 
 #import <Foundation/Foundation.h>
 
-#include "EmiTypes.h"
+#include <core/EmiTypes.h>
 
 @interface EmiSocketConfig : NSObject
 

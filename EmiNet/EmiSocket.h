@@ -6,7 +6,7 @@
 //  Copyright (c) 2012 Per Eckerdal. All rights reserved.
 //
 
-#include "EmiTypes.h"
+#include <core/EmiTypes.h>
 #import "EmiConnection.h"
 
 #import <Foundation/Foundation.h>
