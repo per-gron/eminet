@@ -9,7 +9,7 @@
 #ifndef eminet_EmiDispatchTimer_h
 #define eminet_EmiDispatchTimer_h
 
-#include "EmiTypes.h"
+#include <core/EmiTypes.h>
 #include <dispatch/dispatch.h>
 
 class EmiDispatchTimer;
