@@ -5,7 +5,7 @@
   "author": "Per Eckerdal <per@emilir.com>",
   "engines": { "node" : ">=0.6.0" },
   "scripts": {
-    "preinstall": "node-waf configure build"
+    "preinstall": "node-gyp configure build"
   },
   "main": "./node/eminet"
 }
